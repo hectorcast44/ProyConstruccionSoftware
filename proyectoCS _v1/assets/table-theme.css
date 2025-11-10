@@ -1,0 +1,68 @@
+/* assets/table-theme.css */
+/* -------- CONTENEDOR DETALLE (tabla debajo de la card) -------- */
+.item-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+
+/* cuando el bloque está abierto (el JS agrega .open al bloque principal) */
+.item-block.open .item-detail {
+  max-height: 360px;
+}
+
+/* -------- CAJA BLANCA DEL DETALLE -------- */
+.item-table-wrapper {
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius:10px 10px 10px 10px;
+  overflow: hidden;
+}
+
+/* -------- TABLA REUTILIZABLE -------- */
+.item-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.item-table thead th {
+  background: #f5f5f5;
+  padding: 8px 12px;
+  font-size: 0.7rem;
+  color: #555;
+  border-right: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.item-table tbody td {
+  padding: 8px 12px;
+  font-size: 0.72rem;
+  border-bottom: 1px solid #f0f0f0;
+  border-right: 1px solid #e0e0e0;
+}
+
+.item-table thead th:last-child,
+.item-table tbody td:last-child {
+  border-right: none;
+}
+
+.item-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.right, .text-right { text-align: right; }
+
+/* -------- TAGS GENÉRICAS (pueden representar estados, tipos, etc.) -------- */
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 500;
+}
+
+/* Paleta genérica reutilizable */
+.tag-info { background: rgba(129,125,228,.15); color: #5a5bd4; }
+.tag-warning { background: rgba(255,199,90,.15); color: #b57a08; }
+.tag-danger { background: rgba(255,138,138,.15); color: #c0392b; }
+.tag-neutral { background: rgba(143,143,143,.15); color: #555; }

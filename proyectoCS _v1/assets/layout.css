@@ -1,0 +1,31 @@
+/* assets/layout.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
+:root {
+  --sidebar-open-width: 245px;
+  --sidebar-collapsed-width: 78px;
+  --page-bg: #efefef;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--page-bg);
+  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ⇢ cuando la página tiene sidebar */
+body.has-sidebar main {
+  margin-left: var(--sidebar-open-width);
+  padding: 2.5rem 2.5rem 3rem;
+  transition: margin-left .25s ease;
+}
+
+/* ⇢ cuando  JS de sidebar colapsa y pone esta clase en el body */
+body.has-sidebar.sidebar-collapsed main {
+  margin-left: var(--sidebar-collapsed-width);
+}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mis calificaciones</title>
+
+    <!-- estilos globales -->
+    <link rel="stylesheet" href="../assets/sidebar.css" />
+    <link rel="stylesheet" href="../assets/layout.css"/>
+    <link rel="stylesheet" href="../assets/search-bar.css"/>
+    <link rel="stylesheet" href="../assets/table-theme.css"/>
+    <link rel="stylesheet" href="../styles/mis-calificaciones.css"/>
+  </head>
+  <body class="has-sidebar">
+    <!-- aquí se inyecta el sidebar -->
+    <div id="sidebar-mount"></div>
+
+    <main>
+      <!-- buscador flotante -->
+      <div class="search-wrapper">
+        <div class="input-holder">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar materia..."
+            id="buscador-menu"
+          />
+          <button class="search-icon" aria-label="Buscar / Cerrar" id="search-toggle">
+            <i data-feather="search"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- cards de materias -->
+      <div id="lista-usuarios"></div>
+    </main>
+
+    <!-- feather icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- sidebar dinámico -->
+    <script src="../js/sidebar.js"></script>
+    <!-- lógica de calificaciones (cards + buscador) -->
+    <script src="../js/mis-calificaciones.js"></script>
+  </body>
+</html>

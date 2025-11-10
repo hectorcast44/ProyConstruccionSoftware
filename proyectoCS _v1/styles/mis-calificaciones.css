@@ -1,0 +1,95 @@
+/* === grid de cards === */
+#lista-usuarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 4.5rem;
+}
+
+/* envoltura externa */
+.item-shell {
+  width: 100%;
+}
+
+/* bloque card + tabla */
+.materia-block,
+.item-block {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  transition: box-shadow .25s ease, transform .25s ease;
+}
+
+/* =========================
+   1) CARD CERRADA -> hover solo card
+   ========================= */
+.item-block:not(.open) .usuario-card:hover,
+.item-block:not(.open) .card-primary:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  transform: translateY(-2px);
+}
+
+/* =========================
+   2) CARD ABIERTA -> hover en TODO el bloque
+   ========================= */
+.item-block.open:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  transform: translateY(-2px);
+}
+
+/* === card morada (header) === */
+.usuario-card,
+.card-primary {
+  border-radius: 10px; /* todas las esquinas redondeadas cuando está cerrada */
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #5a6ad4, #7a4ea8);
+  cursor: pointer;
+  transition: background .25s ease, box-shadow .25s ease, transform .25s ease, border-radius .25s ease;
+}
+
+.usuario-card:hover {
+  background: linear-gradient(135deg, #6b77dc, #8a5ac0);
+}
+
+/* === cuando la card está abierta === */
+.item-block.open .usuario-card,
+.materia-block.abierto .usuario-card {
+  border-radius: 10px 10px 0 0; /* solo arriba redondeado */
+}
+
+/* === panel blanco que se despliega === */
+.detalle-materia,
+.item-detail {
+  background: #fff;
+  border: 1px solid #ececec;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+  box-shadow: none; /* sombra controlada por hover */
+}
+
+/* abierto */
+.materia-block.abierto .detalle-materia,
+.item-block.open .item-detail {
+  max-height: 360px;
+}
+
+/* icono y texto */
+.icono-usuario-card {
+  display: inline-flex;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.nombre-usuario-card {
+  font-size: .78rem;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
