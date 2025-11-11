@@ -1,12 +1,12 @@
 <?php
-// Usamos el namespace de PHPUnit
+require_once __DIR__ . '/../vendor/autoload.php';
+
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject; // Para los mocks
+use PHPUnit\Framework\MockObject\MockObject;
 
-// Importamos la clase que VAMOS a probar
-require_once __DIR__ . '/../src/CalculadoraService.php';
 
-// El nombre de la clase de prueba debe terminar en "Test"
+require_once __DIR__ . '/../php/src/CalculadoraService.php';
+
 class CalculadoraServiceTest extends TestCase
 {
     private MockObject $pdoMock;
@@ -25,19 +25,17 @@ class CalculadoraServiceTest extends TestCase
         $this->stmtGuardarMock = $this->createMock(PDOStatement::class);
 
         // 2. Le decimos al PDO falso qué debe devolver
-        // Cuando se llame a ->prepare() con una query, devolverá el "statement" falso
+        // Le diremos que devuelva los "statements" falsos en el orden
+        // exacto en que el servicio los llama.
         $this->pdoMock->method('prepare')
-            ->willReturnMap(
-                [
-                    // Usamos "stringContains" para ignorar espacios en blanco
-                    [$this->stringContains('FROM PONDERACION'), $this->stmtPondMock],
-                    [$this->stringContains('FROM ACTIVIDAD'), $this->stmtActMock],
-                    [$this->stringContains('UPDATE MATERIA'), $this->stmtGuardarMock],
-                ]
+            ->willReturnOnConsecutiveCalls(
+                $this->stmtPondMock,  // 1ra llamada: (SELECT ... FROM PONDERACION)
+                $this->stmtActMock,   // 2da llamada: (SELECT ... FROM ACTIVIDAD)
+                $this->stmtGuardarMock // 3ra llamada: (UPDATE MATERIA ...)
             );
-
-        // 3. Creamos una instancia de nuestro servicio REAL,
-        // pero le pasamos la base de datos FALSA
+            
+        // !!! ESTA LÍNEA FALTABA !!!
+        // 3. Crear la instancia del servicio usando el PDO falso
         $this->calculadora = new CalculadoraService($this->pdoMock);
     }
 
