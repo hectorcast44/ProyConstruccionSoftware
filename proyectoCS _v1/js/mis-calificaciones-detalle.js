@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // aquí ya son DOS bloques
   const secciones = [
     {
       id: 'tarea',
@@ -73,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
       contenedor.appendChild(block);
     });
 
-    // íconos (por si quieres poner alguno)
     if (window.feather) feather.replace();
   }
 
@@ -85,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     block.classList.toggle('open');
   });
 
-  // filtro por texto (busca en nombre de actividad)
+  // filtro por texto 
   function filtrar() {
     const term = (buscadorInput?.value || '').toLowerCase();
 
