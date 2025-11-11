@@ -29,3 +29,27 @@ body.has-sidebar main {
 body.has-sidebar.sidebar-collapsed main {
   margin-left: var(--sidebar-collapsed-width);
 }
+
+/* --- ENCABEZADO PRINCIPAL --- */
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* espacio entre ícono y texto */
+  margin-bottom: 1.5rem;
+  padding-left: 0.5rem;
+}
+
+.page-title svg {
+  color: #5162AF; /* azul del degradado */
+  width: 20px;
+  height: 20px;
+  stroke-width: 3px; /* línea más gruesa del ícono */
+}
+
+.page-title h1 {
+  font-size: 1.2rem;
+  font-weight: 800; /* texto fuerte */
+  text-transform: uppercase;
+  color: #111; /* texto negro/gris oscuro */
+  letter-spacing: 0.02em;
+}
