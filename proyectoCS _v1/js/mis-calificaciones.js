@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function crearBloqueMateria(materia) {
-    // shell = elemento que recibe la sombra (si la quieres)
+    // shell = elemento que recibe la sombra
     const shell = document.createElement('div');
     shell.classList.add('item-shell');
 
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleBtn = e.target.closest('.card-menu-detail');
     const card = e.target.closest('.usuario-card');
 
-    // 1) clic en los tres puntos
+    // clic en los tres puntos
     if (menuBtn) {
       e.stopPropagation();
       const actions = menuBtn.parentElement;
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 2) clic en "Detalles" del menú
+    // clic en "Detalles" del menú
     if (detalleBtn) {
       e.stopPropagation();
       const block = detalleBtn.closest('.item-block');
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 3) clic en la card pero no en las acciones
+    // clic en la card pero no en las acciones
     if (card && !e.target.closest('.card-actions')) {
       const bloque = card.parentElement; // .item-block
       bloque.classList.toggle('open');
@@ -207,3 +207,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // primera carga
   renderizarMaterias(materias);
 });
+
