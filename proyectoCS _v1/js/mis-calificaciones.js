@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bloque = document.createElement('div');
     bloque.classList.add('item-block');
 
-    // card morada
+    // card morada con menú
     const card = document.createElement('div');
     card.classList.add('usuario-card');
     card.innerHTML = `
@@ -82,6 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <i data-feather="book-open"></i>
         </span>
         <h3 class="nombre-usuario-card">${materia.nombre}</h3>
+      </div>
+      <div class="card-actions">
+        <button class="card-menu-btn" type="button" aria-label="Más opciones">
+          <i data-feather="more-vertical"></i>
+        </button>
+        <div class="card-menu">
+          <button class="card-menu-detail" type="button">Detalles</button>
+        </div>
       </div>
     `;
 
@@ -130,12 +138,53 @@ document.addEventListener('DOMContentLoaded', () => {
     renderizarMaterias(filtradas);
   }
 
-  // click sobre la card para abrir/cerrar
+  // click sobre la lista (delegación)
   listaUsuariosDiv.addEventListener('click', e => {
+    const menuBtn = e.target.closest('.card-menu-btn');
+    const detalleBtn = e.target.closest('.card-menu-detail');
     const card = e.target.closest('.usuario-card');
-    if (!card) return;
-    const bloque = card.parentElement; // .item-block
-    bloque.classList.toggle('open');
+
+    // clic en los tres puntos
+    if (menuBtn) {
+      e.stopPropagation();
+      const actions = menuBtn.parentElement;
+      const menu = actions.querySelector('.card-menu');
+
+      // cerrar otros menús abiertos
+      document.querySelectorAll('.card-menu.show').forEach(m => {
+        if (m !== menu) m.classList.remove('show');
+      });
+
+      menu.classList.toggle('show');
+      return;
+    }
+
+    // clic en "Detalles" del menú
+    if (detalleBtn) {
+      e.stopPropagation();
+      const block = detalleBtn.closest('.item-block');
+      block.classList.toggle('open');
+
+      // cerrar el menú
+      detalleBtn.closest('.card-menu').classList.remove('show');
+      return;
+    }
+
+    // clic en la card pero no en las acciones
+    if (card && !e.target.closest('.card-actions')) {
+      const bloque = card.parentElement; // .item-block
+      bloque.classList.toggle('open');
+
+      // cerrar menús abiertos
+      document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
+    }
+  });
+
+  // cerrar menú si clicas fuera
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.card-actions')) {
+      document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
+    }
   });
 
   // buscador
@@ -158,3 +207,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // primera carga
   renderizarMaterias(materias);
 });
+
