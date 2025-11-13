@@ -1,10 +1,10 @@
 <?php
 /**
- * Clase Materia
+ * Clase MateriaService
  * Maneja la lógica de negocio para las materias del usuario
  */
 
-class Materia {
+class MateriaService {
     private $pdo;
 
     public function __construct($pdo) {
@@ -29,8 +29,15 @@ class Materia {
             throw new Exception('La calificación mínima debe estar entre 0 y 100.');
         }
 
-        $sql = "INSERT INTO MATERIA (id_usuario, nombre_materia, calif_minima) 
-                VALUES (?, ?, ?)";
+        $sql = "INSERT INTO MATERIA (
+                    id_usuario, 
+                    nombre_materia, 
+                    calif_minima,
+                    calificacion_actual,
+                    puntos_ganados,
+                    puntos_perdidos,
+                    puntos_pendientes
+                ) VALUES (?, ?, ?, 0.00, 0.00, 0.00, 0.00)";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$id_usuario, $nombre_materia, $calif_minima]);
@@ -73,6 +80,35 @@ class Materia {
     }
 
     /**
+     * Actualizar las estadísticas de puntos y calificación de una materia
+     * @param int $id_materia ID de la materia
+     * @param float $calificacion_actual Calificación actual
+     * @param float $puntos_ganados Puntos ganados
+     * @param float $puntos_perdidos Puntos perdidos
+     * @param float $puntos_pendientes Puntos pendientes
+     * @return bool True si se actualizó correctamente
+     */
+    public function actualizarEstadisticas($id_materia, $calificacion_actual, $puntos_ganados, $puntos_perdidos, $puntos_pendientes) {
+        $sql = "UPDATE MATERIA 
+                SET calificacion_actual = ?, 
+                    puntos_ganados = ?, 
+                    puntos_perdidos = ?, 
+                    puntos_pendientes = ? 
+                WHERE id_materia = ?";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            $calificacion_actual, 
+            $puntos_ganados, 
+            $puntos_perdidos, 
+            $puntos_pendientes, 
+            $id_materia
+        ]);
+        
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
      * Eliminar una materia
      * @param int $id_materia ID de la materia
      * @param int $id_usuario ID del usuario (para verificar propiedad)
@@ -99,10 +135,19 @@ class Materia {
     /**
      * Obtener todas las materias de un usuario
      * @param int $id_usuario ID del usuario
-     * @return array Lista de materias
+     * @return array Lista de materias con todas sus estadísticas
      */
     public function obtenerPorUsuario($id_usuario) {
-        $sql = "SELECT * FROM MATERIA 
+        $sql = "SELECT 
+                    id_materia,
+                    id_usuario,
+                    nombre_materia,
+                    calif_minima,
+                    calificacion_actual,
+                    puntos_ganados,
+                    puntos_perdidos,
+                    puntos_pendientes
+                FROM MATERIA 
                 WHERE id_usuario = ? 
                 ORDER BY nombre_materia";
         
@@ -119,7 +164,16 @@ class Materia {
      * @return array|false Datos de la materia o false si no existe
      */
     public function obtenerPorId($id_materia, $id_usuario) {
-        $sql = "SELECT * FROM MATERIA 
+        $sql = "SELECT 
+                    id_materia,
+                    id_usuario,
+                    nombre_materia,
+                    calif_minima,
+                    calificacion_actual,
+                    puntos_ganados,
+                    puntos_perdidos,
+                    puntos_pendientes
+                FROM MATERIA 
                 WHERE id_materia = ? AND id_usuario = ?";
         
         $stmt = $this->pdo->prepare($sql);
