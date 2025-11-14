@@ -1,25 +1,16 @@
-/* assets/table-theme.css */
-/* -------- CONTENEDOR DETALLE (tabla debajo de la card) -------- */
-.item-detail {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height .25s ease;
-}
+/* ============================================================
+   TABLE THEME — Contenedor visual y estilos comunes de tabla
+   ============================================================ */
 
-/* cuando el bloque está abierto (el JS agrega .open al bloque principal) */
-.item-block.open .item-detail {
-  max-height: 360px;
-}
-
-/* -------- CAJA BLANCA DEL DETALLE -------- */
+/* ---------- Caja blanca que envuelve la tabla ---------- */
 .item-table-wrapper {
   background: #fff;
   border: 1px solid #ececec;
-  border-radius:10px 10px 10px 10px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
-/* -------- TABLA REUTILIZABLE -------- */
+/* ---------- Tabla base ---------- */
 .item-table {
   width: 100%;
   border-collapse: collapse;
@@ -50,9 +41,13 @@
   border-bottom: none;
 }
 
-.right, .text-right { text-align: right; }
+/* alineación rápida */
+.right,
+.text-right {
+  text-align: right;
+}
 
-/* -------- TAGS GENÉRICAS (pueden representar estados, tipos, etc.) -------- */
+/* ---------- Tags genéricas ---------- */
 .tag {
   display: inline-block;
   padding: 3px 10px;
@@ -61,8 +56,89 @@
   font-weight: 500;
 }
 
-/* Paleta genérica reutilizable */
-.tag-info { background: rgba(129,125,228,.15); color: #5a5bd4; }
-.tag-warning { background: rgba(255,199,90,.15); color: #b57a08; }
-.tag-danger { background: rgba(255,138,138,.15); color: #c0392b; }
-.tag-neutral { background: rgba(143,143,143,.15); color: #555; }
+
+/* ============================================================
+   PALETA DE TAGS PASTEL 
+   ============================================================ */
+
+/* ROJOS / ROSAS */
+.tag-rojo {
+  background: #ffe5e8; 
+  color: #b33a46;     
+}
+
+.tag-rosa {
+  background: #ffdce4;
+  color: #a83254;
+}
+
+/* NARANJAS */
+.tag-naranja {
+  background: #ffe9d6; /* pastel claro */
+  color: #8b3b0f;      /* naranja mucho más oscuro */
+}
+
+.tag-durazno {
+  background: #ffe2cc;
+  color: #7a330f;
+}
+
+/* AMARILLOS / DORADOS */
+.tag-amarillo {
+  background: #fff7d1;   
+  color: #5a4c0b;        
+}
+
+.tag-dorado {
+  background: #ffefbf;
+  color: #7c6910;
+}
+
+/* VERDES */
+.tag-verde {
+  background: #dcfbe4;
+  color: #2d7048;
+}
+
+.tag-verde-lima {
+  background: #e6ffd6;
+  color: #4c7a23;
+}
+
+/* AZULES */
+.tag-azul {
+  background: #e0eaff;
+  color: #3458a0;
+}
+
+.tag-azul-claro {
+  background: #d6f0ff;
+  color: #2a638e;
+}
+
+.tag-agua {
+  background: #e0f7ff;
+  color: #2b6b88;
+}
+
+/* VIOLETAS / MALVA */
+.tag-morado {
+  background: #f0e0ff;
+  color: #7a3da8;
+}
+
+.tag-lavanda {
+  background: #ead6ff;
+  color: #6a2fa0;
+}
+
+/* MAGENTA / MELOCOTÓN */
+.tag-magenta {
+  background: #ffe3ef;
+  color: #9f3d74;
+}
+
+.tag-melocoton {
+  background: #ffe7d6;
+  color: #7c3915;
+}

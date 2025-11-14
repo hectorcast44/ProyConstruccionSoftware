@@ -1,74 +1,9 @@
-/* contenedor: columna centrada con espacio entre cards */
-#lista-usuarios {
-  max-width: 1100px;
-  margin: 4.5rem auto 0;
-  padding: 0 1rem 3rem; 
-  display: flex;
-  flex-direction: column;
-  gap: 1.8rem; 
-}
+/* ==================================================
+   MIS CALIFICACIONES: INFORME + DIAGNÓSTICO
+   (las cards+acordeón las maneja calificaciones-card-accordion.css)
+   ================================================== */
 
-/* bloque completo (card + tabla) */
-.item-block {
-  border-radius: 10px;
-  transition: transform .25s ease, box-shadow .25s ease;
-  cursor: pointer;
-  overflow: hidden; /* evita que se vea la tabla antes de abrir */
-  background: transparent;
-}
-
-/* card/header azul */
-.item-header {
-  background: linear-gradient(90deg, #5162AF 0%, #222949 100%);
-  color: #fff;
-  border-radius: 10px;
-  padding: 16px 20px; 
-  font-weight: 600;
-  text-align: center;
-  letter-spacing: .02em;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
-  min-height: 60px; 
-}
-
-/* título a la izquierda */
-.item-header-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: .9rem;
-}
-
-.item-header-title i {
-  width: 20px;
-  height: 20px;
-}
-
-/* cuando se abre, solo redondeado arriba */
-.item-block.open .item-header {
-  border-radius: 10px 10px 0 0;
-}
-
-/* efecto de elevación al hover */
-.item-block:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.15);
-}
-
-/* tabla blanca conectada a la card */
-.item-block.open .item-detail .item-table-wrapper {
-  border-radius: 0 0 10px 10px;
-  border-top: none;
-}
-
-/* opcional: sutil transición al abrir */
-.item-detail {
-  transition: max-height .25s ease;
-}
-
-/* contenedor de las dos cosas */
+/* contenedor de la tarjeta de progreso + círculo de diagnóstico */
 .progress-and-diagnosis {
   display: flex;
   justify-content: center;
@@ -78,7 +13,7 @@
   flex-wrap: wrap;
 }
 
-/* tarjeta azul de la izquierda */
+/* tarjeta de informe (usando la tabla reutilizable) */
 .progress-card {
   background: #fff;
   border-radius: 12px;
@@ -88,7 +23,7 @@
   box-shadow: 0 12px 30px rgba(0,0,0,0.03);
 }
 
-/* header del informe */
+/* header azul del informe */
 .progress-card__header {
   background: linear-gradient(90deg, #5162AF 0%, #222949 100%);
   color: #fff;
@@ -98,15 +33,15 @@
   font-size: .85rem;
 }
 
-/* aquí adaptamos TU table-theme, sin romperlo */
+/* adaptación del tema de tabla dentro del progress-card */
 .progress-card .item-table-wrapper {
-  /* tu table-theme ya pone fondo y borde,
-     aquí solo lo pegamos al header */
+  /* table-theme.css ya define fondo y borde,
+     aquí sólo ajustamos unión con el header */
   border-radius: 0 0 12px 12px;
   border-top: none;
 }
 
-/* si quieres que las celdas de la derecha se vean centradas */
+/* columnas derechas dentro del informe */
 .progress-card .item-table td.right {
   text-align: right;
   font-weight: 500;
