@@ -1,55 +1,74 @@
-/* assets/layout.css */
+/* assets/layout.css
+   Estilos de layout base: body, main con sidebar y encabezado de página
+*/
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
 
 :root {
+  /* Dimensiones del sidebar */
   --sidebar-open-width: 245px;
   --sidebar-collapsed-width: 78px;
+
+  /* Fondo general de la página */
   --page-bg: #efefef;
+
+  /* Padding del área principal */
+  --page-main-padding: 2.5rem;
+
+  /* Encabezado de página */
+  --page-title-icon-color: #5162AF;
+  --page-title-text-color: #111;
+  --page-title-font-size: 1.2rem;
 }
 
+/* Reset básico */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Fondo y tipografía base */
 body {
   background: var(--page-bg);
   font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* ⇢ cuando la página tiene sidebar */
+/* Área principal cuando existe sidebar */
 body.has-sidebar main {
   margin-left: var(--sidebar-open-width);
-  padding: 2.5rem 2.5rem 3rem;
-  transition: margin-left .25s ease;
+  padding: var(--page-main-padding);
+  padding-bottom: 3rem;
+  transition: margin-left 0.25s ease;
 }
 
-/* ⇢ cuando  JS de sidebar colapsa y pone esta clase en el body */
+/* Ajuste de main cuando el sidebar está colapsado (clase aplicada por JS) */
 body.has-sidebar.sidebar-collapsed main {
   margin-left: var(--sidebar-collapsed-width);
 }
 
-/* --- ENCABEZADO PRINCIPAL --- */
+/* Encabezado principal de página (icono + título) */
 .page-title {
   display: flex;
   align-items: center;
-  gap: 8px; /* espacio entre ícono y texto */
+  gap: 8px;
   margin-bottom: 1.5rem;
   padding-left: 0.5rem;
 }
 
+/* Icono del encabezado */
 .page-title svg {
-  color: #5162AF; /* azul del degradado */
+  color: var(--page-title-icon-color);
   width: 20px;
   height: 20px;
-  stroke-width: 3px; /* línea más gruesa del ícono */
+  stroke-width: 3px;
 }
 
+/* Texto del encabezado */
 .page-title h1 {
-  font-size: 1.2rem;
-  font-weight: 800; /* texto fuerte */
+  font-size: var(--page-title-font-size);
+  font-weight: 800;
   text-transform: uppercase;
-  color: #111; /* texto negro/gris oscuro */
+  color: var(--page-title-text-color);
   letter-spacing: 0.02em;
 }
