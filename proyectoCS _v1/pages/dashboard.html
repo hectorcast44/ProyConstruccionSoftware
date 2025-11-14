@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dashboard</title>
+        <!-- estilos globales -->
+        <link rel="stylesheet" href="../assets/sidebar.css" />
+        <link rel="stylesheet" href="../assets/layout.css"/>
+        <link rel="stylesheet" href="../assets/search-bar.css"/>
+        <link rel="stylesheet" href="../assets/table-theme.css"/>
+        <link rel="stylesheet" href="../styles/mis-calificaciones.css"/>
+        <link rel="stylesheet" href="../assets/buttons.css"/>
+    </head>
+    <body class="has-sidebar" data-page="dashboard">
+        <!-- aquí se inyecta el sidebar -->
+        <div id="sidebar-mount"></div>
+        <main>
+            <!-- Boton nueva -->
+            <div id="contenedor-boton"></div>
+            
+
+            <div class="page-title">
+            <i data-feather="home"></i>
+            <h1>Dashboard</h1>
+            </div>
+
+            <!-- Contenido de tabla -->
+            <table id="tabla" style="margin-top: 20px; width:100%">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Actividad</th>
+                        <th>Materia</th>
+                        <th>Tipo</th>
+                        <th>Progreso</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                </tbody>
+            </table>
+
+        </main>
+        <!-- feather icons -->
+        <script src="https://unpkg.com/feather-icons"></script>
+        <!-- sidebar dinámico -->
+        <script src="../js/sidebar.js"></script>
+        <!-- Lógica de boton nueva calificación -->
+        <script src="../js/boton-nueva.js"></script>
+        <!-- Lógica de la tabla -->
+        <script src="../js/dashboard-table.js"></script>
+  </body>
+</html>
