@@ -1,36 +1,38 @@
-const btnNuevo = document.getElementById('btn-nuevo');
-const popup = document.getElementById('popup');
-const cerrar = document.getElementById('cerrar');
-const form = document.getElementById('form');
-const tbody = document.getElementById('tbody');
+document.addEventListener("DOMContentLoaded", () => {
+  const btnCrear = document.getElementById("crear-modal");
+  const modal = document.getElementById("modal-nueva");
+  const tbody = document.getElementById("tabla-body");
 
+  btnCrear.addEventListener("click", () => {
+    // Leer valores del modal
+    const actividad = document.getElementById("actividad").value;
+    const materia = document.getElementById("materia").value;
+    const tipo = document.getElementById("tipo").value;
+    const puntajeMax = document.getElementById("puntaje-max").value;
+    const puntaje = document.getElementById("puntaje").value;
+    const fecha = document.getElementById("fecha").value;
 
-btnNuevo.addEventListener('click', () => popup.classList.remove('hidden'));
-cerrar.addEventListener('click', () => popup.classList.add('hidden'));
-
-
-form.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-
-    const fecha = document.getElementById('fecha').value;
-    const actividad = document.getElementById('actividad').value;
-    const materia = document.getElementById('materia').value;
-    const tipo = document.getElementById('tipo').value;
-    const progreso = document.getElementById('progreso').value;
-
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-    <td class="border p-2">${fecha}</td>
-    <td class="border p-2">${actividad}</td>
-    <td class="border p-2">${materia}</td>
-    <td class="border p-2">${tipo}</td>
-    <td class="border p-2">${progreso}</td>
+    // Crear fila
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${actividad}</td>
+      <td>${materia}</td>
+      <td>${tipo}</td>
+      <td>${puntajeMax}</td>
+      <td>${puntaje}</td>
+      <td>${fecha}</td>
     `;
 
+    // Insertar en tabla
+    tbody.appendChild(fila);
 
-    tbody.appendChild(tr);
-    popup.classList.add('hidden');
-    form.reset();
+    // Cerrar el modal
+    modal.close();
+
+    // Limpiar el formulario
+    document.querySelector("#modal-nueva form").reset();
+
+    // Volver a aplicar feather icons
+    if (window.feather) feather.replace();
+  });
 });
