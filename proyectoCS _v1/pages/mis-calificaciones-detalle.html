@@ -9,91 +9,110 @@
     <link rel="stylesheet" href="../assets/sidebar.css" />
     <link rel="stylesheet" href="../assets/layout.css" />
     <link rel="stylesheet" href="../assets/search-bar.css" />
+
+    <!-- tema de tabla reutilizable -->
     <link rel="stylesheet" href="../assets/table-theme.css" />
-    <!-- estilos específicos -->
+
+    <!-- cards + acordeón reutilizable (mismas cards que en la vista general) -->
+    <link rel="stylesheet" href="../assets/card-accordion.css" />
+
+    <!-- estilos específicos de esta página (informe + diagnóstico, ajustes) -->
     <link rel="stylesheet" href="../styles/mis-calificaciones-detalle.css" />
   </head>
-  <body class="has-sidebar">
+  <body class="has-sidebar page-calificaciones-detalle">
+    <!-- sidebar dinámico -->
     <div id="sidebar-mount"></div>
 
     <main>
       <!-- buscador flotante -->
-        <div class="search-wrapper">
-            <div class="input-holder">
-                <input type="text" class="search-input" placeholder="Buscar actividad..." id="buscador-menu"/>
-                <button class="search-icon" aria-label="Buscar / Cerrar" id="search-toggle">
-                <i data-feather="search"></i>
-                </button>
-            </div>
+      <div class="search-wrapper">
+        <div class="input-holder">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar actividad..."
+            id="buscador-menu"
+          />
+          <button
+            class="search-icon"
+            aria-label="Buscar / Cerrar"
+            id="search-toggle"
+          >
+            <i data-feather="search"></i>
+          </button>
         </div>
-        
-        <div class="page-title">
-          <i data-feather="bar-chart-2"></i>
-          <h1>Mis calificaciones - detalles</h1>
-        </div>
+      </div>
+      
+      <div class="page-title">
+        <i data-feather="bar-chart-2"></i>
+        <h1>Mis calificaciones - detalles</h1>
+      </div>
 
-        <!-- aquí van las cards -->
-        <div id="lista-usuarios"></div>
-        <!-- bloque informe + diagnóstico -->
-        <section class="progress-and-diagnosis">
-          <!-- tarjeta de informe que usa TU tabla -->
-          <div class="progress-card">
-            <div class="progress-card__header">
-              Informe de Progreso
-            </div>
+      <!-- cards con acordeón para actividades de esta materia -->
+      <section id="lista-usuarios"></section>
 
-            <!-- usa las clases de table-theme -->
-            <div class="item-table-wrapper progress-table-wrapper">
-              <table class="item-table">
-                <tbody>
-                  <tr>
-                    <td>Porcentaje obtenido %</td>
-                    <td class="right">70 / 100</td>
-                  </tr>
-                  <tr>
-                    <td>Puntos obtenidos</td>
-                    <td class="right">55</td>
-                  </tr>
-                  <tr>
-                    <td>Puntos perdidos</td>
-                    <td class="right">15</td>
-                  </tr>
-                  <tr>
-                    <td>Puntos posibles a obtener</td>
-                    <td class="right">30</td>
-                  </tr>
-                  <tr>
-                    <td>Puntos necesarios para aprobar</td>
-                    <td class="right">15</td>
-                  </tr>
-                  <tr>
-                    <td>Calificación mínima</td>
-                    <td class="right">55</td>
-                  </tr>
-                  <tr>
-                    <td>Calificación máxima</td>
-                    <td class="right">85</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+      <!-- bloque informe + diagnóstico -->
+      <section class="progress-and-diagnosis">
+        <!-- tarjeta de informe que usa la tabla reutilizable -->
+        <div class="progress-card">
+          <div class="progress-card__header">
+            Informe de Progreso
           </div>
 
-          <!-- diagnóstico -->
-          <div class="diagnosis-card">
-            <p class="diagnosis-title">Diagnóstico</p>
-            <div class="diagnosis-circle">
-              <span class="diag-label">Calificación</span>
-              <span class="diag-grade">55</span>
-              <span class="diag-status diag-status--risk">En riesgo</span>
-            </div>
+          <!-- usa las clases de table-theme.css -->
+          <div class="item-table-wrapper">
+            <table class="item-table">
+              <tbody>
+                <tr>
+                  <td>Porcentaje obtenido %</td>
+                  <td class="right">70 / 100</td>
+                </tr>
+                <tr>
+                  <td>Puntos obtenidos</td>
+                  <td class="right">55</td>
+                </tr>
+                <tr>
+                  <td>Puntos perdidos</td>
+                  <td class="right">15</td>
+                </tr>
+                <tr>
+                  <td>Puntos posibles a obtener</td>
+                  <td class="right">30</td>
+                </tr>
+                <tr>
+                  <td>Puntos necesarios para aprobar</td>
+                  <td class="right">15</td>
+                </tr>
+                <tr>
+                  <td>Calificación mínima</td>
+                  <td class="right">55</td>
+                </tr>
+                <tr>
+                  <td>Calificación máxima</td>
+                  <td class="right">85</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </section>
-        
+        </div>
+
+        <!-- diagnóstico -->
+        <div class="diagnosis-card">
+          <p class="diagnosis-title">Diagnóstico</p>
+          <div class="diagnosis-circle">
+            <span class="diag-label">Calificación</span>
+            <span class="diag-grade">55</span>
+            <span class="diag-status diag-status--risk">En riesgo</span>
+          </div>
+        </div>
+      </section>
     </main>
 
+    <!-- feather icons -->
     <script src="https://unpkg.com/feather-icons"></script>
+    <!-- sidebar dinámico -->
     <script src="../js/sidebar.js"></script>
+    <!-- lógica de detalle (cards + buscador + informe dinámico si quieres) -->
     <script src="../js/mis-calificaciones-detalle.js"></script>
   </body>
 </html>

@@ -1,5 +1,6 @@
-/* === grid de cards === */
-#lista-usuarios {
+/* calificaciones-card-accordion.css */
+/* === grid de cards (lista de calificaciones) === */
+#lista-calificaciones {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
@@ -11,7 +12,7 @@
   width: 100%;
 }
 
-/* bloque card + tabla */
+/* bloque card + tabla (cada materia / curso) */
 .materia-block,
 .item-block {
   display: flex;
@@ -37,7 +38,7 @@
   transform: translateY(-2px);
 }
 
-/* === card morada (header) === */
+/* === card morada (header de la materia/calificación) === */
 .usuario-card,
 .card-primary {
   border-radius: 10px; /* todas las esquinas redondeadas cuando está cerrada */
@@ -47,7 +48,11 @@
   gap: 10px;
   background: linear-gradient(135deg, #5a6ad4, #7a4ea8);
   cursor: pointer;
-  transition: background .25s ease, box-shadow .25s ease, transform .25s ease, border-radius .25s ease;
+  transition:
+    background .25s ease,
+    box-shadow .25s ease,
+    transform .25s ease,
+    border-radius .25s ease;
 }
 
 .usuario-card:hover {
@@ -60,7 +65,7 @@
   border-radius: 10px 10px 0 0; /* solo arriba redondeado */
 }
 
-/* === panel blanco que se despliega === */
+/* === panel blanco que se despliega (contiene la tabla de actividades/notas) === */
 .detalle-materia,
 .item-detail {
   background: #fff;
@@ -70,13 +75,13 @@
   max-height: 0;
   overflow: hidden;
   transition: max-height .25s ease;
-  box-shadow: none; /* sombra controlada por hover */
+  box-shadow: none; /* la sombra la maneja el hover del bloque */
 }
 
 /* abierto */
 .materia-block.abierto .detalle-materia,
 .item-block.open .item-detail {
-  max-height: 360px;
+  max-height: 360px; /* ajusta según el contenido */
 }
 
 /* icono y texto */
@@ -149,4 +154,3 @@
 .card-menu button:hover {
   background: rgba(129,106,228,0.06);
 }
-

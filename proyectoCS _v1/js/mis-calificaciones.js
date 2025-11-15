@@ -33,7 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   ];
 
-  const listaUsuariosDiv = document.getElementById('lista-usuarios');
+  // 🔹 OJO: ahora usamos lista-calificaciones
+  const listaCalificaciones = document.getElementById('lista-calificaciones');
   const buscadorInput = document.getElementById('buscador-menu');
   const buscadorWrapper = document.querySelector('.search-wrapper');
   const buscadorBtn = document.getElementById('search-toggle');
@@ -120,10 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderizarMaterias(lista) {
-    listaUsuariosDiv.innerHTML = '';
+    if (!listaCalificaciones) return;
+    listaCalificaciones.innerHTML = '';
     lista.forEach(m => {
       const bloque = crearBloqueMateria(m);
-      listaUsuariosDiv.appendChild(bloque);
+      listaCalificaciones.appendChild(bloque);
     });
 
     // volver a dibujar íconos
@@ -139,46 +141,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // click sobre la lista (delegación)
-  listaUsuariosDiv.addEventListener('click', e => {
-    const menuBtn = e.target.closest('.card-menu-btn');
-    const detalleBtn = e.target.closest('.card-menu-detail');
-    const card = e.target.closest('.usuario-card');
+  if (listaCalificaciones) {
+    listaCalificaciones.addEventListener('click', e => {
+      const menuBtn = e.target.closest('.card-menu-btn');
+      const detalleBtn = e.target.closest('.card-menu-detail');
+      const card = e.target.closest('.usuario-card');
 
-    // clic en los tres puntos
-    if (menuBtn) {
-      e.stopPropagation();
-      const actions = menuBtn.parentElement;
-      const menu = actions.querySelector('.card-menu');
+      // clic en los tres puntos
+      if (menuBtn) {
+        e.stopPropagation();
+        const actions = menuBtn.parentElement;
+        const menu = actions.querySelector('.card-menu');
 
-      // cerrar otros menús abiertos
-      document.querySelectorAll('.card-menu.show').forEach(m => {
-        if (m !== menu) m.classList.remove('show');
-      });
+        // cerrar otros menús abiertos
+        document.querySelectorAll('.card-menu.show').forEach(m => {
+          if (m !== menu) m.classList.remove('show');
+        });
 
-      menu.classList.toggle('show');
-      return;
-    }
+        menu.classList.toggle('show');
+        return;
+      }
 
-    // clic en "Detalles" del menú
-    if (detalleBtn) {
-      e.stopPropagation();
-      const block = detalleBtn.closest('.item-block');
-      block.classList.toggle('open');
+      // clic en "Detalles" del menú
+      if (detalleBtn) {
+        e.stopPropagation();
+        const block = detalleBtn.closest('.item-block');
+        block.classList.toggle('open');
 
-      // cerrar el menú
-      detalleBtn.closest('.card-menu').classList.remove('show');
-      return;
-    }
+        // cerrar el menú
+        detalleBtn.closest('.card-menu').classList.remove('show');
+        return;
+      }
 
-    // clic en la card pero no en las acciones
-    if (card && !e.target.closest('.card-actions')) {
-      const bloque = card.parentElement; // .item-block
-      bloque.classList.toggle('open');
+      // clic en la card pero no en las acciones
+      if (card && !e.target.closest('.card-actions')) {
+        const bloque = card.parentElement; // .item-block
+        bloque.classList.toggle('open');
 
-      // cerrar menús abiertos
-      document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
-    }
-  });
+        // cerrar menús abiertos
+        document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
+      }
+    });
+  }
 
   // cerrar menú si clicas fuera
   document.addEventListener('click', e => {
@@ -207,4 +211,3 @@ document.addEventListener('DOMContentLoaded', () => {
   // primera carga
   renderizarMaterias(materias);
 });
-

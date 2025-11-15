@@ -7,13 +7,20 @@
 
     <!-- estilos globales -->
     <link rel="stylesheet" href="../assets/sidebar.css" />
-    <link rel="stylesheet" href="../assets/layout.css"/>
-    <link rel="stylesheet" href="../assets/search-bar.css"/>
-    <link rel="stylesheet" href="../assets/table-theme.css"/>
-    <link rel="stylesheet" href="../styles/mis-calificaciones.css"/>
+    <link rel="stylesheet" href="../assets/layout.css" />
+    <link rel="stylesheet" href="../assets/search-bar.css" />
     <link rel="stylesheet" href="../assets/buttons.css"/>
+
+    <!-- tema de tabla reutilizable -->
+    <link rel="stylesheet" href="../assets/table-theme.css" />
+
+    <!-- card + acordeón especializado para calificaciones -->
+    <link rel="stylesheet" href="../assets/calificaciones-card-accordion.css" />
+
+    <!-- estilos específicos de esta página -->
+    <link rel="stylesheet" href="../styles/mis-calificaciones.css" />
   </head>
-  <body class="has-sidebar" data-page="mis-calificaciones">
+  <body class="has-sidebar page-calificaciones">
     <!-- aquí se inyecta el sidebar -->
     <div id="sidebar-mount"></div>
 
@@ -21,20 +28,28 @@
       <!-- buscador flotante -->
       <div class="search-wrapper">
         <div class="input-holder">
-          <input type="text" class="search-input" placeholder="Buscar materia..." id="buscador-menu"/>
-          <button class="search-icon" aria-label="Buscar / Cerrar" id="search-toggle">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar materia..."
+            id="buscador-menu"
+          />
+          <button
+            class="search-icon"
+            aria-label="Buscar / Cerrar"
+            id="search-toggle"
+          >
             <i data-feather="search"></i>
           </button>
         </div>
       </div>
-      
       <div class="page-title">
         <i data-feather="bar-chart-2"></i>
         <h1>Mis calificaciones</h1>
       </div>
-
-      <!-- cards de materias -->
-      <div id="lista-usuarios"></div>
+      
+      <!-- grid de cards de materias/calificaciones -->
+      <section id="lista-calificaciones"></section>
     </main>
 
     <!-- feather icons -->
