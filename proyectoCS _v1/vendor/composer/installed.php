@@ -3,7 +3,7 @@
         'name' => 'joseph/proyecto-cs_v1',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'e44a5bf83e3a336a7744bd678af3f56f3216998f',
+        'reference' => '890726eb2f7f08bb139b6113b488e1debabc9cfe',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'joseph/proyecto-cs_v1' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'e44a5bf83e3a336a7744bd678af3f56f3216998f',
+            'reference' => '890726eb2f7f08bb139b6113b488e1debabc9cfe',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

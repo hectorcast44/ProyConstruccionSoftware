@@ -12,7 +12,7 @@
 
 // 1. Dependencias y Configuración
 require_once '../src/db.php'; 
-require_once '../src/Materia.php';
+require_once '../src/MateriaService.php';
 
 // 2. Iniciar Sesión
 session_start();
@@ -44,7 +44,7 @@ $id_usuario = $_SESSION['id_usuario'];
 // -------------------------------------------------
 
 try {
-    $materia = new Materia($pdo);
+    $materiaService = new MateriaService($pdo);
     $method = $_SERVER['REQUEST_METHOD'];
 
     switch ($method) {
@@ -55,7 +55,7 @@ try {
         case 'GET':
             if (isset($_GET['id_materia'])) {
                 // Obtener una materia específica
-                $resultado = $materia->obtenerPorId($_GET['id_materia'], $id_usuario);
+                $resultado = $materiaService->obtenerPorId($_GET['id_materia'], $id_usuario);
                 
                 if ($resultado) {
                     enviarRespuesta(200, [
@@ -70,7 +70,7 @@ try {
                 }
             } else {
                 // Obtener todas las materias del usuario
-                $materias = $materia->obtenerPorUsuario($id_usuario);
+                $materias = $materiaService->obtenerPorUsuario($id_usuario);
                 
                 enviarRespuesta(200, [
                     'status' => 'success',
@@ -109,7 +109,7 @@ try {
 
             if (isset($data->id_materia) && !empty($data->id_materia)) {
                 // --- ACTUALIZAR ---
-                $materia->actualizar(
+                $materiaService->actualizar(
                     $data->id_materia,
                     $id_usuario,
                     $data->nombre_materia,
@@ -126,7 +126,7 @@ try {
 
             } else {
                 // --- CREAR ---
-                $id_materia_nueva = $materia->crear(
+                $id_materia_nueva = $materiaService->crear(
                     $id_usuario,
                     $data->nombre_materia,
                     $calif_minima
@@ -163,7 +163,7 @@ try {
             // Iniciar transacción
             $pdo->beginTransaction();
 
-            $resultado = $materia->eliminar($id_materia, $id_usuario);
+            $resultado = $materiaService->eliminar($id_materia, $id_usuario);
 
             if ($resultado) {
                 $pdo->commit();
