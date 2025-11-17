@@ -1,46 +1,50 @@
+// js/mis-calificaciones.js 
 document.addEventListener('DOMContentLoaded', () => {
-  // datos de ejemplo
-  const materias = [
-    {
-      id: 1,
-      nombre: 'INFERENCIA',
-      tipos: [
-        { nombre: 'Tarea', obtenido: 40, maximo: 40 },
-        { nombre: 'Proyecto', obtenido: 5, maximo: 10 },
-        { nombre: 'Examen', obtenido: 25, maximo: 50 }
-      ]
-    },
-    {
-      id: 2,
-      nombre: 'PROGRAMACIÓN WEB',
-      tipos: [
-        { nombre: 'Tarea', obtenido: 10, maximo: 10 },
-        { nombre: 'Práctica', obtenido: 15, maximo: 20 },
-        { nombre: 'Proyecto', obtenido: 30, maximo: 30 },
-        { nombre: 'Examen', obtenido: 15, maximo: 40 }
-      ]
-    },
-    {
-      id: 3,
-      nombre: 'BASES DE DATOS',
-      tipos: [
-        { nombre: 'Tarea', obtenido: 8, maximo: 10 },
-        { nombre: 'Exposición', obtenido: 10, maximo: 10 },
-        { nombre: 'Proyecto', obtenido: 12, maximo: 20 },
-        { nombre: 'Examen parcial', obtenido: 20, maximo: 30 },
-        { nombre: 'Examen final', obtenido: 0, maximo: 30 }
-      ]
-    }
-  ];
+  // ---------------------------------------------------------------------------
+  // Estado
+  // ---------------------------------------------------------------------------
+  /**
+   * Estructura esperada de cada materia:
+   * {
+   *   id: number,
+   *   nombre: string,
+   *   tipos: [
+   *     { id_tipo?: number, nombre: string, obtenido: number, maximo: number }
+   *   ]
+   * }
+   */
+  let materias = [];
 
-  // 🔹 OJO: ahora usamos lista-calificaciones
+  // ---------------------------------------------------------------------------
+  // Referencias al DOM
+  // ---------------------------------------------------------------------------
   const listaCalificaciones = document.getElementById('lista-calificaciones');
   const buscadorInput = document.getElementById('buscador-menu');
   const buscadorWrapper = document.querySelector('.search-wrapper');
   const buscadorBtn = document.getElementById('search-toggle');
 
+  // ---------------------------------------------------------------------------
+  // Helpers de UI (render)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Obtiene la clase CSS de tag para un tipo de actividad,
+   * usando el TagStyleManager para que el color sea consistente.
+   * @param {{id_tipo?:number, id_tipo_actividad?:number, nombre:string}} tipo
+   * @returns {string}
+   */
+  function obtenerTagClassPorTipo(tipo) {
+    const key = tipo.id_tipo ?? tipo.id_tipo_actividad ?? tipo.nombre;
+    return UIHelpers.TagStyleManager.getClassFor(key);
+  }
+
+  /**
+   * Genera las filas <tr> de la tabla interna para los tipos de actividad.
+   * @param {Array<{id_tipo?:number, nombre:string, obtenido:number, maximo:number}>} tipos
+   * @returns {string} HTML
+   */
   function generarFilasTipos(tipos = []) {
-    if (!tipos.length) {
+    if (!tipos || !tipos.length) {
       return `
         <tr>
           <td colspan="2" class="right">Sin registros</td>
@@ -49,61 +53,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     return tipos.map(tipo => {
-      const tl = tipo.nombre.toLowerCase();
-      let tagClass = '';
-      if (tl.includes('tarea')) tagClass = 'tag-tarea';
-      else if (tl.includes('proyecto')) tagClass = 'tag-proyecto';
-      else if (tl.includes('examen')) tagClass = 'tag-examen';
-      else tagClass = 'tag-otro';
+      const tagClass = obtenerTagClassPorTipo(tipo);
+      const obtenido = Number(tipo.obtenido ?? 0);
+      const maximo   = Number(tipo.maximo   ?? 0);
 
       return `
         <tr>
-          <td><span class="tag ${tagClass}">${tipo.nombre}</span></td>
-          <td class="right">${tipo.obtenido} / ${tipo.maximo}</td>
+          <td>
+            <span class="tag ${tagClass}">${tipo.nombre}</span>
+          </td>
+          <td class="right">${obtenido} / ${maximo}</td>
         </tr>
       `;
     }).join('');
   }
 
-  function crearBloqueMateria(materia) {
-    // shell = elemento que recibe la sombra
-    const shell = document.createElement('div');
-    shell.classList.add('item-shell');
+  /**
+   * Crea la card (acordeón) de una materia.
+   * @param {{id:number, nombre:string, tipos:Array}} materia
+   * @returns {HTMLDivElement}
+   */
+  function crearCardMateria(materia) {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('accordion-card-wrapper');
 
-    // bloque (card + detalle)
-    const bloque = document.createElement('div');
-    bloque.classList.add('item-block');
-
-    // card morada con menú
     const card = document.createElement('div');
-    card.classList.add('usuario-card');
-    card.innerHTML = `
-      <div class="contenedor-nombre-icono">
-        <span class="icono-usuario-card">
+    card.classList.add('accordion-card');
+
+    const header = document.createElement('div');
+    header.classList.add('accordion-card__header');
+    header.innerHTML = `
+      <div class="accordion-card__header-main">
+        <span class="accordion-card__icon">
           <i data-feather="book-open"></i>
         </span>
-        <h3 class="nombre-usuario-card">${materia.nombre}</h3>
+        <h3 class="accordion-card__title">${materia.nombre}</h3>
       </div>
-      <div class="card-actions">
-        <button class="card-menu-btn" type="button" aria-label="Más opciones">
+      <div class="accordion-card__actions">
+        <button
+          class="accordion-card__menu-toggle"
+          type="button"
+          aria-label="Más opciones"
+        >
           <i data-feather="more-vertical"></i>
         </button>
-        <div class="card-menu">
-          <button class="card-menu-detail" type="button">Detalles</button>
+        <div class="accordion-card__menu">
+          <button
+            class="accordion-card__menu-item js-card-detail"
+            type="button"
+          >
+            Detalles
+          </button>
         </div>
       </div>
     `;
 
-    // panel blanco con la tabla
     const panel = document.createElement('div');
-    panel.classList.add('item-detail');
+    panel.classList.add('accordion-card__panel');
     panel.innerHTML = `
       <div class="item-table-wrapper">
         <table class="item-table">
           <thead>
             <tr>
               <th>Tipo</th>
-              <th>Valor</th>
+              <th class="right">Puntos</th>
             </tr>
           </thead>
           <tbody>
@@ -113,101 +126,148 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    // juntar
-    bloque.appendChild(card);
-    bloque.appendChild(panel);
-    shell.appendChild(bloque);
-    return shell;
+    card.appendChild(header);
+    card.appendChild(panel);
+    wrapper.appendChild(card);
+
+    return wrapper;
   }
 
+  /**
+   * Pinta la lista de materias en el grid (#lista-calificaciones).
+   * @param {Array} lista
+   */
   function renderizarMaterias(lista) {
     if (!listaCalificaciones) return;
+
     listaCalificaciones.innerHTML = '';
+
+    if (!lista || !lista.length) {
+      listaCalificaciones.innerHTML = `
+        <p class="texto-vacio">No hay materias para mostrar.</p>
+      `;
+      return;
+    }
+
     lista.forEach(m => {
-      const bloque = crearBloqueMateria(m);
-      listaCalificaciones.appendChild(bloque);
+      const card = crearCardMateria(m);
+      listaCalificaciones.appendChild(card);
     });
 
-    // volver a dibujar íconos
     if (window.feather) feather.replace();
   }
 
-  function filtrarYRenderizar() {
-    const termino = (buscadorInput?.value || '').toLowerCase();
+  /**
+   * Aplica el filtro del buscador sobre el arreglo de materias
+   * y vuelve a renderizar.
+   * @param {string} [valorDesdeSearch]  Texto introducido en el buscador
+   */
+  function filtrarYRenderizar(valorDesdeSearch) {
+    let fuente = '';
+
+    if (typeof valorDesdeSearch === 'string') {
+      fuente = valorDesdeSearch;
+    } else if (buscadorInput) {
+      fuente = buscadorInput.value || '';
+    }
+
+    const termino = fuente.toLowerCase().trim();
+
     const filtradas = materias.filter(m =>
-      m.nombre.toLowerCase().includes(termino)
+      (m.nombre || '').toLowerCase().includes(termino)
     );
+
     renderizarMaterias(filtradas);
   }
 
-  // click sobre la lista (delegación)
-  if (listaCalificaciones) {
-    listaCalificaciones.addEventListener('click', e => {
-      const menuBtn = e.target.closest('.card-menu-btn');
-      const detalleBtn = e.target.closest('.card-menu-detail');
-      const card = e.target.closest('.usuario-card');
 
-      // clic en los tres puntos
-      if (menuBtn) {
-        e.stopPropagation();
-        const actions = menuBtn.parentElement;
-        const menu = actions.querySelector('.card-menu');
+  // ---------------------------------------------------------------------------
+  // Carga de datos desde la API (vía Apache / Open Server)
+  // ---------------------------------------------------------------------------
 
-        // cerrar otros menús abiertos
-        document.querySelectorAll('.card-menu.show').forEach(m => {
-          if (m !== menu) m.classList.remove('show');
-        });
+  async function cargarMateriasDesdeAPI() {
+    const url = '../php/api/calificaciones_resumen.php';
 
-        menu.classList.toggle('show');
+    try {
+      console.log('Llamando a:', url);
+
+      const resp = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      const raw = await resp.text();
+      console.log('Respuesta cruda de la API:', raw);
+
+      let json = null;
+      try {
+        json = JSON.parse(raw);
+      } catch (e) {
+        console.error('No se pudo parsear JSON:', e);
+      }
+
+      console.log('JSON parseado:', json);
+
+      if (!resp.ok) {
+        console.error('HTTP no OK:', resp.status, resp.statusText);
+        materias = [];
+        renderizarMaterias(materias);
         return;
       }
 
-      // clic en "Detalles" del menú
-      if (detalleBtn) {
-        e.stopPropagation();
-        const block = detalleBtn.closest('.item-block');
-        block.classList.toggle('open');
+      let listaMaterias = [];
 
-        // cerrar el menú
-        detalleBtn.closest('.card-menu').classList.remove('show');
+      if (json && Array.isArray(json.data)) {
+        listaMaterias = json.data;
+      } else if (Array.isArray(json)) {
+        listaMaterias = json;
+      } else {
+        console.error('Formato de respuesta no esperado. Se esperaba array o data[]');
+        materias = [];
+        renderizarMaterias(materias);
         return;
       }
 
-      // clic en la card pero no en las acciones
-      if (card && !e.target.closest('.card-actions')) {
-        const bloque = card.parentElement; // .item-block
-        bloque.classList.toggle('open');
+      materias = listaMaterias.map(m => ({
+        id: m.id ?? m.id_materia ?? 0,
+        nombre: m.nombre ?? m.nombre_materia ?? 'Sin nombre',
+        tipos: (m.tipos || []).map(t => ({
+          id_tipo:   t.id_tipo ?? t.id_tipo_actividad ?? undefined,
+          nombre:    t.nombre ?? t.nombre_tipo ?? 'Sin tipo',
+          obtenido:  Number(t.obtenido ?? t.puntos_obtenidos ?? 0),
+          maximo:    Number(t.maximo   ?? t.puntos_posibles  ?? 0)
+        }))
+      }));
 
-        // cerrar menús abiertos
-        document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
-      }
-    });
+      filtrarYRenderizar('');
+
+    } catch (error) {
+      console.error('Error de red al cargar materias:', error);
+      materias = [];
+      renderizarMaterias(materias);
+    }
   }
 
-  // cerrar menú si clicas fuera
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.card-actions')) {
-      document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
+  // ---------------------------------------------------------------------------
+  // Inicializar helpers de UI
+  // ---------------------------------------------------------------------------
+
+  UIHelpers.initAccordionGrid(listaCalificaciones);
+
+  UIHelpers.initSearchBar({
+    input: buscadorInput,
+    toggleBtn: buscadorBtn,
+    wrapper: buscadorWrapper,
+    onFilter: (texto) => {
+      filtrarYRenderizar(texto);
     }
   });
 
-  // buscador
-  if (buscadorInput) {
-    buscadorInput.addEventListener('input', filtrarYRenderizar);
-  }
-
-  if (buscadorBtn && buscadorWrapper) {
-    buscadorBtn.addEventListener('click', () => {
-      buscadorWrapper.classList.toggle('active');
-      if (buscadorWrapper.classList.contains('active')) {
-        buscadorInput.focus();
-      } else {
-        buscadorInput.value = '';
-        filtrarYRenderizar();
-      }
-    });
-  }
-
-  // primera carga
-  renderizarMaterias(materias);
+  // ---------------------------------------------------------------------------
+  // Primera carga
+  // ---------------------------------------------------------------------------
+  cargarMateriasDesdeAPI();
 });
