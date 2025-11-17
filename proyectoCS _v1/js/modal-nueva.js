@@ -27,7 +27,7 @@ function abrirModalNueva() {
 function inicializarModalNueva() {
   const modal = document.getElementById('modal-nueva');
   const cerrar = document.getElementById('cerrar-modal');
-  const form = document.getElementById('form-calificacion');
+  const form = document.getElementById('form-actividad');
 
   if (!modal || !form) return;
 
@@ -52,7 +52,7 @@ function inicializarModalNueva() {
     // Escapar texto sencillo para evitar inyección
     function esc(s){ return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
 
-    const tbody = document.getElementById('tbody');
+    const tbody = document.getElementById('tabla-body');
     if (!tbody) {
       console.error('No se encontró #tbody en la página.');
       return;
