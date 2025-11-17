@@ -1,0 +1,103 @@
+:root {
+    --fondo-input: #e6e0e9;
+    --color-primario: #a78bc0;
+    --color-oscuro: #4e395f;
+}
+
+.contenedor-modal {
+    margin: auto;
+    border: none;
+    padding: 50px;
+    width: 680px;
+    border-radius: 10px;
+}
+.contenedor-modal::backdrop {
+    background: rgba(0, 0, 0, 0.500); 
+}
+
+.modal-title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.2rem;
+    padding: 20px;
+}
+
+.modal-title svg {
+    stroke: #5162AF;
+    width: 30px;
+    height: 30px;
+    stroke-width: 2px; 
+}
+
+#cerrar-modal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+
+/* Floating labels */
+.modal-form-section {
+    position: relative;
+    margin: 20px 0;
+}
+
+.modal-form-input {
+    width: 100%;
+    padding: 12px 10px;
+    font-size: 16px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.2s;
+    background-color: var(--fondo-input);
+    border: 2px transparent solid;
+    color: var(--color-oscuro);
+}
+
+.modal-form-input:focus {
+    border-bottom: 2px var(--color-primario) solid;
+}
+
+/* Eliminar los spinners del input type number para mejor estilización */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Estilo del label */
+.modal-form-label {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none; 
+    padding: 0 4px;
+    color: #777;
+    pointer-events: none;
+    transition: 
+        top 0.2s,
+        font-size 0.2s,
+        color 0.2s;
+}
+
+/* Cuando el input está activo o con texto */
+.modal-form-section .modal-form-input:focus + .modal-form-label,
+.modal-form-section .modal-form-input:not(:placeholder-shown) + .modal-form-label {
+    top: -8px;
+    font-size: 10px;
+    color: var(--color-primario);
+}
+
+.row-fecha-crear {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.row-fecha-crear input[type="date"] {
+    width: 200%;
+}

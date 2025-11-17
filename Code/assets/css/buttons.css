@@ -1,0 +1,160 @@
+:root {
+  --fondo-claro: #d5ccff;
+  --fondo-gradiente: linear-gradient(135deg, #5a6ad4, #7a4ea8);
+}
+
+button svg {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.contenedor-botones button {
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.200);
+}
+
+/* Boton nueva */
+.boton-nueva {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+  gap: 10px;
+  border-radius: 15px; 
+  padding: 10px 35px;
+  border: none;
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #4155af;
+  background: var(--fondo-claro);
+  cursor: pointer;
+  z-index: 1;
+  height: 40px;
+}
+.boton-nueva:hover {
+  color: #efefef;
+}
+.boton-nueva::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--fondo-gradiente);
+    opacity: 0;
+    border-radius: 15px;
+    transition: opacity 0.2s ease-out;
+    z-index: -1;
+}
+
+.boton-nueva:hover::before {
+    opacity: 1;
+}
+
+.boton-nueva:active {
+  transform: scale(.98);
+  box-shadow: 0 5px 2px rgba(100, 100, 255, 0.2);
+}
+
+
+
+/* Boton editar */
+.boton-editar {
+  position: relative;
+  border: none;
+  background: var(--fondo-gradiente);
+  border-radius: 50%;
+  width: 45px;
+  height: 40px;
+  color: #fff;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.boton-editar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--fondo-claro);
+  transform: scale(1.01);
+  opacity: 0;
+  border-radius: 50%;
+  transition: opacity 0.2s ease-out;
+  z-index: -1;
+}
+
+.boton-editar:hover::before {
+  opacity: 1;
+}
+
+.boton-editar:hover {
+  color: #4155af;
+}
+
+/* Botón eliminar */
+.boton-eliminar {
+  position: relative;
+  border: none;
+  background: var(--fondo-claro);
+  border-radius: 50%;
+  width: 45px;
+  height: 40px;
+  color: #4155af;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.boton-eliminar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #d47676;
+  opacity: 0;
+  border-radius: 50%;
+  transition: opacity 0.2s ease-out;
+  z-index: -1;
+}
+
+.boton-eliminar:hover::before {
+  opacity: 1;
+}
+
+.boton-eliminar:hover {
+  color: #302020;
+}
+
+
+/* Botón crear */ 
+.boton-crear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 15px; 
+  height: 48px;
+  width: 30%;
+  border: 1px transparent solid;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #5a6ad4, #7a4ea8);
+  cursor: pointer;
+}
+
+.boton-crear:hover {
+  transition: box-shadow 0.2s ease;
+  box-shadow: 2px 5px 10px rgba(51, 2, 45, 0.267);
+}
+
+.boton-crear:active {
+  transform: scale(.98);
+  box-shadow: 0 2px 8px rgba(100, 100, 255, 0.2);
+}
+
+.boton-crear i {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
