@@ -9,7 +9,6 @@
         <link rel="stylesheet" href="../assets/css/layout.css"/>
         <link rel="stylesheet" href="../assets/css/search-bar.css"/>
         <link rel="stylesheet" href="../assets/css/table-theme.css"/>
-        <link rel="stylesheet" href="../styles/mis-calificaciones.css"/>
         <link rel="stylesheet" href="../assets/css/buttons.css"/>
         <link rel="stylesheet" href="../assets/css/modal.css">
     </head>
@@ -17,13 +16,28 @@
         <!-- aquí se inyecta el sidebar -->
         <div id="sidebar-mount"></div>
         <main>
-            <!-- Boton nueva -->
-            <div id="contenedor-boton"></div>
+            <div class="main-bar">
+                <div class="page-title">
+                    <i data-feather="home"></i>
+                    <h1>Dashboard</h1>
+                </div>
 
-            <div class="page-title">
-                <i data-feather="home"></i>
-                <h1>Dashboard</h1>
+                <!-- Botones -->
+                <div class="contenedor-botones">
+                    <div id="contenedor-boton-nueva"></div>
+                    <div id="contenedor-boton-editar"></div>
+                    <div id="contenedor-boton-eliminar"></div>
+                </div>
             </div>
+
+            <!-- Search Bar -->
+            <div class="content-group">
+                <div class="search-content">
+                    <input type="text" id="search-input" class="search-input" placeholder="Buscar...">
+                </div>
+            </div>
+                
+            
 
             <!-- Contenido de tabla -->
             <table id="tabla" style="margin-top: 20px; width:100%">
@@ -41,11 +55,15 @@
             </table>
 
         </main>
-       
+        <!-- feather icons -->
         <script src="https://unpkg.com/feather-icons"></script>
+        <!-- sidebar dinámico -->
         <script src="../assets/js/sidebar.js"></script>
+        <!-- Lógica del modal -->
         <script src="../assets/js/modal-nueva.js"></script>
-        <script src="../assets/js/boton-nueva.js"></script>
-        <script src="../js/dashboard-table.js"></script>
+        <!-- Lógica de boton nueva calificación -->
+        <script src="../assets/js/buttons.js"></script>
+        <!-- Lógica de la página Dashboard -->
+        <script src="../js/dashboard.js"></script>
   </body>
 </html>
