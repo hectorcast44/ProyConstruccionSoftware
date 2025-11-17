@@ -182,6 +182,7 @@ main {
    Items del menú
    ========================= */
 .nav-item {
+  text-decoration: none;
   background: transparent;
   border: none;
   display: flex;

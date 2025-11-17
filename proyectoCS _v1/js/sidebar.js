@@ -3,35 +3,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const mount = document.getElementById('sidebar-mount');
   if (!mount) return;
 
-  // carga el HTML del sidebar
   fetch('../partials/sidebar.html')
     .then(resp => resp.text())
     .then(html => {
       mount.innerHTML = html;
 
-      // iconos de feather
-      if (window.feather) {
-        feather.replace();
-      }
+      if (window.feather) feather.replace();
+
+      // ★ activar nav-item según la página ★
+      const currentPage = document.body.dataset.page;
+
+      document.querySelectorAll('.sidebar .nav-item').forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.includes(currentPage)) {
+          link.classList.add('active');        // ← FIX
+        } else {
+          link.classList.remove('active');     // ← FIX
+        }
+      });
 
       const sidebar = document.getElementById('sidebar');
       const toggleBtn = document.getElementById('sidebarToggle');
-
-      // por si algún día cambias el id en el html
       if (!sidebar || !toggleBtn) return;
 
       toggleBtn.addEventListener('click', () => {
-        // colapsa el aside
         sidebar.classList.toggle('collapsed');
-
-        // ¿quedó colapsado?
-        const isCollapsed = sidebar.classList.contains('collapsed');
-
-        // se lo contamos al body
-        document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+        document.body.classList.toggle(
+          'sidebar-collapsed',
+          sidebar.classList.contains('collapsed')
+        );
       });
     })
-    .catch(err => {
-      console.error('No se pudo cargar el sidebar:', err);
-    });
+    .catch(err => console.error('No se pudo cargar el sidebar:', err));
 });
