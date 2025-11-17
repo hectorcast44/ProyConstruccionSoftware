@@ -1,156 +1,63 @@
-/* calificaciones-card-accordion.css */
-/* === grid de cards (lista de calificaciones) === */
-#lista-calificaciones {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-top: 4.5rem;
+/* ==========================================================================
+   MIS CALIFICACIONES
+   Estilos específicos de la vista "Mis calificaciones".
+   Depende de:
+     - assets/layout.css          (estructura principal, .page-title, etc.)
+     - assets/sidebar.css         (layout con sidebar)
+     - assets/search-bar.css      (componente de buscador flotante)
+     - assets/card-accordion.css  (componente de cards con acordeón)
+     - assets/table-theme.css     (estilo de tablas dentro del panel)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CONTEXTO DE PÁGINA
+   -------------------------------------------------------------------------- */
+
+/* Ajustes de layout solo para esta vista:
+   - Mayor separación superior del contenido respecto al header/buscador.
+*/
+.page-calificaciones main {
+  padding-inline: 1.5rem;
 }
 
-/* envoltura externa */
-.item-shell {
-  width: 100%;
-}
-
-/* bloque card + tabla (cada materia / curso) */
-.materia-block,
-.item-block {
-  display: flex;
-  flex-direction: column;
-  border-radius: 10px;
-  transition: box-shadow .25s ease, transform .25s ease;
-}
-
-/* =========================
-   1) CARD CERRADA -> hover solo card
-   ========================= */
-.item-block:not(.open) .usuario-card:hover,
-.item-block:not(.open) .card-primary:hover {
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  transform: translateY(-2px);
-}
-
-/* =========================
-   2) CARD ABIERTA -> hover en TODO el bloque
-   ========================= */
-.item-block.open:hover {
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  transform: translateY(-2px);
-}
-
-/* === card morada (header de la materia/calificación) === */
-.usuario-card,
-.card-primary {
-  border-radius: 10px; /* todas las esquinas redondeadas cuando está cerrada */
-  padding: 12px 16px;
+/* Título de la página "Mis calificaciones":
+   - Alineación y separación con el grid de cards.
+*/
+.page-calificaciones .page-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: linear-gradient(135deg, #5a6ad4, #7a4ea8);
-  cursor: pointer;
-  transition:
-    background .25s ease,
-    box-shadow .25s ease,
-    transform .25s ease,
-    border-radius .25s ease;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
-.usuario-card:hover {
-  background: linear-gradient(135deg, #6b77dc, #8a5ac0);
+/* Icono del título (bar-chart) alineado con el estilo general del sistema. */
+.page-calificaciones .page-title i {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
-/* === cuando la card está abierta === */
-.item-block.open .usuario-card,
-.materia-block.abierto .usuario-card {
-  border-radius: 10px 10px 0 0; /* solo arriba redondeado */
+/* --------------------------------------------------------------------------
+   GRID DE CARDS (LISTA DE MATERIAS)
+   -------------------------------------------------------------------------- */
+
+/* El grid como tal ya lo define card-accordion.css mediante .accordion-card-grid.
+   Aquí solo afinamos la relación con el título/buscador en esta página. */
+.page-calificaciones #lista-calificaciones {
+  /* Permite pequeños ajustes en esta vista sin afectar otros grids. */
+  margin-top: 1.5rem;
 }
 
-/* === panel blanco que se despliega (contiene la tabla de actividades/notas) === */
-.detalle-materia,
-.item-detail {
-  background: #fff;
-  border: 1px solid #ececec;
-  border-top: none;
-  border-radius: 0 0 10px 10px;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height .25s ease;
-  box-shadow: none; /* la sombra la maneja el hover del bloque */
+/* --------------------------------------------------------------------------
+   ESTADOS DE LISTA (SIN DATOS)
+   -------------------------------------------------------------------------- */
+
+/* Mensaje mostrado cuando no hay materias para renderizar.
+   Clase usada desde mis-calificaciones.js. */
+.page-calificaciones .texto-vacio {
+  font-size: 0.8rem;
+  color: #777;
+  text-align: center;
+  margin-top: 2rem;
 }
 
-/* abierto */
-.materia-block.abierto .detalle-materia,
-.item-block.open .item-detail {
-  max-height: 360px; /* ajusta según el contenido */
-}
-
-/* icono y texto */
-.icono-usuario-card {
-  display: inline-flex;
-  color: #fff;
-  font-size: 1.1rem;
-}
-
-.nombre-usuario-card {
-  font-size: .78rem;
-  font-weight: 600;
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: .03em;
-}
-
-/* ===== menú de la card (tres puntitos) ===== */
-.card-actions {
-  margin-left: auto;
-  position: relative;
-}
-
-.card-menu-btn {
-  background: transparent;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-  border-radius: 999px;
-}
-
-.card-menu-btn:hover {
-  background: rgba(255,255,255,0.15);
-}
-
-/* el menú desplegable */
-.card-menu {
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: #fff;
-  border: 1px solid rgba(0,0,0,.04);
-  border-radius: 8px;
-  min-width: 120px;
-  box-shadow: 0 8px 25px rgba(0,0,0,.12);
-  display: none;
-  z-index: 10;
-}
-
-.card-menu.show {
-  display: block;
-}
-
-.card-menu button {
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 8px 10px;
-  font-size: .7rem;
-  cursor: pointer;
-  color: #333;
-  border-radius: 6px;
-}
-
-.card-menu button:hover {
-  background: rgba(129,106,228,0.06);
-}

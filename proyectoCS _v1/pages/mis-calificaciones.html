@@ -13,14 +13,13 @@
     <!-- tema de tabla reutilizable -->
     <link rel="stylesheet" href="../assets/table-theme.css" />
 
-    <!-- card + acordeón especializado para calificaciones -->
-    <link rel="stylesheet" href="../assets/calificaciones-card-accordion.css" />
+    <!-- componente genérico de cards con acordeón -->
+    <link rel="stylesheet" href="../assets/card-accordion.css" />
 
     <!-- estilos específicos de esta página -->
     <link rel="stylesheet" href="../styles/mis-calificaciones.css" />
   </head>
   <body class="has-sidebar page-calificaciones">
-    <!-- aquí se inyecta el sidebar -->
     <div id="sidebar-mount"></div>
 
     <main>
@@ -47,19 +46,15 @@
         <i data-feather="bar-chart-2"></i>
         <h1>Mis calificaciones</h1>
       </div>
-      <!-- botón nueva calificación Puesto por ruben para probar-->
-      <div id="contenedor-boton"></div>
-      <script src="../js/boton-nueva.js"></script>
 
       <!-- grid de cards de materias/calificaciones -->
-      <section id="lista-calificaciones"></section>
+      <section id="lista-calificaciones" class="accordion-card-grid"></section>
     </main>
 
-    <!-- feather icons -->
     <script src="https://unpkg.com/feather-icons"></script>
-    <!-- sidebar dinámico -->
     <script src="../js/sidebar.js"></script>
-    <!-- lógica de calificaciones (cards + buscador) -->
     <script src="../js/mis-calificaciones.js"></script>
+    <script src="../js/ui-helpers.js"></script>
+
   </body>
 </html>
