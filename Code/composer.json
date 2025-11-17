@@ -1,0 +1,15 @@
+{
+    "name": "joseph/proyecto-cs_v1",
+    "description": "agenda escolar para estudiantes",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "JosephGarcia24",
+            "email": "a23216420@alumnos.uady.mx"
+        }
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^12.4"
+    }
+}
