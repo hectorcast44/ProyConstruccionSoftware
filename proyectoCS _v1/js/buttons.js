@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarPartial(
     '../partials/boton-editar.html',
     'contenedor-boton-editar',
-    'abrir-boton-editar'
+    'boton-editar',
+    actualizarColumnaAcciones
   );
 
   cargarPartial(

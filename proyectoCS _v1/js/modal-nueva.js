@@ -42,15 +42,15 @@ function inicializarModalNueva() {
 
     const data = Object.fromEntries(new FormData(form).entries());
 
-    // Validación mínima
-    if (!data.actividad || !data.materia) {
-      // mostrar mensaje real si quieres
-      console.warn('Faltan campos obligatorios');
-      return;
-    }
-
     // Escapar texto sencillo para evitar inyección
-    function esc(s){ return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+    function esc(s){ 
+      return String(s || '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;'); 
+    }
 
     const tbody = document.getElementById('tabla-body');
     if (!tbody) {
@@ -58,21 +58,44 @@ function inicializarModalNueva() {
       return;
     }
 
+    const editIndex = form.dataset.editIndex;
+
+    if (editIndex !== undefined) {
+    const filas = tbody.querySelectorAll('tr');
+    const tr = filas[editIndex];
+    const tds = tr.querySelectorAll('td');
+
+    tds[0].textContent = esc(data.fecha || '');
+    tds[1].textContent = esc(data.actividad);
+    tds[2].textContent = esc(data.materia);
+    tds[3].textContent = esc(data.tipo || '');
+    tds[4].textContent = esc(data.progreso || '');
+
+    modal.close();
+    form.reset();
+
+    // limpiar el estado
+    delete form.dataset.editIndex;
+
+  } else {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${esc(data.actividad)}</td>
-      <td>${esc(data.materia)}</td>
-      <td>${esc(data.tipo || '')}</td>
-      <td>${esc(data['puntaje-max'] || '')}</td>
-      <td>${esc(data.puntaje || '')}</td>
-      <td>${esc(data.fecha || '')}</td>
-    `;
+      tr.innerHTML = `
+        <td>${esc(data.fecha || '')}</td>
+        <td>${esc(data.actividad)}</td>
+        <td>${esc(data.materia)}</td>
+        <td>${esc(data.tipo || '')}</td>
+        <td>
+          <span class="progress-badge progress-encurso" data-progreso="en curso">
+            En curso
+          </span>
+        </td>
+      `;
 
     tbody.appendChild(tr);
-
-    // reset y cerrar
     form.reset();
     modal.close();
+    verificarTablaVacia();
+  }
 
     // volver a inicializar iconos (si necesitas)
     if (window.feather) feather.replace();

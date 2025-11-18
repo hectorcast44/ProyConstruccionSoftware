@@ -30,30 +30,37 @@
                 </div>
             </div>
 
-            <!-- Search Bar -->
-            <div class="content-group">
-                <div class="search-content">
-                    <input type="text" id="search-input" class="search-input" placeholder="Buscar...">
+            <!-- Search Bar y Filtros -->
+            <div id="content-group" class="content-group">
+                <div class="search-box">
+                    <i data-feather="search" class="d-search-icon"></i>
+                    <input type="text" id="d-search-input" class="d-search-input" placeholder="Buscar...">
                 </div>
+                <a class="filter-button" id="filter-button">
+                    <i data-feather="filter"></i>
+                    <span>Filtrar</span>
+                </a>
             </div>
-                
             
-
             <!-- Contenido de tabla -->
-            <table id="tabla" style="margin-top: 20px; width:100%">
-                <thead>
+            <table id="tabla" class="dashboard-table-wrapper">
+                <thead >
                     <tr>
+                        <th>Fecha</th>
                         <th>Actividad</th>
                         <th>Materia</th>
                         <th>Tipo</th>
-                        <th>Puntaje Máx</th>
-                        <th>Puntaje</th>
-                        <th>Fecha</th>
+                        <th>Progreso</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-body"></tbody>
+                <tbody id="tabla-body">
+                </tbody>
             </table>
-
+            <div id="mensaje-vacio" class="oculto">
+                <h3>No se han registrado actividades.</h3>
+                <p>Presiona el botón "Nueva" para agregar una.</p>
+                <img src="../assets/empty-dashboard.png" alt="Lista vacía" height="250px">
+            </div>
         </main>
         <!-- feather icons -->
         <script src="https://unpkg.com/feather-icons"></script>

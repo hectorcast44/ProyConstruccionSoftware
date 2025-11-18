@@ -76,19 +76,19 @@
    ============================ */
 
 /* La caja se expande y se convierte en un campo largo */
-.search-wrapper.active .input-holder {
+.dashboard-search-wrapper.active .input-holder {
   width: 300px;
   border-radius: 25px;
   background: rgba(0,0,0,0.5);
 }
 
 /* El input aparece */
-.search-wrapper.active .search-input {
+.dashboard-search-wrapper.active .search-input {
   opacity: 1;
 }
 
 /* El botón se reduce y se hace transparente */
-.search-wrapper.active .search-icon {
+.dashboard-search-wrapper.active .search-icon {
   background: transparent;
   box-shadow: none;
   width: 30px;
@@ -98,8 +98,92 @@
 }
 
 /* Ícono en blanco cuando está expandido */
-.search-wrapper.active .search-icon svg {
+.dashboard-search-wrapper.active .search-icon svg {
   stroke: #fff;
   width: 18px;
   height: 18px;
+}
+
+
+/* Dashboard */
+.content-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Boton Filtro */
+.filter-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+    user-select: none;
+}
+
+/* Search bar del Dashboard */
+.search-box {
+  position: relative;
+  height: 40px;
+  width: 40px; 
+  transition: width 0.3s ease;
+}
+
+.search-box:focus-within {
+  width: 300px; 
+}
+
+.d-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #666;
+  background-color: #fff;
+  width: 40px;
+  height: 40px;
+  padding: 10px;
+  border-radius: 50%;
+}
+
+.d-search-input {
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  padding: 0 10px 0 38px; 
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+  background: transparent;
+  border-color: transparent;
+  color: transparent; 
+}
+
+.d-search-input::placeholder {
+  color: transparent;
+  transition: none;
+}
+
+.search-box:focus-within .d-search-input {
+  background-color: #fff;
+  border-color: #b6b6b6;
+  color: #000; 
+  box-shadow: 0 0 0 3px rgba(124, 124, 124, 0.1);
+  cursor: text;
+}
+
+.search-box:focus-within .d-search-input::placeholder {
+    color: #9c9c9c;
 }
