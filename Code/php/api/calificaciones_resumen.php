@@ -1,154 +1,132 @@
 <?php
 /**
- * API: Resumen de calificaciones por materia
- * Conexión directa a agenda_escolar usando PDO.
+ * API Endpoint: Resumen de calificaciones por materia.
+ *
+ * Responsabilidad:
+ *  - Listar las materias del usuario actual.
+ *  - Para cada materia, devolver la suma de puntos obtenidos y posibles
+ *    agrupados por tipo de actividad.
+ *
+ * Este endpoint no calcula calificaciones finales, únicamente resume datos
+ * de la tabla ACTIVIDAD.
  */
 
-header('Content-Type: application/json; charset=utf-8');
+require_once '../src/db.php';
 
-// ---------------------------
-// Helper de respuesta JSON
-// ---------------------------
-function send_json(int $code, array $payload): void {
-    http_response_code($code);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+session_start();
+
+// Configuración CORS
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
+
+// Manejo de preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
     exit;
 }
 
-// ---------------------------
-// CORS básico
-// ---------------------------
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    send_json(204, []);
-}
-
-// Solo GET
+// Validación de método HTTP
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    send_json(405, [
-        'status'  => 'error',
+    enviarRespuesta(405, [
+        'status' => 'error',
         'message' => 'Método no permitido. Use GET.'
     ]);
 }
 
-// ===========================
-// 1) Conexión a la BD
-// ===========================
-$host = 'localhost';
-$db   = 'agenda_escolar';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+// Obtención del usuario actual (maneja modo desarrollo y sesión)
+$idUsuario = obtenerIdUsuarioActual();
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
-} catch (PDOException $e) {
-    send_json(500, [
-        'status'  => 'error',
-        'message' => 'Error interno del servidor: No se pudo conectar a la base de datos.',
-        'detail'  => $e->getMessage()
-    ]);
-}
-
-// ===========================
-// 2) Usuario (por ahora fijo)
-// ===========================
-$id_usuario = 1;
-
-// ===========================
-// 3) Obtener materias
-// ===========================
-try {
-    $sqlMaterias = "
+    // Consulta de materias del usuario
+    $consultaMaterias = '
         SELECT
-            `id_materia`,
-            `nombre_materia`
-        FROM `MATERIA`
-        WHERE `id_usuario` = :id_usuario
-        ORDER BY `nombre_materia`
-    ";
+            id_materia,
+            nombre_materia
+        FROM MATERIA
+        WHERE id_usuario = :id_usuario
+        ORDER BY nombre_materia
+    ';
 
-    $stmtMaterias = $pdo->prepare($sqlMaterias);
-    $stmtMaterias->execute([':id_usuario' => $id_usuario]);
-    $materiasBD = $stmtMaterias->fetchAll();
+    $sentenciaMaterias = $pdo->prepare($consultaMaterias);
+    $sentenciaMaterias->execute([
+        ':id_usuario' => $idUsuario
+    ]);
 
+    $filasMaterias = $sentenciaMaterias->fetchAll();
     $materias = [];
-    foreach ($materiasBD as $row) {
-        $id_materia = (int) $row['id_materia'];
 
-        $materias[$id_materia] = [
-            'id'     => $id_materia,
-            'nombre' => $row['nombre_materia'],
-            'tipos'  => []
+    foreach ($filasMaterias as $fila) {
+        $idMateria = (int) $fila['id_materia'];
+
+        $materias[$idMateria] = [
+            'id' => $idMateria,
+            'nombre' => $fila['nombre_materia'],
+            'tipos' => []
         ];
     }
 
+    // Si no hay materias, devolver un arreglo vacío coherente
     if (empty($materias)) {
-        send_json(200, [
+        enviarRespuesta(200, [
             'status' => 'success',
-            'data'   => []
+            'data' => []
         ]);
     }
 
-    // ===========================
-    // 4) Sumar puntos por tipo
-    // ===========================
-    $sqlResumen = "
+    // Consulta de resumen por tipo de actividad
+    $consultaResumen = '
         SELECT
-            a.`id_materia`,
-            ta.`nombre_tipo`,
-            SUM(a.`puntos_obtenidos`) AS puntos_obtenidos,
-            SUM(a.`puntos_posibles`)  AS puntos_posibles
-        FROM `ACTIVIDAD` a
-        INNER JOIN `TIPO_ACTIVIDAD` ta
-            ON ta.`id_tipo_actividad` = a.`id_tipo_actividad`
+            a.id_materia,
+            ta.nombre_tipo,
+            SUM(a.puntos_obtenidos) AS puntos_obtenidos,
+            SUM(a.puntos_posibles)  AS puntos_posibles
+        FROM ACTIVIDAD a
+        INNER JOIN TIPO_ACTIVIDAD ta
+            ON ta.id_tipo_actividad = a.id_tipo_actividad
         WHERE
-            a.`id_usuario` = :id_usuario
+            a.id_usuario = :id_usuario
         GROUP BY
-            a.`id_materia`,
-            ta.`nombre_tipo`
+            a.id_materia,
+            ta.nombre_tipo
         ORDER BY
-            a.`id_materia`,
-            ta.`nombre_tipo`
-    ";
+            a.id_materia,
+            ta.nombre_tipo
+    ';
 
-    $stmtResumen = $pdo->prepare($sqlResumen);
-    $stmtResumen->execute([':id_usuario' => $id_usuario]);
-    $filas = $stmtResumen->fetchAll();
+    $sentenciaResumen = $pdo->prepare($consultaResumen);
+    $sentenciaResumen->execute([
+        ':id_usuario' => $idUsuario
+    ]);
 
-    foreach ($filas as $fila) {
-        $id_materia = (int) $fila['id_materia'];
-        if (!isset($materias[$id_materia])) {
+    $filasResumen = $sentenciaResumen->fetchAll();
+
+    foreach ($filasResumen as $fila) {
+        $idMateria = (int) $fila['id_materia'];
+
+        if (!isset($materias[$idMateria])) {
             continue;
         }
 
-        $materias[$id_materia]['tipos'][] = [
-            'nombre'   => $fila['nombre_tipo'],
-            'obtenido' => $fila['puntos_obtenidos'] !== null ? (float) $fila['puntos_obtenidos'] : 0,
-            'maximo'   => $fila['puntos_posibles']  !== null ? (float) $fila['puntos_posibles']  : 0,
+        $materias[$idMateria]['tipos'][] = [
+            'nombre' => $fila['nombre_tipo'],
+            'obtenido' => $fila['puntos_obtenidos'] !== null ? (float) $fila['puntos_obtenidos'] : 0.0,
+            'maximo' => $fila['puntos_posibles']  !== null ? (float) $fila['puntos_posibles']  : 0.0,
         ];
     }
 
-    // ===========================
-    // 5) Respuesta final
-    // ===========================
-    send_json(200, [
+    enviarRespuesta(200, [
         'status' => 'success',
-        'data'   => array_values($materias)
+        'data' => array_values($materias)
     ]);
 
-} catch (Exception $e) {
-    send_json(500, [
-        'status'  => 'error',
-        'message' => 'Error al obtener el resumen de materias.',
-        'detail'  => $e->getMessage()
+} catch (Exception $excepcion) {
+    error_log('Error en calificaciones_resumen.php: ' . $excepcion->getMessage());
+
+    enviarRespuesta(500, [
+        'status' => 'error',
+        'message' => 'Error al obtener el resumen de calificaciones.',
+        'detail' => $excepcion->getMessage()
     ]);
 }

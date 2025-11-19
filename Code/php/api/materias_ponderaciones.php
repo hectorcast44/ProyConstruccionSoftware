@@ -1,135 +1,209 @@
 <?php
 /**
- * API Endpoint para Configurar Ponderaciones de una Materia
+ * API Endpoint para Configurar Ponderaciones de una Materia.
+ *
+ * Responsabilidades:
+ *  - Validar que la suma de ponderaciones llegue a 100%.
+ *  - Guardar las ponderaciones en la tabla PONDERACION.
+ *  - Disparar recálculo automático de la materia (CalculadoraService).
  *
  * Cumple con:
- * - RF-038 a RF-041 (Validación de suma 100%)
- * - RF-048 (Disparar recálculo automático)
+ *  - RF-038 a RF-041 (validación de suma 100%)
+ *  - RF-048 (disparar recálculo automático)
  */
 
-// 1. Dependencias y Configuración
-require_once '../src/db.php'; 
+require_once '../src/db.php';
 require_once '../src/CalculadoraService.php';
 
-// 2. Iniciar Sesión
 session_start();
 
-// 3. Configuración de CORS
-header("Access-Control-Allow-Origin: *"); 
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
+// Configuración CORS
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
 
-// 4. Manejar solicitud OPTIONS
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+$metodoHttp = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+if ($metodoHttp === 'OPTIONS') {
     enviarRespuesta(204, []);
 }
 
-// 5. Seguridad: Verificar Sesión de Usuario
-if (!isset($_SESSION['id_usuario'])) {
-    enviarRespuesta(401, [
-        'status' => 'error', 
-        'message' => 'No autorizado. Por favor, inicie sesión.'
+// Requiere usuario autenticado para POST
+$idUsuario = obtenerIdUsuarioActual();
+
+/**
+ * Valida y normaliza el payload de ponderaciones.
+ *
+ * @param object|null $data Datos crudos del cuerpo JSON.
+ *
+ * @return array Arreglo con id_materia y lista de ponderaciones normalizadas.
+ *
+ * @throws Exception Si los datos son inválidos.
+ */
+function validarPayloadPonderaciones(?object $data): array
+{
+    if (!$data) {
+        throw new Exception('No se recibieron datos de ponderaciones.', 400);
+    }
+
+    if (empty($data->id_materia)) {
+        throw new Exception('El campo "id_materia" es obligatorio.', 400);
+    }
+
+    if (!isset($data->ponderaciones) || !is_array($data->ponderaciones)) {
+        throw new Exception('El campo "ponderaciones" es obligatorio y debe ser un arreglo.', 400);
+    }
+
+    $idMateria = (int) $data->id_materia;
+    if ($idMateria <= 0) {
+        throw new Exception('El "id_materia" debe ser un entero positivo.', 400);
+    }
+
+    $ponderaciones = [];
+    $suma = 0.0;
+
+    foreach ($data->ponderaciones as $index => $pond) {
+        if (!isset($pond->id_tipo_actividad) || !isset($pond->porcentaje)) {
+            throw new Exception("Cada ponderación debe incluir 'id_tipo_actividad' y 'porcentaje'.", 400);
+        }
+
+        $idTipo = (int) $pond->id_tipo_actividad;
+        $porcentaje = (float) $pond->porcentaje;
+
+        if ($idTipo <= 0) {
+            throw new Exception("El 'id_tipo_actividad' en la posición {$index} no es válido.", 400);
+        }
+
+        if ($porcentaje <= 0) {
+            throw new Exception("El 'porcentaje' en la posición {$index} debe ser mayor que 0.", 400);
+        }
+
+        $suma += $porcentaje;
+
+        $ponderaciones[] = [
+            'id_tipo_actividad' => $idTipo,
+            'porcentaje' => $porcentaje
+        ];
+    }
+
+    // Validar que la suma sea 100% (permitiendo pequeño margen por redondeo)
+    $diferencia = abs($suma - 100.0);
+    if ($diferencia > 0.01) {
+        throw new Exception("La suma de las ponderaciones debe ser 100%. Actualmente es {$suma}.", 400);
+    }
+
+    return [
+        'id_materia' => $idMateria,
+        'ponderaciones' => $ponderaciones
+    ];
+}
+
+/**
+ * Verifica que la materia pertenezca al usuario actual.
+ *
+ * @param PDO $pdo Conexión a la base de datos.
+ * @param int $idMateria Id de la materia.
+ * @param int $idUsuario Id del usuario.
+ *
+ * @return void
+ *
+ * @throws Exception Si la materia no existe o no pertenece al usuario.
+ */
+function verificarMateriaUsuario(PDO $pdo, int $idMateria, int $idUsuario): void
+{
+    $sql = 'SELECT COUNT(*) AS total FROM MATERIA WHERE id_materia = :id_materia AND id_usuario = :id_usuario';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        ':id_materia' => $idMateria,
+        ':id_usuario' => $idUsuario
+    ]);
+
+    $fila = $stmt->fetch();
+    $total = $fila ? (int) $fila['total'] : 0;
+
+    if ($total === 0) {
+        throw new Exception('La materia no existe o no pertenece al usuario actual.', 403);
+    }
+}
+
+// Solo se permite POST (ya manejamos OPTIONS arriba)
+if ($metodoHttp !== 'POST') {
+    enviarRespuesta(405, [
+        'status' => 'error',
+        'message' => 'Método no permitido. Use POST.'
     ]);
 }
-$id_usuario = $_SESSION['id_usuario'];
-
-// 6. Restringir Método a POST
-if ($_SERVER['REQUEST_METHOD'] != 'POST') {
-    enviarRespuesta(405, ['status' => 'error', 'message' => 'Método no permitido']);
-}
-
-// -------------------------------------------------
-// --- Inicia Lógica Principal (dentro de try/catch)
-// -------------------------------------------------
 
 try {
-    // 7. Obtener Datos del Frontend
     $data = obtenerDatosJSON();
+    $datosValidados = validarPayloadPonderaciones($data);
 
-    // 8. Validación Básica de Entrada
-    if (!$data || empty($data->id_materia) || !isset($data->ponderaciones) || !is_array($data->ponderaciones)) {
-        enviarRespuesta(400, ['status' => 'error', 'message' => 'Datos incompletos. Se requiere id_materia y un array de ponderaciones.']);
-    }
+    $idMateria = $datosValidados['id_materia'];
+    $listaPonderaciones = $datosValidados['ponderaciones'];
 
-    $id_materia = $data->id_materia;
-
-    // 9. Validación de Lógica (RF-039 / RF-040)
-    $suma_total = 0;
-    if (empty($data->ponderaciones)) {
-         enviarRespuesta(400, ['status' => 'error', 'message' => 'El array de ponderaciones no puede estar vacío.']);
-    }
-
-    foreach ($data->ponderaciones as $pond) {
-        if (!isset($pond->id_tipo_actividad) || !isset($pond->porcentaje)) {
-            enviarRespuesta(400, ['status' => 'error', 'message' => 'Cada ponderación debe tener "id_tipo_actividad" y "porcentaje".']);
-        }
-        if (!is_numeric($pond->porcentaje) || $pond->porcentaje < 0) {
-            enviarRespuesta(400, ['status' => 'error', 'message' => 'El porcentaje debe ser un número positivo (o 0).']);
-        }
-        // RF-041 (Permitir 0%) se cumple implícitamente
-        $suma_total += (float)$pond->porcentaje;
-    }
-
-    // RF-039: La suma DEBE ser exactamente 100
-    // Usamos una pequeña tolerancia (epsilon) para comparaciones de floats
-    if (abs($suma_total - 100.0) > 0.001) {
-        enviarRespuesta(400, [
-            'status' => 'error', 
-            'message' => "RF-039: La suma de porcentajes debe ser exactamente 100%. Suma actual: $suma_total %."
-        ]);
-    }
-
-    // 10. Lógica de Base de Datos (Transacción)
     $pdo->beginTransaction();
 
-    // Seguridad: Validar que la materia pertenece al usuario
-    $stmt_check = $pdo->prepare("SELECT 1 FROM MATERIA WHERE id_materia = ? AND id_usuario = ?");
-    $stmt_check->execute([$id_materia, $id_usuario]);
-    if ($stmt_check->rowCount() == 0) {
-        enviarRespuesta(403, ['status' => 'error', 'message' => 'Acceso denegado. Esta materia no le pertenece.']);
-    }
+    // Verificar propiedad de la materia
+    verificarMateriaUsuario($pdo, $idMateria, $idUsuario);
 
-    // a. Borrar ponderaciones antiguas para esta materia
-    $stmt_delete = $pdo->prepare("DELETE FROM PONDERACION WHERE id_materia = ?");
-    $stmt_delete->execute([$id_materia]);
+    // Eliminar ponderaciones previas de la materia
+    $sqlDelete = 'DELETE FROM PONDERACION WHERE id_materia = :id_materia';
+    $stmtDelete = $pdo->prepare($sqlDelete);
+    $stmtDelete->execute([
+        ':id_materia' => $idMateria
+    ]);
 
-    // b. Insertar las nuevas ponderaciones
-    $sql_insert = "INSERT INTO PONDERACION (id_materia, id_tipo_actividad, porcentaje) VALUES (?, ?, ?)";
-    $stmt_insert = $pdo->prepare($sql_insert);
-    
-    foreach ($data->ponderaciones as $pond) {
-        $stmt_insert->execute([
-            $id_materia,
-            $pond->id_tipo_actividad,
-            (float)$pond->porcentaje
+    // Insertar nuevas ponderaciones
+    $sqlInsert = '
+        INSERT INTO PONDERACION (id_materia, id_tipo_actividad, porcentaje)
+        VALUES (:id_materia, :id_tipo_actividad, :porcentaje)
+    ';
+    $stmtInsert = $pdo->prepare($sqlInsert);
+
+    foreach ($listaPonderaciones as $pond) {
+        $stmtInsert->execute([
+            ':id_materia' => $idMateria,
+            ':id_tipo_actividad' => $pond['id_tipo_actividad'],
+            ':porcentaje' => $pond['porcentaje']
         ]);
     }
 
-    // 11. Disparar Recálculo Automático (RF-048)
+    // Recalcular la materia (RF-048)
     $calculadora = new CalculadoraService($pdo);
-    $calculadora->recalcularMateria($id_materia, $id_usuario);
+    $calculadora->recalcularMateria($idMateria, $idUsuario);
 
-    // 12. Confirmar Transacción
     $pdo->commit();
 
-    // 13. Respuesta Exitosa
     enviarRespuesta(200, [
         'status' => 'success',
-        'message' => 'Ponderaciones guardadas y calificaciones recalculadas.'
+        'message' => 'Ponderaciones guardadas y materia recalculada correctamente.'
     ]);
 
 } catch (PDOException $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("Error de BD en ponderaciones.php: " + $e->getMessage());
-    enviarRespuesta(500, ['status' => 'error', 'message' => 'Error en la base de datos: ' . $e->getMessage()]);
+
+    error_log('Error de BD en materias_ponderaciones.php: ' . $e->getMessage());
+
+    enviarRespuesta(500, [
+        'status' => 'error',
+        'message' => 'Error en la base de datos.'
+    ]);
 
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("Error general en ponderaciones.php: " + $e->getMessage());
-    enviarRespuesta(500, ['status' => 'error', 'message' => 'Error interno del servidor: ' . $e->getMessage()]);
+
+    $codigo = $e->getCode();
+    if ($codigo < 400 || $codigo >= 600) {
+        $codigo = 400;
+    }
+
+    enviarRespuesta($codigo, [
+        'status' => 'error',
+        'message' => $e->getMessage()
+    ]);
 }

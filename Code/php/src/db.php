@@ -3,74 +3,99 @@
  * ============================================================================
  * ARCHIVO DE CONEXIÓN Y CONFIGURACIÓN GLOBAL
  * ============================================================================
- * Fusiona la conexión a BD (PDO) y funciones auxiliares para la API.
- * Este archivo se incluye al inicio de cada endpoint de la API.
+ * Proporciona la conexión PDO y funciones auxiliares comunes a la API.
+ * Debe incluirse al inicio de cada endpoint.
  */
 
-// --- Funciones auxiliares para la API ---
+/**
+ * Modo de desarrollo para pruebas sin login.
+ * Cuando está activado, se usa un id_usuario fijo definido en USUARIO_PRUEBAS.
+ * IMPORTANTE: desactivar en producción.
+ */
+define('MODO_DESARROLLO', true);
+define('USUARIO_PRUEBAS', 1);
 
 /**
  * Envía una respuesta JSON estandarizada y finaliza el script.
- * @param int $statusCode - El código de estado HTTP (ej. 200, 400, 500)
- * @param array $data - El payload de datos a enviar
+ *
+ * @param int   $statusCode Código de estado HTTP (ej. 200, 400, 500)
+ * @param array $data       Cuerpo de la respuesta
+ *
+ * @return void
  */
-function enviarRespuesta($statusCode, $data) {
+function enviarRespuesta(int $statusCode, array $data): void
+{
     header('Content-Type: application/json; charset=utf-8');
     http_response_code($statusCode);
-    echo json_encode($data);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 /**
- * Obtiene el cuerpo de la solicitud JSON (ej. de un POST o PUT).
- * @return object|null - Los datos decodificados o null si hay error
+ * Obtiene el cuerpo JSON de la solicitud y lo decodifica.
+ *
+ * @return object|null Objeto decodificado o null si no hay JSON válido
  */
-function obtenerDatosJSON() {
-    $json = file_get_contents('php://input');
-    return json_decode($json);
+function obtenerDatosJSON(): ?object
+{
+    $raw = file_get_contents('php://input');
+    if ($raw === false || $raw === '') {
+        return null;
+    }
+
+    $decoded = json_decode($raw);
+    return $decoded instanceof stdClass ? $decoded : null;
 }
 
+/**
+ * Obtiene el identificador del usuario actual.
+ * Considera el modo de desarrollo y la sesión.
+ *
+ * Requiere que la sesión haya sido iniciada previamente con session_start().
+ *
+ * @return int Id de usuario válido para usar en consultas
+ */
+function obtenerIdUsuarioActual(): int
+{
+    if (defined('MODO_DESARROLLO') && MODO_DESARROLLO === true) {
+        return (int) USUARIO_PRUEBAS;
+    }
 
-// --- Configuración de la base de datos (tomado de conexion.php) ---
+    if (!isset($_SESSION['id_usuario'])) {
+        enviarRespuesta(401, [
+            'status'  => 'error',
+            'message' => 'No autorizado. Inicie sesión.'
+        ]);
+    }
+
+    return (int) $_SESSION['id_usuario'];
+}
+
+// Configuración de la base de datos
 define('DB_HOST', 'localhost');
-define('DB_USER', 'joseph');           // Usuario de MySQL
-define('DB_PASS', 'garavi1619');       // Contraseña
-define('DB_NAME', 'agenda_escolar'); // Nombre de la base de datos
-define('DB_CHARSET', 'utf8mb4');       // Charset recomendado
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_NAME', 'agenda_escolar');
+define('DB_CHARSET', 'utf8mb4');
 
+// Construcción del DSN de PDO
+$dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
 
-// --- Lógica de Conexión PDO (El estándar moderno) ---
-
-// 1. DSN (Data Source Name)
-$dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
-
-// 2. Opciones de PDO
+// Opciones recomendadas para PDO
 $options = [
-
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    
-    // Traer resultados como arrays asociativos
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    
-    // Desactivar emulación de preparados para usar preparados reales
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 
-// 3. Crear la conexión
-$pdo = null;
-
+// Creación de la conexión PDO compartida
 try {
-    // Intentar conectar
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-    
-} catch (\PDOException $e) {
-    
-    error_log("Error de conexión a la BD: " . $e->getMessage());
-    
+} catch (PDOException $e) {
+    error_log('Error de conexión a la BD: ' . $e->getMessage());
+
     enviarRespuesta(500, [
-        'status' => 'error', 
-        'message' => 'Error interno del servidor: No se pudo conectar a la base de datos.'
+        'status'  => 'error',
+        'message' => 'Error interno del servidor: no se pudo conectar a la base de datos.'
     ]);
 }
-
-?>
