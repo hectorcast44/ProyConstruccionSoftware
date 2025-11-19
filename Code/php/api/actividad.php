@@ -14,7 +14,7 @@ session_start();
 
 // 3. Configuración de CORS
 header("Access-Control-Allow-Origin: *"); 
-header("Access-Control-Allow-Methods: POST, PUT, DELETE, OPTIONS"); 
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS"); 
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Access-Control-Allow-Credentials: true");
 
@@ -36,13 +36,50 @@ $calculadora = new CalculadoraService($pdo);
 // -------------------------------------------------
 
 try {
-    // Iniciar transacción (se usará en todos los casos)
-    $pdo->beginTransaction();
-
     switch ($_SERVER['REQUEST_METHOD']) {
+        
+        // --- OBTENER (GET) ---
+        case 'GET':
+            // Construir filtros desde los parámetros de consulta
+            $filtros = [];
+            
+            if (!empty($_GET['id_materia'])) {
+                $filtros['id_materia'] = (int)$_GET['id_materia'];
+            }
+            
+            if (!empty($_GET['id_tipo_actividad'])) {
+                $filtros['id_tipo_actividad'] = (int)$_GET['id_tipo_actividad'];
+            }
+            
+            if (!empty($_GET['estado'])) {
+                $filtros['estado'] = $_GET['estado'];
+            }
+            
+            if (!empty($_GET['fecha_desde'])) {
+                $filtros['fecha_desde'] = $_GET['fecha_desde'];
+            }
+            
+            if (!empty($_GET['fecha_hasta'])) {
+                $filtros['fecha_hasta'] = $_GET['fecha_hasta'];
+            }
+            
+            if (!empty($_GET['buscar'])) {
+                $filtros['buscar'] = $_GET['buscar'];
+            }
+            
+            // Obtener actividades con filtros
+            $actividades = $actividadService->obtenerActividades($id_usuario, $filtros);
+            
+            enviarRespuesta(200, [
+                'status' => 'success',
+                'data' => $actividades,
+                'total' => count($actividades)
+            ]);
+            break;
         
         // --- CREAR (POST) ---
         case 'POST':
+            $pdo->beginTransaction();
             $data = obtenerDatosJSON();
             // Validar y preparar datos
             $datosParaGuardar = validarYPrepararDatos($data, $id_usuario);
@@ -64,6 +101,7 @@ try {
 
         // --- EDITAR (PUT) ---
         case 'PUT':
+            $pdo->beginTransaction();
             $data = obtenerDatosJSON();
             
             // PUT requiere un ID
@@ -91,6 +129,7 @@ try {
 
         // --- ELIMINAR (DELETE) ---
         case 'DELETE':
+            $pdo->beginTransaction();
             // El ID vendrá por la URL (ej. ?id=15)
             if (empty($_GET['id'])) {
                 throw new Exception("Se requiere 'id' en la URL para eliminar.", 400);
@@ -112,7 +151,6 @@ try {
             
         // --- Pre-flight (OPTIONS) ---
         case 'OPTIONS':
-            $pdo->rollBack(); // No se necesita transacción para OPTIONS
             enviarRespuesta(204, []);
             break;
 
