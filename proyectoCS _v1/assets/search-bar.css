@@ -52,7 +52,7 @@
   height: 50px;
   border: none;
   border-radius: 6px;
-  background: #fff;
+  background: #ffffff;
   position: absolute;
   top: 0;
   right: 0;
@@ -76,19 +76,19 @@
    ============================ */
 
 /* La caja se expande y se convierte en un campo largo */
-.dashboard-search-wrapper.active .input-holder {
+.search-wrapper.active .input-holder {
   width: 300px;
   border-radius: 25px;
   background: rgba(0,0,0,0.5);
 }
 
 /* El input aparece */
-.dashboard-search-wrapper.active .search-input {
+.search-wrapper.active .search-input {
   opacity: 1;
 }
 
 /* El botón se reduce y se hace transparente */
-.dashboard-search-wrapper.active .search-icon {
+.search-wrapper.active .search-icon {
   background: transparent;
   box-shadow: none;
   width: 30px;
@@ -98,7 +98,7 @@
 }
 
 /* Ícono en blanco cuando está expandido */
-.dashboard-search-wrapper.active .search-icon svg {
+.search-wrapper.active .search-icon svg {
   stroke: #fff;
   width: 18px;
   height: 18px;
