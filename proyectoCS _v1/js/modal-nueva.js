@@ -20,7 +20,6 @@ function abrirModalNueva() {
       .catch(err => console.error('Error cargando modal:', err));
     return;
   }
-
   modal.showModal();
 }
 
@@ -34,6 +33,9 @@ function inicializarModalNueva() {
   // cerrar
   cerrar.addEventListener('click', () => {
     modal.close();
+    form.reset();
+    // limpiar el estado
+    delete form.dataset.editIndex;
   });
 
   // submit del form: leer datos y agregar fila a la tabla (tbody)
@@ -42,7 +44,7 @@ function inicializarModalNueva() {
 
     const data = Object.fromEntries(new FormData(form).entries());
 
-    // Escapar texto sencillo para evitar inyección
+    // evitar inyección de HTML
     function esc(s){ 
       return String(s || '')
         .replaceAll('&','&amp;')
@@ -95,6 +97,7 @@ function inicializarModalNueva() {
     form.reset();
     modal.close();
     verificarTablaVacia();
+    if (modoEdicionActivo === true){actualizarColumnaAcciones();}
   }
 
     // volver a inicializar iconos (si necesitas)

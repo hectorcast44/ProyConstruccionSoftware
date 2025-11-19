@@ -36,10 +36,7 @@
                     <i data-feather="search" class="d-search-icon"></i>
                     <input type="text" id="d-search-input" class="d-search-input" placeholder="Buscar...">
                 </div>
-                <a class="filter-button" id="filter-button">
-                    <i data-feather="filter"></i>
-                    <span>Filtrar</span>
-                </a>
+                <div id="contenedor-boton-filtro"></div>
             </div>
             
             <!-- Contenido de tabla -->
@@ -54,6 +51,39 @@
                     </tr>
                 </thead>
                 <tbody id="tabla-body">
+                    <tr>
+                        <td>2025-11-21</td>
+                        <td>Actividad 1	</td>
+                        <td>Inferencia</td>
+                        <td>Tarea</td>
+                        <td>
+                            <span class="progress-badge progress-encurso" data-progreso="en curso">
+                                En curso
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2025-12-25</td>
+                        <td>Proyecto 1</td>
+                        <td>Bases de datos</td>
+                        <td>Proyecto</td>
+                        <td>
+                            <span class="progress-badge progress-completado" data-progreso="listo">
+                                Listo
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2025-11-19</td>
+                        <td>Examen</td>
+                        <td>Construcción de Software</td>
+                        <td>Examen</td>
+                        <td>
+                            <span class="progress-badge progress-sininiciar" data-progreso="sin iniciar">
+                                Sin iniciar
+                            </span>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             <div id="mensaje-vacio" class="oculto">
@@ -66,8 +96,9 @@
         <script src="https://unpkg.com/feather-icons"></script>
         <!-- sidebar dinámico -->
         <script src="../js/sidebar.js"></script>
-        <!-- Lógica del modal -->
+        <!-- Lógica de modales -->
         <script src="../js/modal-nueva.js"></script>
+        <script src="../js/modal-filtro.js"></script>
         <!-- Lógica de boton nueva calificación -->
         <script src="../js/buttons.js"></script>
         <!-- Lógica de la página Dashboard -->

@@ -1,6 +1,8 @@
 let modoEdicionActivo = false;
 
 document.addEventListener('DOMContentLoaded', verificarTablaVacia);
+
+// Si la tabla está vacía, oculta elementos y muestra mensaje
 function verificarTablaVacia() {
     const grupoFiltros = document.getElementById('content-group');
     const tabla = document.getElementById('tabla');
@@ -24,7 +26,27 @@ function verificarTablaVacia() {
     }
 }
 
+// Borrar todas las filas de la tabla
+function botonEliminarMasivo() {
+    const filas = document.querySelectorAll('#tabla-body tr');
+    const confirmar = window.confirm('¿Estás seguro de que deseas eliminar todas las actividades? Esta acción no se puede deshacer.');
+    if (!confirmar) return;
+    filas.forEach(tr => tr.remove());
+    verificarTablaVacia();
+}
 
+// Barra de busqueda funcional
+document.getElementById("d-search-input").addEventListener("input", function () {
+    const filtro = this.value.toLowerCase();
+    const filas = document.querySelectorAll("#tabla-body tr");
+
+    filas.forEach(fila => {
+        const textoFila = fila.innerText.toLowerCase();
+        fila.style.display = textoFila.includes(filtro) ? "" : "none";
+    });
+});
+
+// Actualizar la columna de acciones (editar/eliminar) en la tabla
 function actualizarColumnaAcciones() {
     modoEdicionActivo = !modoEdicionActivo;
 
@@ -127,7 +149,7 @@ document.addEventListener('click', (e) => {
 });
 
 function cambiarProgreso(el) {
-  const estados = ["sin iniciar", "en curso", "completado"];
+  const estados = ["sin iniciar", "en curso", "listo"];
 
   let actual = el.dataset.progreso;
   let idx = estados.indexOf(actual);
@@ -152,5 +174,4 @@ function cambiarProgreso(el) {
 
 function capitalizar(txt) {
   return txt.charAt(0).toUpperCase() + txt.slice(1);
-}
-
+}  

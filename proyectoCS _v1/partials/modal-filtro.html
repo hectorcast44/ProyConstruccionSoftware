@@ -1,0 +1,33 @@
+<div id="filtro-modal" class="modal-filtro-overlay oculto">
+    <div class="modal-filtro">
+        <div class="modal-filtro-header">
+            <h3>Filtrar actividades</h3>
+            <button id="cerrar-filtro" class="close-btn">×</button>
+        </div>
+        <div class="modal-filtro-body">
+            <label>Tipo:</label>
+            <select id="filtro-tipo">
+                <option value="">Todos</option>
+                <option value="tarea">Tarea</option>
+                <option value="proyecto">Proyecto</option>
+                <option value="examen">Examen</option>
+            </select>
+            <label>Progreso:</label>
+            <select id="filtro-progreso">
+                <option value="">Todos</option>
+                <option value="en curso">En curso</option>
+                <option value="listo">Listo</option>
+                <option value="sin iniciar">Sin iniciar</option>
+            </select>
+            <label>Materia:</label>
+            <input type="text" id="filtro-materia" placeholder="Materia..." />
+            <label>Fecha mínima:</label>
+            <input type="date" id="filtro-fecha-min" />
+            <label>Fecha máxima:</label>
+            <input type="date" id="filtro-fecha-max" />
+        </div>
+        <div class="modal-filtro-footer">
+            <button id="aplicar-filtros" class="apply-btn">Aplicar</button>
+        </div>
+    </div>
+</div>

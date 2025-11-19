@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarPartial(
     '../partials/boton-nueva.html',
     'contenedor-boton-nueva',
-    'abrir-boton-nueva',
+    'boton-nueva',
     abrirModalNueva
   );
 
@@ -32,6 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarPartial(
     '../partials/boton-eliminar.html',
     'contenedor-boton-eliminar',
-    'abrir-boton-eliminar'
+    'boton-eliminar',
+    botonEliminarMasivo
   );
+
+  cargarPartial(
+    '../partials/boton-filtro.html',
+    'contenedor-boton-filtro',
+    'boton-filtro',
+    abrirModalFiltro
+  );
+
 });
