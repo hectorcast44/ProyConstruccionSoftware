@@ -1,17 +1,58 @@
+/**
+ * Página "Mis calificaciones".
+ *
+ * Responsabilidades:
+ *  - Cargar materias y su resumen de puntos desde la API.
+ *  - Renderizar una card tipo acordeón por materia.
+ *  - Permitir filtrar materias por nombre.
+ *  - Redirigir al detalle de una materia al pulsar "Detalles".
+ */
 document.addEventListener('DOMContentLoaded', () => {
 
+  // =====================================================
+  // Estado y referencias al DOM
+  // =====================================================
+
+  /** @type {Array<Object>} Lista de materias cargadas desde la API. */
   let materias = [];
 
+  /** @type {HTMLElement|null} Contenedor principal de las cards de materias. */
   const listaCalificaciones = document.getElementById('lista-calificaciones');
-  const buscadorInput = document.getElementById('buscador-menu');
+  /** @type {HTMLInputElement|null} Input del buscador flotante. */
+  const buscadorInput = /** @type {HTMLInputElement|null} */ (document.getElementById('buscador-menu'));
+  /** @type {HTMLElement|null} Wrapper del buscador flotante. */
   const buscadorWrapper = document.querySelector('.search-wrapper');
-  const buscadorBtn = document.getElementById('search-toggle');
+  /** @type {HTMLButtonElement|null} Botón para abrir/cerrar el buscador. */
+  const buscadorBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('search-toggle'));
 
+  // =====================================================
+  // Helpers de estilo / tags
+  // =====================================================
+
+  /**
+   * Obtiene la clase CSS para el tag de un tipo de actividad.
+   *
+   * @param {Object} tipo Objeto de tipo de actividad.
+   * @param {number} [tipo.id_tipo] Identificador de tipo (opcional).
+   * @param {number} [tipo.id_tipo_actividad] Id alternativo de tipo.
+   * @param {string} [tipo.nombre] Nombre del tipo.
+   * @returns {string} Nombre de la clase CSS a aplicar.
+   */
   function obtenerTagClassPorTipo(tipo) {
     const key = tipo.id_tipo ?? tipo.id_tipo_actividad ?? tipo.nombre;
     return UIHelpers.TagStyleManager.getClassFor(key);
   }
 
+  // =====================================================
+  // Render de filas y cards
+  // =====================================================
+
+  /**
+   * Genera las filas HTML de la tabla para un conjunto de tipos de actividad.
+   *
+   * @param {Array<Object>} [tipos=[]] Arreglo de tipos con puntos obtenidos y máximos.
+   * @returns {string} Cadena HTML con filas <tr> listas para insertarse en <tbody>.
+   */
   function generarFilasTipos(tipos = []) {
     if (!tipos.length) {
       return `
@@ -35,6 +76,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
+  /**
+   * Crea el nodo DOM de una card de acordeón para una materia.
+   *
+   * @param {Object} materia Objeto de materia a representar.
+   * @param {number} materia.id Identificador de la materia.
+   * @param {string} materia.nombre Nombre de la materia.
+   * @param {Array<Object>} materia.tipos Resumen por tipo de actividad.
+   * @returns {HTMLDivElement} Wrapper con la estructura de la card.
+   */
   function crearCardMateria(materia) {
 
     const wrapper = document.createElement('div');
@@ -42,7 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const card = document.createElement('div');
     card.classList.add('accordion-card');
-    card.dataset.idMateria = materia.id;   // Necesario para la redirección
+    // Id necesario para la redirección a la página de detalle
+    card.dataset.idMateria = String(materia.id);
 
     const header = document.createElement('div');
     header.classList.add('accordion-card__header');
@@ -88,6 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return wrapper;
   }
 
+  /**
+   * Renderiza la lista de materias en el contenedor principal.
+   *
+   * @param {Array<Object>} lista Materias a mostrar.
+   * @returns {void}
+   */
   function renderizarMaterias(lista) {
     if (!listaCalificaciones) return;
 
@@ -98,14 +155,26 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    lista.forEach(m => {
-      const card = crearCardMateria(m);
+    for (const materia of lista) {
+      const card = crearCardMateria(materia);
       listaCalificaciones.appendChild(card);
-    });
+    }
 
-    if (window.feather) feather.replace();
+    if (globalThis.feather) {
+      feather.replace();
+    }
   }
 
+  // =====================================================
+  // Filtro y búsqueda
+  // =====================================================
+
+  /**
+   * Aplica el filtro de búsqueda y vuelve a pintar las materias.
+   *
+   * @param {string|Event} valorDesdeSearch Texto del buscador o evento.
+   * @returns {void}
+   */
   function filtrarYRenderizar(valorDesdeSearch) {
     let fuente = '';
 
@@ -124,33 +193,17 @@ document.addEventListener('DOMContentLoaded', () => {
     renderizarMaterias(filtradas);
   }
 
-  // ================================
-  // LÓGICA DE REDIRECCIÓN A DETALLE
-  // ================================
+  // =====================================================
+  // Carga de datos desde la API
+  // =====================================================
 
-  if (listaCalificaciones) {
-    listaCalificaciones.addEventListener('click', e => {
-
-      const btnDetalle = e.target.closest('.js-card-detail');
-      if (btnDetalle) {
-        const card = btnDetalle.closest('.accordion-card');
-        const idMateria = card.dataset.idMateria;
-
-        if (idMateria) {
-          // Construye la URL para la página de detalle
-          const destino = `mis-calificaciones-detalle.html?id=${idMateria}`;
-          window.location.href = destino;
-        }
-        return;
-      }
-
-    });
-  }
-
-
-  // ---------------------------------------
-  // Cargar datos desde API PHP
-  // ---------------------------------------
+  /**
+   * Consulta la API de resumen de calificaciones y
+   * actualiza la colección local de materias.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function cargarMateriasDesdeAPI() {
 
     const url = '../php/api/calificaciones_resumen.php';
@@ -164,16 +217,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const text = await resp.text();
 
+      /** @type {{status:string,data?:Array}|null} */
       let json = null;
-      try { json = JSON.parse(text); }
-      catch { console.error("No es JSON válido:", text); }
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error('No es JSON válido:', text);
+      }
 
-      if (!json || !json.data) {
+      if (!json?.data) {
         materias = [];
       } else {
         materias = json.data.map(m => ({
           id: m.id ?? m.id_materia ?? 0,
-          nombre: m.nombre ?? m.nombre_materia ?? "Sin nombre",
+          nombre: m.nombre ?? m.nombre_materia ?? 'Sin nombre',
           tipos: (m.tipos || []).map(t => ({
             id_tipo: t.id_tipo ?? t.id_tipo_actividad,
             nombre: t.nombre ?? t.nombre_tipo,
@@ -186,13 +243,36 @@ document.addEventListener('DOMContentLoaded', () => {
       filtrarYRenderizar('');
 
     } catch (e) {
-      console.error("Error al cargar materias:", e);
+      console.error('Error al cargar materias:', e);
       materias = [];
       renderizarMaterias(materias);
     }
   }
 
-  // Inicializar helpers
+  // =====================================================
+  // Eventos de UI (detalle + helpers)
+  // =====================================================
+
+  /**
+   * Maneja los clics dentro de la lista de calificaciones.
+   * Si se hace clic en el botón "Detalles" de una card,
+   * redirige a la página de detalle de la materia.
+   */
+  if (listaCalificaciones) {
+    listaCalificaciones.addEventListener('click', e => {
+      const btnDetalle = e.target.closest('.js-card-detail');
+      if (!btnDetalle) return;
+
+      const card = btnDetalle.closest('.accordion-card');
+      const idMateria = card?.dataset.idMateria;
+      if (!idMateria) return;
+
+      const destino = `mis-calificaciones-detalle.html?id=${idMateria}`;
+      globalThis.location.href = destino;
+    });
+  }
+
+  // Inicializar helpers visuales para acordeón y barra de búsqueda
   UIHelpers.initAccordionGrid(listaCalificaciones);
   UIHelpers.initSearchBar({
     input: buscadorInput,
@@ -200,6 +280,10 @@ document.addEventListener('DOMContentLoaded', () => {
     wrapper: buscadorWrapper,
     onFilter: filtrarYRenderizar
   });
+
+  // =====================================================
+  // Inicio: carga inicial de datos
+  // =====================================================
 
   cargarMateriasDesdeAPI();
 });
