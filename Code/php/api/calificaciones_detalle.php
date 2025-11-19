@@ -1,88 +1,133 @@
 <?php
 /**
- * API: Detalle de calificaciones por materia
+ * API Endpoint: Detalle de calificaciones por materia.
  *
- * Devuelve:
- *  - info de la materia
- *  - actividades agrupadas por tipo
- *  - resumen de progreso (para la card y el diagnóstico)
+ * Responsabilidad:
+ *  - Obtener la información general de una materia del usuario.
+ *  - Calcular métricas de progreso (porcentaje obtenido, máximo posible,
+ *    puntos necesarios para aprobar, diagnóstico).
+ *  - Listar las actividades agrupadas por tipo de actividad.
+ *
+ * Entrada:
+ *  - Parámetro GET: id_materia (o id) con el identificador de la materia.
+ *
+ * Salida (JSON):
+ *  - data.materia   -> fila de la tabla MATERIA.
+ *  - data.progreso  -> métricas calculadas para la UI.
+ *  - data.secciones -> actividades agrupadas por tipo.
  */
 
-header('Content-Type: application/json; charset=utf-8');
+require_once '../src/db.php';
 
-// ---------------------------
-// Helper de respuesta JSON
-// ---------------------------
-function send_json(int $code, array $payload): void {
-    http_response_code($code);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+session_start();
+
+// Configuración de CORS
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
+
+// Manejo de preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
     exit;
 }
 
-// ---------------------------
-// CORS básico
-// ---------------------------
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    send_json(204, []);
-}
-
-// Solo GET
+// Validación de método HTTP
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    send_json(405, [
-        'status'  => 'error',
-        'message' => 'Método no permitido. Use GET.'
+    enviarRespuesta(405, [
+        'status' => 'error',
+        'message'=> 'Método no permitido. Use GET.'
     ]);
 }
 
-// ===========================
-// 1) Validar id_materia
-// ===========================
-$id_materia = isset($_GET['id_materia']) ? (int) $_GET['id_materia'] : 0;
-if ($id_materia <= 0) {
-    send_json(400, [
-        'status'  => 'error',
-        'message' => 'Parámetro id_materia es requerido y debe ser numérico.'
-    ]);
+/**
+ * Calcula métricas de progreso para una materia a partir de sus totales.
+ *
+ * @param float $puntosGanados       Puntos obtenidos por el estudiante.
+ * @param float $puntosPerdidos      Puntos perdidos (posibles - obtenidos).
+ * @param float $puntosPendientes    Puntos de actividades aún no calificadas.
+ * @param float $calificacionMinima  Calificación mínima para aprobar (0-100).
+ * @param float $calificacionActual  Calificación actual calculada y guardada.
+ *
+ * @return array Estructura con porcentajes, puntos y diagnóstico.
+ */
+function calcularProgresoMateria(
+    float $puntosGanados,
+    float $puntosPerdidos,
+    float $puntosPendientes,
+    float $calificacionMinima,
+    float $calificacionActual
+): array {
+    $totalPuntos = $puntosGanados + $puntosPerdidos + $puntosPendientes;
+
+    if ($totalPuntos > 0) {
+        $porcentajeObtenido = ($puntosGanados / $totalPuntos) * 100.0;
+        $porcentajeMaxPosible = (($puntosGanados + $puntosPendientes) / $totalPuntos) * 100.0;
+
+        $puntosRequeridosAprobar = ($calificacionMinima / 100.0) * $totalPuntos;
+        $puntosNecesarios = max(0.0, $puntosRequeridosAprobar - $puntosGanados);
+    } else {
+        $porcentajeObtenido = 0.0;
+        $porcentajeMaxPosible = 0.0;
+        $puntosNecesarios = 0.0;
+    }
+
+    $porcentajeObtenido = round($porcentajeObtenido, 2);
+    $porcentajeMaxPosible = round($porcentajeMaxPosible, 2);
+    $puntosNecesarios = round($puntosNecesarios, 2);
+
+    $estado = 'En riesgo';
+    $nivel = 'risk';
+
+    if ($porcentajeObtenido >= $calificacionMinima) {
+        $estado = 'Aprobado';
+        $nivel = 'ok';
+    } elseif ($porcentajeObtenido < $calificacionMinima - 10) {
+        $estado = 'Reprobado';
+        $nivel = 'fail';
+    }
+
+    return [
+        'porcentaje_obtenido' => $porcentajeObtenido,
+        'porcentaje_total' => 100,
+        'puntos_obtenidos' => $puntosGanados,
+        'puntos_perdidos' => $puntosPerdidos,
+        'puntos_posibles_obtener' => $puntosPendientes,
+        'puntos_necesarios_aprobar' => $puntosNecesarios,
+        'calificacion_minima' => $calificacionMinima,
+        'calificacion_actual' => $calificacionActual,
+        'calificacion_maxima_posible' => $porcentajeMaxPosible,
+        'diagnostico' => [
+            'grado' => round($porcentajeObtenido),
+            'estado' => $estado,
+            'nivel' => $nivel
+        ]
+    ];
 }
 
-// ===========================
-// 2) Conexión a la BD
-// ===========================
-$host    = 'localhost';
-$db      = 'agenda_escolar';
-$user    = 'root';
-$pass    = '';
-$charset = 'utf8mb4';
+// Id de usuario desde helper centralizado
+$idUsuario = obtenerIdUsuarioActual();
 
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+// Obtener id_materia desde la URL (?id_materia= o ?id=)
+$idMateria = 0;
+
+if (isset($_GET['id_materia'])) {
+    $idMateria = (int) $_GET['id_materia'];
+} elseif (isset($_GET['id'])) {
+    $idMateria = (int) $_GET['id'];
+}
+
+if ($idMateria <= 0) {
+    enviarRespuesta(400, [
+        'status' => 'error',
+        'message' => 'El parámetro "id_materia" es obligatorio y debe ser numérico.'
+    ]);
+}
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
-} catch (PDOException $e) {
-    send_json(500, [
-        'status'  => 'error',
-        'message' => 'No se pudo conectar a la base de datos.',
-        'detail'  => $e->getMessage()
-    ]);
-}
-
-// ===========================
-// 3) Usuario (por ahora fijo)
-// ===========================
-$id_usuario = 1;
-
-// ===========================
-// 4) Consultar info base de la materia
-// ===========================
-try {
-    $sqlMateria = "
+    // Consulta de información base de la materia
+    $consultaMateria = '
         SELECT
             id_materia,
             nombre_materia,
@@ -95,94 +140,39 @@ try {
         WHERE id_usuario = :id_usuario
           AND id_materia = :id_materia
         LIMIT 1
-    ";
+    ';
 
-    $stmtMateria = $pdo->prepare($sqlMateria);
-    $stmtMateria->execute([
-        ':id_usuario' => $id_usuario,
-        ':id_materia' => $id_materia
+    $sentenciaMateria = $pdo->prepare($consultaMateria);
+    $sentenciaMateria->execute([
+        ':id_usuario' => $idUsuario,
+        ':id_materia' => $idMateria
     ]);
 
-    $materiaRow = $stmtMateria->fetch();
+    $filaMateria = $sentenciaMateria->fetch();
 
-    if (!$materiaRow) {
-        send_json(404, [
-            'status'  => 'error',
-            'message' => 'No se encontró la materia solicitada para este usuario.'
+    if (!$filaMateria) {
+        enviarRespuesta(404, [
+            'status' => 'error',
+            'message' => 'No se encontró la materia solicitada para el usuario actual.'
         ]);
     }
 
-    // Normalizar info base
-    $p_ganados    = (float) $materiaRow['puntos_ganados'];
-    $p_perdidos   = (float) $materiaRow['puntos_perdidos'];
-    $p_pendientes = (float) $materiaRow['puntos_pendientes'];
-    $total_puntos = $p_ganados + $p_perdidos + $p_pendientes;
+    $puntosGanados = (float) $filaMateria['puntos_ganados'];
+    $puntosPerdidos = (float) $filaMateria['puntos_perdidos'];
+    $puntosPendientes = (float) $filaMateria['puntos_pendientes'];
+    $calificacionMin = (float) $filaMateria['calif_minima'];
+    $calificacionAct = (float) $filaMateria['calificacion_actual'];
 
-    $calif_min    = (float) $materiaRow['calif_minima'];
-    $calif_actual = (float) $materiaRow['calificacion_actual'];
+    $progreso = calcularProgresoMateria(
+        $puntosGanados,
+        $puntosPerdidos,
+        $puntosPendientes,
+        $calificacionMin,
+        $calificacionAct
+    );
 
-    // ===============================
-    // Calcular progreso
-    // ===============================
-    if ($total_puntos > 0) {
-        $porcentaje_obtenido = ($p_ganados / $total_puntos) * 100;
-        $porcentaje_max_posible = (($p_ganados + $p_pendientes) / $total_puntos) * 100;
-
-        $puntos_requeridos_para_aprobar = ($calif_min / 100) * $total_puntos;
-        $puntos_necesarios = max(0, $puntos_requeridos_para_aprobar - $p_ganados);
-    } else {
-        $porcentaje_obtenido = 0;
-        $porcentaje_max_posible = 0;
-        $puntos_necesarios = 0;
-    }
-
-    // Redondeos para UI
-    $porcentaje_obtenido    = round($porcentaje_obtenido, 2);
-    $porcentaje_max_posible = round($porcentaje_max_posible, 2);
-    $puntos_necesarios      = round($puntos_necesarios, 2);
-
-    // ===============================
-    // Diagnóstico
-    // ===============================
-    $estado = 'En riesgo';
-    $nivel  = 'risk';
-
-    if ($porcentaje_obtenido >= $calif_min) {
-        $estado = 'Aprobado';
-        $nivel  = 'ok';
-    } elseif ($porcentaje_obtenido < $calif_min - 10) {
-        $estado = 'Reprobado';
-        $nivel  = 'fail';
-    }
-
-    // ===============================
-    // Construir bloque progreso
-    // ===============================
-    $progreso = [
-        'porcentaje_obtenido' => $porcentaje_obtenido,
-        'porcentaje_total'    => 100,
-
-        'puntos_obtenidos'          => $p_ganados,
-        'puntos_perdidos'           => $p_perdidos,
-        'puntos_posibles_obtener'   => $p_pendientes,
-        'puntos_necesarios_aprobar' => $puntos_necesarios,
-
-        'calificacion_minima'         => $calif_min,
-        'calificacion_actual'         => $calif_actual,
-        'calificacion_maxima_posible' => $porcentaje_max_posible,
-
-        // datos del círculo
-        'diagnostico' => [
-            'grado'  => round($porcentaje_obtenido),
-            'estado' => $estado,
-            'nivel'  => $nivel
-        ]
-    ];
-
-    // ===============================
-    // 5) Actividades agrupadas por tipo
-    // ===============================
-    $sqlActividades = "
+    // Consulta de actividades agrupadas por tipo
+    $consultaActividades = '
         SELECT
             a.id_actividad,
             a.nombre_actividad,
@@ -202,54 +192,53 @@ try {
             ta.nombre_tipo,
             a.fecha_entrega,
             a.nombre_actividad
-    ";
+    ';
 
-    $stmtAct = $pdo->prepare($sqlActividades);
-    $stmtAct->execute([
-        ':id_usuario' => $id_usuario,
-        ':id_materia' => $id_materia
+    $sentenciaActividades = $pdo->prepare($consultaActividades);
+    $sentenciaActividades->execute([
+        ':id_usuario' => $idUsuario,
+        ':id_materia' => $idMateria
     ]);
 
-    $rows = $stmtAct->fetchAll();
+    $filasActividades = $sentenciaActividades->fetchAll();
     $secciones = [];
 
-    foreach ($rows as $r) {
-        $id_tipo = (int) $r['id_tipo_actividad'];
+    foreach ($filasActividades as $actividad) {
+        $idTipoActividad = (int) $actividad['id_tipo_actividad'];
 
-        if (!isset($secciones[$id_tipo])) {
-            $secciones[$id_tipo] = [
-                'id_tipo'     => $id_tipo,
-                'nombre_tipo' => $r['nombre_tipo'],
+        if (!isset($secciones[$idTipoActividad])) {
+            $secciones[$idTipoActividad] = [
+                'id_tipo' => $idTipoActividad,
+                'nombre_tipo' => $actividad['nombre_tipo'],
                 'actividades' => []
             ];
         }
 
-        $secciones[$id_tipo]['actividades'][] = [
-            'id_actividad'  => (int) $r['id_actividad'],
-            'nombre'        => $r['nombre_actividad'],
-            'fecha_entrega' => $r['fecha_entrega'],
-            'estado'        => $r['estado'],
-            'obtenido'      => (float) ($r['puntos_obtenidos'] ?? 0),
-            'maximo'        => (float) ($r['puntos_posibles'] ?? 0)
+        $secciones[$idTipoActividad]['actividades'][] = [
+            'id_actividad' => (int) $actividad['id_actividad'],
+            'nombre' => $actividad['nombre_actividad'],
+            'fecha_entrega' => $actividad['fecha_entrega'],
+            'estado' => $actividad['estado'],
+            'obtenido' => (float) ($actividad['puntos_obtenidos'] ?? 0),
+            'maximo' => (float) ($actividad['puntos_posibles']  ?? 0)
         ];
     }
 
-    // ===============================
-    // 6) Respuesta final
-    // ===============================
-    send_json(200, [
+    enviarRespuesta(200, [
         'status' => 'success',
-        'data'   => [
-            'materia'   => $materiaRow,
-            'progreso'  => $progreso,
+        'data' => [
+            'materia' => $filaMateria,
+            'progreso' => $progreso,
             'secciones' => array_values($secciones)
         ]
     ]);
 
-} catch (Exception $e) {
-    send_json(500, [
-        'status'  => 'error',
+} catch (Exception $excepcion) {
+    error_log('Error en calificaciones_detalle.php: ' . $excepcion->getMessage());
+
+    enviarRespuesta(500, [
+        'status' => 'error',
         'message' => 'Error al obtener el detalle de la materia.',
-        'detail'  => $e->getMessage()
+        'detail' => $excepcion->getMessage()
     ]);
 }
