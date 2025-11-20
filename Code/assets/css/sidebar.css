@@ -2,8 +2,10 @@
   Sidebar vertical fijo con header de usuario, menú principal y bloque inferior
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
 /* =========================
-   Variables y reset
+   Variables
    ========================= */
 :root {
   --sb-bg: #120C18;
@@ -33,6 +35,7 @@
   isolation: isolate;
   position: fixed;
 }
+
 
 /* Borde/ring con degradado radial */
 .sidebar::before {
@@ -85,9 +88,10 @@
 
 .user-label {
   font-size: 0.58rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 4px;
 }
 
 .user-name {
@@ -141,7 +145,7 @@
    Sección de menú
    ========================= */
 .sidebar-section {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--sb-muted);
@@ -158,6 +162,11 @@
 /* Menú principal (ej. Dashboard, Materias, Calificaciones) */
 .sidebar-menu.main-menu {
   flex: 0 0 auto;
+}
+
+.nav-item span {
+  font-size: 0.9rem;
+  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* =========================

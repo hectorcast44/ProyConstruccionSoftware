@@ -30,19 +30,19 @@
   --diag-circle-size: 220px;
 
   /* Status colors (text) */
-  --diag-status-ok: #1f7a38;
-  --diag-status-risk: #c07b12;
-  --diag-status-fail: #c0392b;
+  --diag-status-ok:    #2c8c77;   /* Verde frío */
+  --diag-status-risk:  #b88a2e;   /* Ámbar sobrio */
+  --diag-status-fail:  #b84a4a;   /* Rojo vino */
 
   /* Diagnosis gradients */
-  --diag-warn-grad: radial-gradient(circle at top, #ffdd5d 0%, #e6a91d 80%);
-  --diag-warn-shadow: 0 14px 30px rgba(230, 169, 29, 0.25);
+  --diag-warn-grad: radial-gradient(circle at top, #e8c55a 0%, #c5962e 80%);
+  --diag-warn-shadow: 0 14px 30px rgba(197, 150, 46, 0.25);
 
-  --diag-ok-grad: radial-gradient(circle at top, #7fd35f 0%, #2f9b3a 80%);
-  --diag-ok-shadow: 0 14px 30px rgba(47, 155, 58, 0.25);
+  --diag-ok-grad: radial-gradient(circle at top, #3d9e8a 0%, #2e7f6e 80%);
+  --diag-ok-shadow: 0 14px 30px rgba(46, 127, 110, 0.25);
 
-  --diag-fail-grad: radial-gradient(circle at top, #ff8a5c 0%, #e0442f 80%);
-  --diag-fail-shadow: 0 14px 30px rgba(224, 68, 47, 0.25);
+  --diag-fail-grad: radial-gradient(circle at top, #c45b5b 0%, #a74343 80%);
+  --diag-fail-shadow: 0 14px 30px rgba(167, 67, 67, 0.25);
 }
 
 /* contenedor de la tarjeta de progreso + círculo de diagnóstico */
@@ -50,7 +50,7 @@
   display: flex;
   justify-content: center;
   gap: var(--progress-diag-gap);
-  align-items: flex-start;
+  align-items: center;
   margin-top: var(--progress-diag-margin-top);
   flex-wrap: wrap;
 }
@@ -168,14 +168,16 @@
   text-transform: capitalize;
 }
 
-/* responsive simple */
 @media (max-width: 900px) {
   .progress-and-diagnosis {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center; 
+    text-align: center;  /
   }
 
   .diagnosis-card {
-    align-items: center;
+    align-items: center; 
+    justify-content: center;
+    text-align: center; 
   }
 }
