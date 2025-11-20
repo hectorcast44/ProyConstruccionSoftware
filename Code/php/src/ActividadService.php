@@ -82,9 +82,12 @@ try {
             'nombre' => $actividad['nombre_actividad'],
             'fecha_entrega' => $actividad['fecha_entrega'],
             'estado' => $actividad['estado'],
-            'obtenido' => (float) ($actividad['puntos_obtenidos'] ?? 0),
-            'maximo' => (float) ($actividad['puntos_posibles']  ?? 0)
+            'obtenido'  => $actividad['puntos_obtenidos'] !== null
+                ? (float) $actividad['puntos_obtenidos']: null,
+            'maximo' => $actividad['puntos_posibles'] !== null
+                ? (float) $actividad['puntos_posibles']: 0.0,
         ];
+
     }
 
     enviarRespuesta(200, [
