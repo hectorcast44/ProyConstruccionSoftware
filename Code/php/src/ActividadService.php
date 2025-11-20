@@ -1,117 +1,111 @@
 <?php
 /**
- * Clase de Servicio para Actividades (Lógica de Negocio)
+ * API Endpoint: Detalle de calificaciones por materia.
+ *
+ * Responsabilidad:
+ *  - Obtener la información de la materia y su progreso usando CalculadoraService.
+ *  - Obtener las actividades mediante ActividadService.
+ *  - Entregar al frontend la data ya organizada.
  */
-class ActividadService
-{
-    private $pdo;
 
-    public function __construct(PDO $pdo)
-    {
-        $this->pdo = $pdo;
-    }
+require_once '../src/db.php';
+require_once '../src/CalculadoraService.php';
+require_once '../src/ActividadService.php';
 
-    /**
-     * Crea una nueva actividad en la BD.
-     *
-     * @param array $datos - Array asociativo con los datos.
-     * @return int - El ID de la actividad creada.
-     */
-    public function crearActividad(array $datos): int
-    {
-        $sql = "INSERT INTO ACTIVIDAD 
-                  (id_materia, id_tipo_actividad, id_usuario, nombre_actividad, 
-                   fecha_entrega, estado, puntos_posibles, puntos_obtenidos) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            $datos['id_materia'],
-            $datos['id_tipo_actividad'],
-            $datos['id_usuario'], // Seguridad
-            $datos['nombre_actividad'],
-            $datos['fecha_entrega'],
-            $datos['estado'],
-            $datos['puntos_posibles'],
-            $datos['puntos_obtenidos']
-        ]);
-        
-        return (int)$this->pdo->lastInsertId();
-    }
+session_start();
 
-    /**
-     * Edita una actividad existente en la BD.
-     *
-     * @param int $id_actividad - El ID de la actividad a editar.
-     * @param array $datos - Array asociativo con los nuevos datos.
-     * @return bool - true si la actualización fue exitosa.
-     */
-    public function editarActividad(int $id_actividad, array $datos): bool
-    {
-        $sql = "UPDATE ACTIVIDAD SET 
-                  id_materia = ?, 
-                  id_tipo_actividad = ?, 
-                  nombre_actividad = ?, 
-                  fecha_entrega = ?, 
-                  estado = ?, 
-                  puntos_posibles = ?, 
-                  puntos_obtenidos = ?
-                WHERE id_actividad = ? AND id_usuario = ?";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            $datos['id_materia'],
-            $datos['id_tipo_actividad'],
-            $datos['nombre_actividad'],
-            $datos['fecha_entrega'],
-            $datos['estado'],
-            $datos['puntos_posibles'],
-            $datos['puntos_obtenidos'],
-            $id_actividad,
-            $datos['id_usuario'] // Seguridad
-        ]);
-        
-        return $stmt->rowCount() > 0;
-    }
+// CORS
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
 
-    /**
-     * Elimina una actividad, si cumple con las reglas de negocio (RF-003).
-     *
-     * @param int $id_actividad - El ID de la actividad a eliminar.
-     * @param int $id_usuario - El ID del usuario (por seguridad).
-     * @return int - El id_materia de la actividad eliminada (para recálculo).
-     * @throws Exception si la actividad es calificable (RF-003) o no se encuentra.
-     */
-    public function eliminarActividad(int $id_actividad, int $id_usuario): int
-    {
-        // 1. Verificar la actividad y obtener id_materia (para recálculo)
-        $stmt_check = $this->pdo->prepare(
-            "SELECT id_materia, puntos_posibles 
-             FROM ACTIVIDAD 
-             WHERE id_actividad = ? AND id_usuario = ?"
-        );
-        $stmt_check->execute([$id_actividad, $id_usuario]);
-        $actividad = $stmt_check->fetch(PDO::FETCH_ASSOC);
-
-        if (!$actividad) {
-            throw new Exception("Actividad no encontrada o no pertenece al usuario.", 404);
-        }
-
-        // 2. Aplicar regla de negocio RF-003
-        // (Nuestra lógica: "calificable" = puntos_posibles NO es NULL)
-        if ($actividad['puntos_posibles'] !== null) {
-            throw new Exception("RF-003: No se puede eliminar una actividad que es calificable.", 400);
-        }
-
-        // 3. Proceder con la eliminación
-        $stmt_delete = $this->pdo->prepare(
-            "DELETE FROM ACTIVIDAD 
-             WHERE id_actividad = ? AND id_usuario = ?"
-        );
-        $stmt_delete->execute([$id_actividad, $id_usuario]);
-
-        // 4. Devolver el id_materia para que el controlador pueda recalcular
-        return (int)$actividad['id_materia'];
-    }
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
 }
-?>
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    enviarRespuesta(405, [
+        'status' => 'error',
+        'message' => 'Método no permitido. Use GET.'
+    ]);
+}
+
+// Usuario actual desde helper
+$idUsuario = obtenerIdUsuarioActual();
+
+// Leer id_materia desde ?id_materia= o ?id=
+$idMateria = 0;
+
+if (isset($_GET['id_materia'])) {
+    $idMateria = (int) $_GET['id_materia'];
+} elseif (isset($_GET['id'])) {
+    $idMateria = (int) $_GET['id'];
+}
+
+if ($idMateria <= 0) {
+    enviarRespuesta(400, [
+        'status' => 'error',
+        'message' => 'El parámetro "id_materia" es obligatorio y debe ser numérico.'
+    ]);
+}
+
+try {
+
+    // Servicios
+    $calculadora = new CalculadoraService($pdo);
+    $actividadService = new ActividadService($pdo);
+
+    //Obtener materia + progreso (se recalcula internamente)
+    $resultadoMateria = $calculadora->obtenerMateriaConProgreso($idMateria, $idUsuario);
+    $filaMateria = $resultadoMateria['materia'];
+    $progreso = $resultadoMateria['progreso'];
+
+    //Obtener actividades con sus tipos usando ActividadService
+    $filasActividades = $actividadService->obtenerPorMateria($idMateria, $idUsuario);
+    $secciones = [];
+
+    foreach ($filasActividades as $actividad) {
+        $idTipoActividad = (int) $actividad['id_tipo_actividad'];
+
+        if (!isset($secciones[$idTipoActividad])) {
+            $secciones[$idTipoActividad] = [
+                'id_tipo' => $idTipoActividad,
+                'nombre_tipo' => $actividad['nombre_tipo'],
+                'actividades' => []
+            ];
+        }
+
+        $secciones[$idTipoActividad]['actividades'][] = [
+            'id_actividad' => (int) $actividad['id_actividad'],
+            'nombre' => $actividad['nombre_actividad'],
+            'fecha_entrega' => $actividad['fecha_entrega'],
+            'estado' => $actividad['estado'],
+            'obtenido' => (float) ($actividad['puntos_obtenidos'] ?? 0),
+            'maximo' => (float) ($actividad['puntos_posibles']  ?? 0)
+        ];
+    }
+
+    enviarRespuesta(200, [
+        'status' => 'success',
+        'data' => [
+            'materia' => $filaMateria,
+            'progreso' => $progreso,
+            'secciones' => array_values($secciones)
+        ]
+    ]);
+
+} catch (Exception $e) {
+
+    error_log('Error en calificaciones_detalle.php: ' . $e->getMessage());
+
+    $codigo = ($e->getCode() >= 400 && $e->getCode() < 600)
+        ? $e->getCode()
+        : 500;
+
+    enviarRespuesta($codigo, [
+        'status'  => 'error',
+        'message' => $e->getMessage()
+    ]);
+}
