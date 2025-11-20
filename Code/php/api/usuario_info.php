@@ -50,20 +50,24 @@ try {
         // Si no se encuentra el usuario, devolver algo genérico
         $usuario = [
             'id_usuario' => $idUsuario,
-            'nombre' => 'Usuario',
-            'correo' => '',
-            'avatar' => 'https://i.pravatar.cc/60?u=' . $idUsuario
+            'nombre'     => 'Usuario',
+            'correo'     => '',
+            'avatar'     => 'https://ui-avatars.com/api/?name=Usuario&background=random'
         ];
     } else {
+        // Nombre del usuario
+        $nombre = $fila['nombre_usuario'] ?? 'Usuario';
+
         // Mapear datos desde la BD
         $usuario = [
             'id_usuario' => (int) $fila['id_usuario'],
-            'nombre' => $fila['nombre_usuario'] ?? 'Usuario',
-            'correo' => $fila['correo'] ?? '',
-            // Avatar generado en base al id para que sea estable
-            'avatar' => 'https://i.pravatar.cc/60?u=' . (int) $fila['id_usuario']
+            'nombre'     => $nombre,
+            'correo'     => $fila['correo'] ?? '',
+            // Avatar dinámico con nombre real y fondo aleatorio
+            'avatar'     => 'https://ui-avatars.com/api/?name=' . urlencode($nombre) . '&background=random'
         ];
     }
+
 
     enviarRespuesta(200, [
         'status' => 'success',
