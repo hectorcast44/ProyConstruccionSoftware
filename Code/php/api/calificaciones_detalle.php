@@ -2,7 +2,7 @@
 /**
  * API Endpoint: Detalle de calificaciones por materia.
  *
- * Responsabilidad:
+ * Responsabilidades:
  *  - Obtener la información general de una materia del usuario.
  *  - Obtener métricas de progreso (porcentaje, puntos, diagnóstico)
  *    a través de CalculadoraService.
@@ -14,19 +14,22 @@ require_once '../src/CalculadoraService.php';
 
 session_start();
 
-// Configuración de CORS
+// -----------------------------------------------------------------------------
+// CORS básico (útil si la app se consume desde otro origen)
+// -----------------------------------------------------------------------------
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true');
 
-// Preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
 
+// -----------------------------------------------------------------------------
 // Validación de método
+// -----------------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     enviarRespuesta(405, [
         'status'  => 'error',
@@ -54,14 +57,18 @@ if ($idMateria <= 0) {
 }
 
 try {
-    $calculadora = new CalculadoraService($pdo);
-
-    // Materia + progreso calculado vía servicio
+    // -------------------------------------------------------------------------
+    // Obtener información de la materia + progreso (incluye resumen por tipo)
+    // -------------------------------------------------------------------------
+    $calculadora      = new CalculadoraService($pdo);
     $resultadoMateria = $calculadora->obtenerMateriaConProgreso($idMateria, $idUsuario);
+
     $filaMateria = $resultadoMateria['materia'];
     $progreso    = $resultadoMateria['progreso'];
 
-    // Actividades agrupadas por tipo
+    // -------------------------------------------------------------------------
+    // Obtener actividades de la materia, agrupadas por tipo
+    // -------------------------------------------------------------------------
     $consultaActividades = '
         SELECT
             a.id_actividad,
@@ -84,13 +91,15 @@ try {
             a.nombre_actividad
     ';
 
-    $sentenciaActividades = $pdo->prepare($consultaActividades);
-    $sentenciaActividades->execute([
+    $sentencia = $pdo->prepare($consultaActividades);
+    $sentencia->execute([
         ':id_usuario' => $idUsuario,
-        ':id_materia' => $idMateria
+        ':id_materia' => $idMateria,
     ]);
 
-    $filasActividades = $sentenciaActividades->fetchAll();
+    $filasActividades = $sentencia->fetchAll(PDO::FETCH_ASSOC);
+
+    // Arreglo indexado por id_tipo_actividad
     $secciones = [];
 
     foreach ($filasActividades as $actividad) {
@@ -100,33 +109,54 @@ try {
             $secciones[$idTipoActividad] = [
                 'id_tipo' => $idTipoActividad,
                 'nombre_tipo' => $actividad['nombre_tipo'],
-                'actividades' => []
+                'actividades' => [],
             ];
         }
+
+        $puntosPosibles = $actividad['puntos_posibles'];
+        $puntosObtenidos = $actividad['puntos_obtenidos'];
+
+        // maximo = null  ⇒ no calificable (puntos_posibles NULL o 0)
+        $maximo = ($puntosPosibles === null || (float) $puntosPosibles == 0.0)
+            ? null
+            : (float) $puntosPosibles;
+
+        // obtenido = null ⇒ no capturado aún
+        $obtenido = ($puntosObtenidos === null)
+            ? null
+            : (float) $puntosObtenidos;
 
         $secciones[$idTipoActividad]['actividades'][] = [
             'id_actividad' => (int) $actividad['id_actividad'],
             'nombre' => $actividad['nombre_actividad'],
             'fecha_entrega' => $actividad['fecha_entrega'],
             'estado' => $actividad['estado'],
-            'obtenido' => (float) ($actividad['puntos_obtenidos'] ?? 0),
-            'maximo' => (float) ($actividad['puntos_posibles']  ?? 0)
+            'obtenido' => $obtenido,
+            'maximo' => $maximo,
         ];
     }
 
+    // -------------------------------------------------------------------------
+    // Respuesta JSON
+    // -------------------------------------------------------------------------
     enviarRespuesta(200, [
         'status' => 'success',
-        'data' => ['materia' => $filaMateria,'progreso' => $progreso, 'secciones' => array_values($secciones)]
+        'data' => [
+            'materia' => $filaMateria,
+            'progreso' => $progreso,
+            'secciones' => array_values($secciones),
+        ],
     ]);
 
 } catch (Exception $excepcion) {
     error_log('Error en calificaciones_detalle.php: ' . $excepcion->getMessage());
 
     $codigo = ($excepcion->getCode() >= 400 && $excepcion->getCode() < 600)
-        ? $excepcion->getCode(): 500;
+        ? $excepcion->getCode()
+        : 500;
 
     enviarRespuesta($codigo, [
-        'status'  => 'error',
-        'message' => $excepcion->getMessage()
+        'status' => 'error',
+        'message' => $excepcion->getMessage(),
     ]);
 }
