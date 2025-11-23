@@ -13,40 +13,39 @@
 /**
  * Genera el HTML de las filas de una tabla para la lista de actividades.
  *
- * @param {Array<{nombre: string, obtenido: number, maximo: number}>} actividades
- *        Lista de actividades ya normalizadas.
- * @returns {string} HTML de las filas <tr> a insertar en el <tbody>.
+ * @param {Array<{nombre: string, obtenido: (number|null), maximo: (number|null)}>} actividades
  */
 function filasTabla(actividades = []) {
   if (!actividades.length) {
     return `
-      <tr>
-        <td colspan="2" class="right">Sin registros</td>
-      </tr>
+      <tr><td colspan="2" class="right">Sin registros</td></tr>
     `;
   }
 
-  let html = '';
+  return actividades
+    .map(a => {
+      let textoPuntuacion;
 
-  for (const actividad of actividades) {
-    const obtenido = actividad.obtenido;
-    const maximo   = actividad.maximo;
+      if (a.maximo === null) {
+        // Actividad no calificable
+        textoPuntuacion = '—';
+      } else if (a.obtenido === null) {
+        // Calificable pero aún sin calificar
+        textoPuntuacion = `— / ${a.maximo}`;
+      } else {
+        // Ya calificada (0, 5, 7, etc.)
+        textoPuntuacion = `${a.obtenido} / ${a.maximo}`;
+      }
 
-    const textoPuntos = obtenido === null
-      ? `— / ${maximo}`        // pendiente
-      : `${obtenido} / ${maximo}`;  // calificada
-
-    html += `
-      <tr>
-        <td>${actividad.nombre}</td>
-        <td class="right">${textoPuntos}</td>
-      </tr>
-    `;
-  }
-
-  return html;
+      return `
+        <tr>
+          <td>${a.nombre}</td>
+          <td class="right">${textoPuntuacion}</td>
+        </tr>
+      `;
+    })
+    .join('');
 }
-
 
 /**
  * Calcula el nivel y el estado del diagnóstico a partir del porcentaje
@@ -56,7 +55,11 @@ function filasTabla(actividades = []) {
  * @param {{nivel?: string, estado?: string, grado?: number}} diagnostico Diagnóstico opcional desde backend.
  * @returns {{nivel: string, estado: string, grado: number}} Datos normalizados para la UI.
  */
-function determinarNivelDiagnostico(porcentajeObtenido, calificacionMinima, diagnostico = {}) {
+function determinarNivelDiagnostico(
+  porcentajeObtenido,
+  calificacionMinima,
+  diagnostico = {}
+) {
   let nivel = diagnostico.nivel;
   let estado = diagnostico.estado ?? '—';
   const grado = Number(diagnostico.grado ?? porcentajeObtenido);
@@ -138,20 +141,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const tituloPagina = document.querySelector('.page-title h1');
 
   // Filas del informe
-  const rowPorc = document.querySelector('[data-field="porcentaje-obtenido"] td.right');
-  const rowObt = document.querySelector('[data-field="puntos-obtenidos"] td.right');
-  const rowPerd = document.querySelector('[data-field="puntos-perdidos"] td.right');
-  const rowPosi = document.querySelector('[data-field="puntos-posibles"] td.right');
-  const rowNec = document.querySelector('[data-field="puntos-necesarios"] td.right');
-  const rowMin = document.querySelector('[data-field="calificacion-minima"] td.right');
-  const rowMax = document.querySelector('[data-field="calificacion-maxima"] td.right');
+  const rowPorc = document.querySelector(
+    '[data-field="porcentaje-obtenido"] td.right'
+  );
+  const rowObt = document.querySelector(
+    '[data-field="puntos-obtenidos"] td.right'
+  );
+  const rowPerd = document.querySelector(
+    '[data-field="puntos-perdidos"] td.right'
+  );
+  const rowPosi = document.querySelector(
+    '[data-field="puntos-posibles"] td.right'
+  );
+  const rowNec = document.querySelector(
+    '[data-field="puntos-necesarios"] td.right'
+  );
+  const rowMin = document.querySelector(
+    '[data-field="calificacion-minima"] td.right'
+  );
+  const rowMax = document.querySelector(
+    '[data-field="calificacion-maxima"] td.right'
+  );
 
   // Elementos de diagnóstico
   const diagCircle = document.querySelector('.diagnosis-circle');
   const diagGrade = document.querySelector('.diag-grade');
   const diagStatus = document.querySelector('.diag-status');
 
-  /** @type {Array<{id:number, nombre:string, actividades:Array}>} */
+  /** @type {Array<{id:number, nombre:string, resumenTipo:object|null, actividades:Array}>} */
   let seccionesOriginal = [];
 
   // ------------------------------------------------------
@@ -161,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Crea el bloque completo de una sección (card de acordeón + tabla).
    *
-   * @param {{id:number, nombre:string, actividades:Array}} sec Sección normalizada.
+   * @param {{id:number, nombre:string, resumenTipo:object|null, actividades:Array}} sec Sección normalizada.
    * @returns {HTMLDivElement} Nodo listo para insertar en el DOM.
    */
   function crearBloqueSeccion(sec) {
@@ -173,10 +190,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const header = document.createElement('div');
     header.className = 'accordion-card__header';
+
+    // Título con puntos ponderados del tipo, si existen
+    let tituloSeccion = sec.nombre;
+    if (sec.resumenTipo && typeof sec.resumenTipo.puntos_tipo === 'number') {
+      const ganados = Number(
+        sec.resumenTipo.puntos_asegurados ??
+          sec.resumenTipo.ganados ??
+          0
+      );
+      const totalTipo = Number(sec.resumenTipo.puntos_tipo);
+      tituloSeccion = `${sec.nombre} (${ganados.toFixed(2)} / ${totalTipo.toFixed(
+        2
+      )})`;
+    }
+
     header.innerHTML = `
       <div class="accordion-card__header-main">
         <span class="accordion-card__icon"><i data-feather="layers"></i></span>
-        <h3 class="accordion-card__title">${sec.nombre}</h3>
+        <h3 class="accordion-card__title">${tituloSeccion}</h3>
       </div>
     `;
 
@@ -202,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Renderiza todas las secciones en el contenedor principal del acordeón.
    *
-   * @param {Array<{id:number, nombre:string, actividades:Array}>} secciones
+   * @param {Array<{id:number, nombre:string, resumenTipo:object|null, actividades:Array}>} secciones
    */
   function renderSecciones(secciones) {
     if (!contenedorSecciones) {
@@ -243,38 +275,68 @@ document.addEventListener('DOMContentLoaded', () => {
    *
    * @param {object} progreso Objeto con métricas calculadas en el backend.
    */
-  function actualizarInformeYDiagnostico(progreso) {
+ function actualizarInformeYDiagnostico(progreso) {
     if (!progreso) return;
 
-    const porc = Number(progreso.porcentaje_obtenido ?? 0);
-    const obtenidos = Number(progreso.puntos_obtenidos ?? 0);
-    const perdidos = Number(progreso.puntos_perdidos ?? 0);
-    const posibles = Number(progreso.puntos_posibles_obtener ?? 0);
-    const necesarios = Number(progreso.puntos_necesarios_aprobar ?? 0);
-    const calMin = Number(progreso.calificacion_minima ?? 70);
-    const calMaxPos = Number(progreso.calificacion_maxima_posible ?? 0);
+    // ============
+    // CONSTANTES
+    // ============
+    const DEFAULT_APROBATORIA = 70;     // mínimo aprobatorio por defecto
+    const TOTAL_ESCALA = 100;           // escala completa 0–100 para porcentaje
 
-    // Rellenar tabla de resumen
-    if (rowPorc) rowPorc.textContent = `${porc.toFixed(1)} / 100`;
-    if (rowObt) rowObt.textContent  = obtenidos.toFixed(2);
+    // ============
+    // MÉTRICAS
+    // ============
+    const porc        = Number(progreso.porcentaje_obtenido ?? 0);
+    const obtenidos   = Number(progreso.puntos_obtenidos ?? 0);
+    const perdidos    = Number(progreso.puntos_perdidos ?? 0);
+    const posibles    = Number(progreso.puntos_posibles_obtener ?? 0);
+    const necesarios  = Number(progreso.puntos_necesarios_aprobar ?? 0);
+
+    const minAprobatoria = Number(
+      progreso.calificacion_minima ?? DEFAULT_APROBATORIA
+    );
+
+    const minDinamica = Number(
+      progreso.calificacion_minima_dinamica ?? 0
+    );
+
+    const maxPosible = Number(
+      progreso.calificacion_maxima_posible ?? 0
+    );
+
+    // ============
+    // TABLA DE INFORME
+    // ============
+    if (rowPorc) rowPorc.textContent = `${porc.toFixed(1)} / ${TOTAL_ESCALA}`;
+    if (rowObt)  rowObt.textContent  = obtenidos.toFixed(2);
     if (rowPerd) rowPerd.textContent = perdidos.toFixed(2);
     if (rowPosi) rowPosi.textContent = posibles.toFixed(2);
-    if (rowNec) rowNec.textContent  = necesarios.toFixed(2);
-    if (rowMin) rowMin.textContent  = calMin.toFixed(2);
-    if (rowMax) rowMax.textContent  = calMaxPos.toFixed(2);
+    if (rowNec)  rowNec.textContent  = necesarios.toFixed(2);
 
-    if (!diagCircle || !diagGrade || !diagStatus) {
-      return;
-    }
+  
+    if (rowMin) rowMin.textContent = minDinamica.toFixed(2);
+    if (rowMax) rowMax.textContent = maxPosible.toFixed(2);
+
+    // ============
+    // DIAGNÓSTICO
+    //  (se evalúa con la mínima aprobatoria)
+    // ============
+    if (!diagCircle || !diagGrade || !diagStatus) return;
 
     const diagnostico = progreso.diagnostico || {};
-    const resultado = determinarNivelDiagnostico(porc, calMin, diagnostico);
+    const resultado = determinarNivelDiagnostico(
+      porc,
+      minAprobatoria,
+      diagnostico
+    );
 
     diagGrade.textContent = resultado.grado.toFixed(1);
     diagStatus.textContent = resultado.estado;
 
     aplicarClasesDiagnostico(diagCircle, diagStatus, resultado.nivel);
-  }
+}
+
 
   // ------------------------------------------------------
   // Filtro de actividades por texto
@@ -291,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ...sec,
       actividades: sec.actividades.filter(actividad =>
         actividad.nombre.toLowerCase().includes(term)
-      )
+      ),
     }));
 
     renderSecciones(filtradas);
@@ -324,7 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
    * @returns {Promise<void>}
    */
   async function cargarDetalleMateria() {
-    const url = `../php/api/calificaciones_detalle.php?id_materia=${encodeURIComponent(idMateria)}`;
+    const url = `../php/api/calificaciones_detalle.php?id_materia=${encodeURIComponent(
+      idMateria
+    )}`;
 
     try {
       const resp = await fetch(url, { credentials: 'include' });
@@ -343,24 +407,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Actualizar título con el nombre de la materia
       if (tituloPagina && data.materia?.nombre_materia) {
-        tituloPagina.textContent =
-          `Mis calificaciones - detalles (${data.materia.nombre_materia})`;
+        tituloPagina.textContent = `Mis calificaciones - detalles (${data.materia.nombre_materia})`;
       }
 
       const seccionesAPI = Array.isArray(data.secciones) ? data.secciones : [];
 
-      seccionesOriginal = seccionesAPI.map(sec => ({
-        id: sec.id_tipo,
-        nombre: sec.nombre_tipo,
-        actividades: (sec.actividades || []).map(a => ({
-          id_actividad: a.id_actividad,
-          nombre: a.nombre,
-          fecha_entrega: a.fecha_entrega,
-          estado: a.estado,
-          obtenido: Number(a.obtenido ?? 0),
-          maximo: Number(a.maximo ?? 0)
-        }))
-      }));
+      // Mapa auxiliar: id_tipo -> resumen ponderado del tipo (puntos asegurados, perdidos, pendientes)
+      const resumenPorTipo = {};
+      const listaResumenTipo = Array.isArray(data.progreso?.por_tipo)
+        ? data.progreso.por_tipo
+        : [];
+      for (const t of listaResumenTipo) {
+        if (t && typeof t.id_tipo === 'number') {
+          resumenPorTipo[t.id_tipo] = t;
+        }
+      }
+
+      seccionesOriginal = seccionesAPI.map(sec => {
+        const resumenTipo = resumenPorTipo[sec.id_tipo] || null;
+
+        return {
+          id: sec.id_tipo,
+          nombre: sec.nombre_tipo,
+          resumenTipo,
+          actividades: (sec.actividades || []).map(a => ({
+            id_actividad: a.id_actividad,
+            nombre: a.nombre,
+            fecha_entrega: a.fecha_entrega,
+            estado: a.estado,
+            // null = sin calificar; 0 = calificación de 0
+            obtenido:
+              a.obtenido === null || a.obtenido === undefined
+                ? null
+                : Number(a.obtenido),
+            // null = actividad no calificable (puntos_posibles NULL o 0)
+            maximo:
+              a.maximo === null || a.maximo === undefined
+                ? null
+                : Number(a.maximo),
+          })),
+        };
+      });
 
       renderSecciones(seccionesOriginal);
       actualizarInformeYDiagnostico(data.progreso);
