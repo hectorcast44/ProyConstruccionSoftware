@@ -129,4 +129,27 @@ class Materia
         $stmt->execute([$id_materia]);
         return $stmt->fetchColumn() > 0;
     }
+    public function obtenerResumenActividades($id_usuario)
+    {
+        $sql = "SELECT
+                    a.id_materia,
+                    ta.nombre_tipo,
+                    SUM(a.puntos_obtenidos) AS puntos_obtenidos,
+                    SUM(a.puntos_posibles)  AS puntos_posibles
+                FROM ACTIVIDAD a
+                INNER JOIN TIPO_ACTIVIDAD ta
+                    ON ta.id_tipo_actividad = a.id_tipo_actividad
+                WHERE
+                    a.id_usuario = ?
+                GROUP BY
+                    a.id_materia,
+                    ta.nombre_tipo
+                ORDER BY
+                    a.id_materia,
+                    ta.nombre_tipo";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$id_usuario]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

@@ -2,6 +2,8 @@
 
 use App\Core\Router;
 
+session_start();
+
 // Autoloader
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';

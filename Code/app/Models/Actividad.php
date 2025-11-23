@@ -97,7 +97,7 @@ class Actividad
                 FROM ACTIVIDAD a
                 JOIN TIPO_ACTIVIDAD t ON a.id_tipo_actividad = t.id_tipo_actividad
                 WHERE a.id_materia = ? AND a.id_usuario = ?
-                ORDER BY a.fecha_entrega ASC";
+                ORDER BY t.nombre_tipo, a.fecha_entrega, a.nombre_actividad ASC";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$id_materia, $id_usuario]);

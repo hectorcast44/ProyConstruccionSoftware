@@ -21,7 +21,7 @@ class ActividadController extends Controller
     public function index()
     {
         $idUsuario = AuthController::getUserId();
-        $idMateria = $_GET['id_materia'] ?? 0;
+        $idMateria = $_GET['id_materia'] ?? $_GET['id'] ?? 0;
 
         if ($idMateria <= 0) {
             $this->json(['status' => 'error', 'message' => 'ID Materia requerido'], 400);

@@ -16,8 +16,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const basePath = globalThis.BASE_URL || '';
 
   fetch(basePath + 'partials/sidebar.html')
-    .then(resp => resp.text())
+    .then(resp => {
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+      return resp.text();
+    })
     .then(html => {
+      // Verificar si lo que llegó parece HTML de sidebar y no una página de error 404 genérica
+      if (html.includes('<title>404') || html.includes('Not Found')) {
+        throw new Error('El servidor devolvió una página de error 404');
+      }
+
       mount.innerHTML = html;
 
       if (globalThis.feather) {
@@ -30,6 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .catch(err => {
       console.error('No se pudo cargar el sidebar:', err);
+      // Mostrar error visible para depuración
+      mount.innerHTML = `<div style="padding: 20px; color: red; background: #fff; border: 1px solid red;">
+        <strong>Error cargando sidebar:</strong><br>
+        Ruta intentada: <code>${basePath}partials/sidebar.html</code><br>
+        Detalle: ${err.message}
+      </div>`;
     });
 });
 

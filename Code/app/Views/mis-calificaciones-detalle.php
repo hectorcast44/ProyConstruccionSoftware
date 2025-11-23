@@ -6,22 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mis calificaciones - detalle</title>
   <script>
-    const BASE_URL = "<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/";
+    <?php
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+    $dirName = dirname($scriptName);
+    if ($dirName === '.' || $dirName === '/')
+      $dirName = '';
+    $baseUrl = rtrim($dirName, '/') . '/';
+    ?>
+    const BASE_URL = "<?php echo $baseUrl; ?>";
   </script>
 
   <!-- estilos globales -->
-  <link rel="stylesheet" href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/sidebar.css" />
-  <link rel="stylesheet" href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/layout.css" />
-  <link rel="stylesheet"
-    href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/search-bar.css" />
-  <link rel="stylesheet"
-    href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/table-theme.css" />
-  <link rel="stylesheet"
-    href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/card-accordion.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/sidebar.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/layout.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/search-bar.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/table-theme.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/card-accordion.css" />
 
   <!-- estilos específicos de esta página (informe + diagnóstico, ajustes) -->
-  <link rel="stylesheet"
-    href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/styles/mis-calificaciones-detalle.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>styles/mis-calificaciones-detalle.css" />
 </head>
 
 <body class="has-sidebar page-calificaciones-detalle">
@@ -109,9 +112,9 @@
 
 
   <script src="https://unpkg.com/feather-icons"></script>
-  <script src="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/js/sidebar.js"></script>
-  <script src="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/js/ui-helpers.js"></script>
-  <script src="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/js/mis-calificaciones-detalle.js"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/ui-helpers.js"></script>
+  <script src="<?php echo $baseUrl; ?>js/mis-calificaciones-detalle.js"></script>
 </body>
 
 </html>

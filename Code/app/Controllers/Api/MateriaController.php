@@ -27,8 +27,47 @@ class MateriaController extends Controller
                 $this->json(['status' => 'error', 'message' => 'Materia no encontrada'], 404);
             }
         } else {
-            $materias = $this->materiaModel->obtenerPorUsuario($idUsuario);
-            $this->json(['status' => 'success', 'data' => $materias]);
+            // Obtener materias base
+            $materiasDB = $this->materiaModel->obtenerPorUsuario($idUsuario);
+
+            // Estructurar materias
+            $materias = [];
+            foreach ($materiasDB as $m) {
+                $id = $m['id_materia'];
+                $materias[$id] = [
+                    'id' => $id,
+                    'nombre' => $m['nombre_materia'],
+                    'tipos' => []
+                ];
+            }
+
+            if (empty($materias)) {
+                $this->json(['status' => 'success', 'data' => []]);
+                return;
+            }
+
+            // Obtener resumen de puntos por tipo de actividad (Lógica portada de calificaciones_resumen.php)
+            // Nota: Idealmente esto iría en un método del modelo, pero por simplicidad lo integramos aquí 
+            // o lo movemos a MateriaModel->obtenerResumenPorUsuario($idUsuario).
+            // Para mantener MVC puro, lo moveremos al modelo en un paso posterior si es necesario, 
+            // pero por ahora usaremos el modelo para obtener los datos crudos si es posible, 
+            // o ejecutaremos la query aquí si el modelo no tiene el método.
+
+            // Mejor enfoque: Agregar método al modelo Materia para obtener el resumen.
+            $resumen = $this->materiaModel->obtenerResumenActividades($idUsuario);
+
+            foreach ($resumen as $fila) {
+                $idMateria = $fila['id_materia'];
+                if (isset($materias[$idMateria])) {
+                    $materias[$idMateria]['tipos'][] = [
+                        'nombre' => $fila['nombre_tipo'],
+                        'obtenido' => (float) $fila['puntos_obtenidos'],
+                        'maximo' => (float) $fila['puntos_posibles']
+                    ];
+                }
+            }
+
+            $this->json(['status' => 'success', 'data' => array_values($materias)]);
         }
     }
 

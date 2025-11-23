@@ -6,22 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mis calificaciones</title>
   <script>
-    const BASE_URL = "<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/";
+    <?php
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+    $dirName = dirname($scriptName);
+    if ($dirName === '.' || $dirName === '/')
+      $dirName = '';
+    $baseUrl = rtrim($dirName, '/') . '/';
+    ?>
+    const BASE_URL = "<?php echo $baseUrl; ?>";
   </script>
 
   <!-- estilos globales -->
-  <link rel="stylesheet" href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/sidebar.css" />
-  <link rel="stylesheet" href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/layout.css" />
-  <link rel="stylesheet"
-    href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/search-bar.css" />
-  <link rel="stylesheet"
-    href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/table-theme.css" />
-  <link rel="stylesheet"
-    href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/css/card-accordion.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/sidebar.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/layout.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/search-bar.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/table-theme.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/card-accordion.css" />
 
   <!-- estilos específicos de esta página -->
-  <link rel="stylesheet"
-    href="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/styles/mis-calificaciones.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>styles/mis-calificaciones.css" />
 </head>
 
 <body class="has-sidebar page-calificaciones">
@@ -48,11 +51,10 @@
   </main>
 
   <script src="https://unpkg.com/feather-icons"></script>
-  <script src="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/js/sidebar.js"></script>
-  <script src="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/assets/js/ui-helpers.js"></script>
-  <script src="<?php echo rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>/js/mis-calificaciones.js"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/ui-helpers.js"></script>
+  <script src="<?php echo $baseUrl; ?>js/mis-calificaciones.js"></script>
 
 </body>
 
 </html>
-```
