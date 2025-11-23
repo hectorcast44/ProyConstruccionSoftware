@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return tipos.map(tipo => {
       const tagClass = obtenerTagClassPorTipo(tipo);
       const obtenido = Number(tipo.obtenido ?? 0);
-      const maximo   = Number(tipo.maximo   ?? 0);
+      const maximo = Number(tipo.maximo ?? 0);
 
       return `
         <tr>
@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   async function cargarMateriasDesdeAPI() {
 
-    const url = '../php/api/calificaciones_resumen.php';
+    const url = (globalThis.BASE_URL || '') + 'api/materias';
 
     try {
       const resp = await fetch(url, {
@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const idMateria = card?.dataset.idMateria;
       if (!idMateria) return;
 
-      const destino = `mis-calificaciones-detalle.html?id=${idMateria}`;
+      const destino = `mis-calificaciones/detalle?id_materia=${idMateria}`;
       globalThis.location.href = destino;
     });
   }

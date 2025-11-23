@@ -30,7 +30,7 @@ function filasTabla(actividades = []) {
 
   for (const actividad of actividades) {
     const obtenido = actividad.obtenido;
-    const maximo   = actividad.maximo;
+    const maximo = actividad.maximo;
 
     const textoPuntos = obtenido === null
       ? `— / ${maximo}`        // pendiente
@@ -256,12 +256,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Rellenar tabla de resumen
     if (rowPorc) rowPorc.textContent = `${porc.toFixed(1)} / 100`;
-    if (rowObt) rowObt.textContent  = obtenidos.toFixed(2);
+    if (rowObt) rowObt.textContent = obtenidos.toFixed(2);
     if (rowPerd) rowPerd.textContent = perdidos.toFixed(2);
     if (rowPosi) rowPosi.textContent = posibles.toFixed(2);
-    if (rowNec) rowNec.textContent  = necesarios.toFixed(2);
-    if (rowMin) rowMin.textContent  = calMin.toFixed(2);
-    if (rowMax) rowMax.textContent  = calMaxPos.toFixed(2);
+    if (rowNec) rowNec.textContent = necesarios.toFixed(2);
+    if (rowMin) rowMin.textContent = calMin.toFixed(2);
+    if (rowMax) rowMax.textContent = calMaxPos.toFixed(2);
 
     if (!diagCircle || !diagGrade || !diagStatus) {
       return;
@@ -319,12 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Consulta la API de detalle de calificaciones de una materia
    * y actualiza la UI (acordeón, título e informe).
-   *
-   * @async
-   * @returns {Promise<void>}
    */
   async function cargarDetalleMateria() {
-    const url = `../php/api/calificaciones_detalle.php?id_materia=${encodeURIComponent(idMateria)}`;
+    const url = (globalThis.BASE_URL || '') + `api/actividades?id_materia=${encodeURIComponent(idMateria)}`;
 
     try {
       const resp = await fetch(url, { credentials: 'include' });
@@ -332,7 +329,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Error HTTP al cargar detalles:', resp.status);
         return;
       }
-
       const json = await resp.json();
       if (json.status !== 'success' || !json.data) {
         console.error('Error API detalle:', json?.message);
@@ -364,6 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       renderSecciones(seccionesOriginal);
       actualizarInformeYDiagnostico(data.progreso);
+
     } catch (error) {
       console.error('Error de red al cargar detalle de materia:', error);
     }

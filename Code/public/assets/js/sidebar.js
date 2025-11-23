@@ -12,7 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const mount = document.getElementById('sidebar-mount');
   if (!mount) return;
 
-  fetch('../partials/sidebar.html')
+  // Detectar base path para fetch correcto en subdirectorios
+  const basePath = globalThis.BASE_URL || '';
+
+  fetch(basePath + 'partials/sidebar.html')
     .then(resp => resp.text())
     .then(html => {
       mount.innerHTML = html;
@@ -21,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         feather.replace();
       }
 
-      cargarUsuarioEnSidebar();
+      cargarUsuarioEnSidebar(basePath);
       activarEnlaceActual();
       inicializarColapsoSidebar();
     })
@@ -37,9 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
  * @async
  * @returns {Promise<void>}
  */
-async function cargarUsuarioEnSidebar() {
+async function cargarUsuarioEnSidebar(basePath = '') {
   try {
-    const resp = await fetch('../php/api/usuario_info.php', {
+    const resp = await fetch(basePath + 'auth/me', {
       credentials: 'include'
     });
 
@@ -67,7 +70,8 @@ async function cargarUsuarioEnSidebar() {
  */
 function activarEnlaceActual() {
   const fullPath = globalThis.location.pathname;
-  const currentPage = fullPath.substring(fullPath.lastIndexOf('/') + 1);
+  // Obtener el último segmento de la URL (ej: dashboard, mis-calificaciones)
+  const currentPage = fullPath.split('/').pop() || 'dashboard';
 
   const links = document.querySelectorAll('.sidebar .nav-item[href]');
 
