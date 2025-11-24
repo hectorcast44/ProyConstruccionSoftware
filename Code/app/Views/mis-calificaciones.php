@@ -51,7 +51,7 @@
   </main>
 
   <script src="https://unpkg.com/feather-icons"></script>
-  <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
   <script src="<?php echo $baseUrl; ?>assets/js/ui-helpers.js"></script>
   <script src="<?php echo $baseUrl; ?>js/mis-calificaciones.js"></script>
 

@@ -70,7 +70,7 @@
     <!-- feather icons -->
     <script src="https://unpkg.com/feather-icons"></script>
     <!-- sidebar dinámico -->
-    <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js"></script>
+    <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
     <!-- Lógica del modal -->
     <script src="<?php echo $baseUrl; ?>assets/js/modal-nueva.js"></script>
     <!-- Lógica de boton nueva calificación -->

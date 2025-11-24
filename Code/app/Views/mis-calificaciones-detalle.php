@@ -9,8 +9,11 @@
     <?php
     $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
     $dirName = dirname($scriptName);
-    if ($dirName === '.' || $dirName === '/')
-      $dirName = '';
+    // Ensure leading slash
+    if (substr($dirName, 0, 1) !== '/') {
+        $dirName = '/' . $dirName;
+    }
+    if ($dirName === '.' || $dirName === '/') $dirName = '';
     $baseUrl = rtrim($dirName, '/') . '/';
     ?>
     const BASE_URL = "<?php echo $baseUrl; ?>";
@@ -112,9 +115,9 @@
 
 
   <script src="https://unpkg.com/feather-icons"></script>
-  <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
   <script src="<?php echo $baseUrl; ?>assets/js/ui-helpers.js"></script>
-  <script src="<?php echo $baseUrl; ?>js/mis-calificaciones-detalle.js"></script>
+  <script src="<?php echo $baseUrl; ?>js/mis-calificaciones-detalle.js?v=<?php echo time(); ?>"></script>
 </body>
 
 </html>

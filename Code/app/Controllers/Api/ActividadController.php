@@ -25,6 +25,7 @@ class ActividadController extends Controller
 
         if ($idMateria <= 0) {
             $this->json(['status' => 'error', 'message' => 'ID Materia requerido'], 400);
+            return;
         }
 
         try {

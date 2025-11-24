@@ -15,36 +15,50 @@ document.addEventListener('DOMContentLoaded', () => {
   // Detectar base path para fetch correcto en subdirectorios
   const basePath = globalThis.BASE_URL || '';
 
-  fetch(basePath + 'partials/sidebar.html')
-    .then(resp => {
-      if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
-      return resp.text();
-    })
-    .then(html => {
-      // Verificar si lo que llegó parece HTML de sidebar y no una página de error 404 genérica
-      if (html.includes('<title>404') || html.includes('Not Found')) {
-        throw new Error('El servidor devolvió una página de error 404');
-      }
+  // Lista de rutas a intentar
+  const pathsToTry = [
+    basePath + 'partials/sidebar.html',
+    '../partials/sidebar.html',
+    '../../partials/sidebar.html',
+    '/partials/sidebar.html',
+    'partials/sidebar.html'
+  ];
 
-      mount.innerHTML = html;
-
-      if (globalThis.feather) {
-        feather.replace();
-      }
-
-      cargarUsuarioEnSidebar(basePath);
-      activarEnlaceActual();
-      inicializarColapsoSidebar();
-    })
-    .catch(err => {
-      console.error('No se pudo cargar el sidebar:', err);
-      // Mostrar error visible para depuración
-      mount.innerHTML = `<div style="padding: 20px; color: red; background: #fff; border: 1px solid red;">
-        <strong>Error cargando sidebar:</strong><br>
-        Ruta intentada: <code>${basePath}partials/sidebar.html</code><br>
-        Detalle: ${err.message}
+  // Función recursiva para intentar cargar el sidebar
+  const tryLoadSidebar = (index) => {
+    if (index >= pathsToTry.length) {
+      console.error('No se pudo cargar el sidebar después de varios intentos.');
+      mount.innerHTML = `<div style="padding: 20px; color: red; border: 1px solid red;">
+        <strong>Error cargando sidebar.</strong><br>
+        No se encontró el archivo en ninguna de las rutas esperadas.
       </div>`;
-    });
+      return;
+    }
+
+    const url = pathsToTry[index];
+    fetch(url)
+      .then(resp => {
+        if (!resp.ok) throw new Error('Status ' + resp.status);
+        return resp.text();
+      })
+      .then(html => {
+        if (html.includes('<title>404') || html.includes('Not Found')) {
+          throw new Error('Contenido 404');
+        }
+        mount.innerHTML = html;
+        if (globalThis.feather) feather.replace();
+        // Usamos la URL exitosa para deducir la ruta base correcta para la API
+        cargarUsuarioEnSidebar(url);
+        activarEnlaceActual();
+        inicializarColapsoSidebar();
+      })
+      .catch(err => {
+        console.warn(`Fallo al cargar sidebar desde ${url}:`, err);
+        tryLoadSidebar(index + 1);
+      });
+  };
+
+  tryLoadSidebar(0);
 });
 
 /**
@@ -55,8 +69,16 @@ document.addEventListener('DOMContentLoaded', () => {
  * @returns {Promise<void>}
  */
 async function cargarUsuarioEnSidebar(basePath = '') {
+  // Si basePath viene de una ruta relativa exitosa (ej: ../partials/sidebar.html),
+  // debemos ajustar la ruta de la API para que sea consistente (ej: ../auth/me).
+  // Quitamos 'partials/sidebar.html' del final para obtener el prefijo real.
+  let apiBase = basePath;
+  if (apiBase.endsWith('partials/sidebar.html')) {
+    apiBase = apiBase.replace('partials/sidebar.html', '');
+  }
+
   try {
-    const resp = await fetch(basePath + 'auth/me', {
+    const resp = await fetch(apiBase + 'auth/me', {
       credentials: 'include'
     });
 

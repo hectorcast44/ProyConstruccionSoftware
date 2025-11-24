@@ -321,7 +321,15 @@ document.addEventListener('DOMContentLoaded', () => {
    * y actualiza la UI (acordeón, título e informe).
    */
   async function cargarDetalleMateria() {
-    const url = (globalThis.BASE_URL || '') + `api/actividades?id_materia=${encodeURIComponent(idMateria)}`;
+    // Fallback: si BASE_URL no está definido o está vacío, usamos ruta relativa.
+    // La URL es .../mis-calificaciones/detalle
+    // ../ nos lleva a .../mis-calificaciones/ (NO, nos lleva a public/)
+    // Espera, si estamos en /mis-calificaciones/detalle
+    // ./ es /mis-calificaciones/
+    // ../ es /public/
+    // Probemos con ../api/actividades
+    const baseUrl = globalThis.BASE_URL || '../';
+    const url = `${baseUrl}api/actividades?id_materia=${encodeURIComponent(idMateria)}`;
 
     try {
       const resp = await fetch(url, { credentials: 'include' });

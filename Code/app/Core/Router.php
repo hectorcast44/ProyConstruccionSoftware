@@ -29,7 +29,10 @@ class Router
         // Remove base path if project is in a subdirectory
         // Assuming project is at /ProyConstruccionSoftware/Code/public
         // Adjust this logic if needed based on server config
-        $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+        // Remove base path if project is in a subdirectory
+        // Fix: Normalize slashes for Windows compatibility
+        $scriptName = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+
         if (strpos($path, $scriptName) === 0) {
             $path = substr($path, strlen($scriptName));
         }
