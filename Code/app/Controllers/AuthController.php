@@ -41,16 +41,22 @@ class AuthController extends Controller
 
         if (!$user) {
             $this->json([
-                'id_usuario' => $idUsuario,
-                'nombre' => 'Usuario',
-                'avatar' => 'https://ui-avatars.com/api/?name=Usuario&background=random'
+                'status' => 'success',
+                'data' => [
+                    'id_usuario' => $idUsuario,
+                    'nombre' => 'Usuario',
+                    'avatar' => 'https://ui-avatars.com/api/?name=Usuario&background=random'
+                ]
             ]);
         } else {
             $this->json([
-                'id_usuario' => (int) $user['id_usuario'],
-                'nombre' => $user['nombre_usuario'],
-                'correo' => $user['correo'],
-                'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($user['nombre_usuario']) . '&background=random'
+                'status' => 'success',
+                'data' => [
+                    'id_usuario' => (int) $user['id_usuario'],
+                    'nombre' => $user['nombre_usuario'],
+                    'correo' => $user['correo'],
+                    'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($user['nombre_usuario']) . '&background=random'
+                ]
             ]);
         }
     }
