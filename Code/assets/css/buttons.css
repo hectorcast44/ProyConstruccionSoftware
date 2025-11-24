@@ -158,3 +158,81 @@ button svg {
   height: 18px;
   stroke-width: 2;
 }
+
+/* Boton Filtro */
+.boton-filtro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+    user-select: none;
+}
+
+/* modal filtro dashboard */
+.modal-filtro-overlay {
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;                
+}
+.hidden { display: none; }
+
+
+.modal-filtro {
+background: #fff;
+width: 380px;
+padding: 20px;
+border-radius: 10px;
+box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+display: flex;
+flex-direction: column;
+gap: 15px;
+}
+
+
+.modal-filtro-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+
+.close-btn {
+background: none;
+border: none;
+font-size: 22px;
+cursor: pointer;
+}
+
+
+.modal-filtro-body label { margin-top: 10px; font-weight: 600; }
+.modal-filtro-body input, .modal-filtro-body select {
+width: 100%;
+padding: 8px;
+border-radius: 6px;
+border: 1px solid #ccc;
+}
+
+
+.modal-filtro-footer {
+display: flex;
+justify-content: flex-end;
+}
+
+
+.apply-btn {
+padding: 10px 20px;
+background: #6a4bc3;
+color: white;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+}

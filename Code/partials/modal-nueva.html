@@ -1,10 +1,10 @@
-<dialog class="contenedor-modal" id="modal-nueva" aria-label="Cerrar">
+<dialog class="contenedor-modal" id="modal-nueva">
     <a id="cerrar-modal">
         <i data-feather="x"></i>
     </a>
 
     <div class="form-container">
-        <form action="#" method="POST">
+        <form id="form-actividad" method="post">
             <div class="modal-form">
                 <div class="modal-title">
                     <i data-feather="file-plus"></i>
@@ -25,18 +25,18 @@
                 <div class="modal-form-section">
                     <select class="modal-form-input" name="materia" id="materia" required>
                         <option value="" disabled selected hidden></option>
-                        <option value="#">materia 1</option> 
-                        <option value="#">materia 2</option>                   
-                        <option value="#">materia 3</option>
+                        <option value="Inferencia">Inferencia</option> 
+                        <option value="Bases de datos">Bases de datos</option>                   
+                        <option value="Construcción de software">Construcción de software</option>
                     </select>
                     <label for="materia" class="modal-form-label"> Materia </label>
                 </div>
                 <div class="modal-form-section">
                     <select class="modal-form-input" name="tipo" id="tipo" required>
                         <option value="Selecciona una opción" disabled selected hidden></option>
-                        <option value="#">tipo 1</option> 
-                        <option value="#">tipo 2</option>                   
-                        <option value="#">tipo 3</option>
+                        <option value="Tarea">Tarea</option> 
+                        <option value="Proyecto">Proyecto</option>                   
+                        <option value="Examen">Examen</option>
                     </select>
                     <label for="tipo" class="modal-form-label"> Tipo </label>
                 </div>
@@ -66,16 +66,18 @@
                     />
                     <label for="puntaje" class="modal-form-label"> Puntaje obtenido </label>
                 </div>
-                <div class="modal-form-section">
-                    <input
-                    type="date"
-                    name="fecha"
-                    id="fecha"
-                    class="modal-form-input"
-                    placeholder=" " 
-                    required
-                    />
-                    <label for="fecha" class="modal-form-label"> Fecha </label>
+                <div class="row-fecha-crear">
+                    <div class="modal-form-section">
+                        <input
+                        type="date"
+                        name="fecha"
+                        id="fecha"
+                        class="modal-form-input"
+                        placeholder=" " 
+                        required
+                        />
+                        <label for="fecha" class="modal-form-label"> Fecha </label>
+                    </div>
                     <button type="submit" id="crear-modal" class="boton-crear">
                         <span>Crear</span>
                         <i data-feather="plus-circle"></i>

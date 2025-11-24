@@ -18,19 +18,28 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarPartial(
     '../partials/boton-nueva.html',
     'contenedor-boton-nueva',
-    'abrir-boton-nueva',
+    'boton-nueva',
     abrirModalNueva
   );
 
   cargarPartial(
     '../partials/boton-editar.html',
     'contenedor-boton-editar',
-    'abrir-boton-editar'
+    'boton-editar',
+    actualizarColumnaAcciones
   );
 
   cargarPartial(
     '../partials/boton-eliminar.html',
     'contenedor-boton-eliminar',
-    'abrir-boton-eliminar'
+    'boton-eliminar',
+    botonEliminarMasivo
+  );
+
+  cargarPartial(
+    '../partials/boton-filtro.html',
+    'contenedor-boton-filtro',
+    'boton-filtro',
+    abrirModalFiltro
   );
 });
