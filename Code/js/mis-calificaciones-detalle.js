@@ -1,12 +1,128 @@
-// Página: mis-calificaciones-detalle.html
-// Lee ?id_materia= o ?id= de la URL, consulta php/api/calificaciones_detalle.php
-// y rellena acordeón, informe y diagnóstico.
+/**
+ * Página "Mis calificaciones – Detalle".
+ *
+ * Responsabilidades:
+ *  - Leer el identificador de la materia desde la URL (?id_materia= o ?id=).
+ *  - Consultar la API para obtener: datos de la materia, actividades y métricas de progreso.
+ *  - Renderizar la información en bloques tipo acordeón, actualizando tabla e informe.
+ *  - Mostrar diagnóstico visual (círculo, grado, estado) según progreso calculado.
+ *  - Permitir filtrar actividades por nombre mediante el buscador.
+ *  - Controlar la interacción del usuario con el acordeón (abrir/cerrar secciones).
+ */
 
+/**
+ * Genera el HTML de las filas de una tabla para la lista de actividades.
+ *
+ * @param {Array<{nombre: string, obtenido: (number|null), maximo: (number|null)}>} actividades
+ */
+function filasTabla(actividades = []) {
+  if (!actividades.length) {
+    return `
+      <tr><td colspan="2" class="right">Sin registros</td></tr>
+    `;
+  }
+
+  return actividades
+    .map(a => {
+      let textoPuntuacion;
+
+      if (a.maximo === null) {
+        // Actividad no calificable
+        textoPuntuacion = '—';
+      } else if (a.obtenido === null) {
+        // Calificable pero aún sin calificar
+        textoPuntuacion = `— / ${a.maximo}`;
+      } else {
+        // Ya calificada (0, 5, 7, etc.)
+        textoPuntuacion = `${a.obtenido} / ${a.maximo}`;
+      }
+
+      return `
+        <tr>
+          <td>${a.nombre}</td>
+          <td class="right">${textoPuntuacion}</td>
+        </tr>
+      `;
+    })
+    .join('');
+}
+
+/**
+ * Calcula el nivel y el estado del diagnóstico a partir del porcentaje
+ * obtenido y la calificación mínima requerida.
+ * @param {number} porcentajeObtenido Porcentaje actual obtenido en la materia.
+ * @param {number} calificacionMinima Calificación mínima para aprobar.
+ * @param {{nivel?: string, estado?: string, grado?: number}} diagnostico Diagnóstico opcional desde backend.
+ * @returns {{nivel: string, estado: string, grado: number}} Datos normalizados para la UI.
+ */
+function determinarNivelDiagnostico(
+  porcentajeObtenido,
+  calificacionMinima,
+  diagnostico = {}
+) {
+  let nivel = diagnostico.nivel;
+  let estado = diagnostico.estado ?? '—';
+  const grado = Number(diagnostico.grado ?? porcentajeObtenido);
+
+  if (!nivel) {
+    if (porcentajeObtenido >= calificacionMinima) {
+      nivel = 'ok';
+      estado = 'Aprobado';
+    } else if (porcentajeObtenido < calificacionMinima - 10) {
+      nivel = 'fail';
+      estado = 'Reprobado';
+    } else {
+      nivel = 'risk';
+      estado = 'En riesgo';
+    }
+  }
+
+  return { nivel, estado, grado };
+}
+
+/**
+ * Aplica las clases visuales correspondientes al nivel de diagnóstico
+ * en el círculo y en la etiqueta de estado.
+ *
+ * @param {HTMLElement} diagCircle Elemento que muestra el círculo de diagnóstico.
+ * @param {HTMLElement} diagStatus Elemento que muestra el texto del estado.
+ * @param {string} nivel Nivel final: "ok" | "risk" | "fail".
+ */
+function aplicarClasesDiagnostico(diagCircle, diagStatus, nivel) {
+  diagCircle.classList.remove(
+    'diagnosis-circle--ok',
+    'diagnosis-circle--warn',
+    'diagnosis-circle--fail'
+  );
+  diagStatus.classList.remove(
+    'diag-status--ok',
+    'diag-status--risk',
+    'diag-status--fail'
+  );
+
+  if (nivel === 'ok') {
+    diagCircle.classList.add('diagnosis-circle--ok');
+    diagStatus.classList.add('diag-status--ok');
+  } else if (nivel === 'fail') {
+    diagCircle.classList.add('diagnosis-circle--fail');
+    diagStatus.classList.add('diag-status--fail');
+  } else {
+    diagCircle.classList.add('diagnosis-circle--warn');
+    diagStatus.classList.add('diag-status--risk');
+  }
+}
+
+/**
+ * Script principal para la página mis-calificaciones-detalle.html
+ * - Lee ?id_materia= o ?id= de la URL.
+ * - Consume ../php/api/calificaciones_detalle.php.
+ * - Rellena acordeón, informe y diagnóstico.
+ */
 document.addEventListener('DOMContentLoaded', () => {
   // ------------------------------------------------------
-  // 1) Obtener id_materia
+  // Obtener id_materia desde la URL
   // ------------------------------------------------------
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(globalThis.location.search);
   const idMateria = params.get('id_materia') || params.get('id');
 
   if (!idMateria) {
@@ -15,49 +131,56 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ------------------------------------------------------
-  // 2) Referencias al DOM
+  // Referencias al DOM
   // ------------------------------------------------------
   const contenedorSecciones = document.getElementById('lista-usuarios');
-  const buscadorInput       = document.getElementById('buscador-menu');
-  const buscadorWrapper     = document.querySelector('.search-wrapper');
-  const buscadorBtn         = document.getElementById('search-toggle');
+  const buscadorInput = document.getElementById('buscador-menu');
+  const buscadorWrapper = document.querySelector('.search-wrapper');
+  const buscadorBtn = document.getElementById('search-toggle');
 
-  const tituloPagina = document.querySelector('.page-title h1'); 
+  const tituloPagina = document.querySelector('.page-title h1');
 
-  // filas informe
-  const rowPorc = document.querySelector('[data-field="porcentaje-obtenido"] td.right');
-  const rowObt  = document.querySelector('[data-field="puntos-obtenidos"] td.right');
-  const rowPerd = document.querySelector('[data-field="puntos-perdidos"] td.right');
-  const rowPosi = document.querySelector('[data-field="puntos-posibles"] td.right');
-  const rowNec  = document.querySelector('[data-field="puntos-necesarios"] td.right');
-  const rowMin  = document.querySelector('[data-field="calificacion-minima"] td.right');
-  const rowMax  = document.querySelector('[data-field="calificacion-maxima"] td.right');
+  // Filas del informe
+  const rowPorc = document.querySelector(
+    '[data-field="porcentaje-obtenido"] td.right'
+  );
+  const rowObt = document.querySelector(
+    '[data-field="puntos-obtenidos"] td.right'
+  );
+  const rowPerd = document.querySelector(
+    '[data-field="puntos-perdidos"] td.right'
+  );
+  const rowPosi = document.querySelector(
+    '[data-field="puntos-posibles"] td.right'
+  );
+  const rowNec = document.querySelector(
+    '[data-field="puntos-necesarios"] td.right'
+  );
+  const rowMin = document.querySelector(
+    '[data-field="calificacion-minima"] td.right'
+  );
+  const rowMax = document.querySelector(
+    '[data-field="calificacion-maxima"] td.right'
+  );
 
-  // diagnóstico
+  // Elementos de diagnóstico
   const diagCircle = document.querySelector('.diagnosis-circle');
-  const diagGrade  = document.querySelector('.diag-grade');
+  const diagGrade = document.querySelector('.diag-grade');
   const diagStatus = document.querySelector('.diag-status');
 
+  /** @type {Array<{id:number, nombre:string, resumenTipo:object|null, actividades:Array}>} */
   let seccionesOriginal = [];
 
   // ------------------------------------------------------
-  // 3) Helpers UI (acordeón)
+  // Helpers UI (acordeón)
   // ------------------------------------------------------
-  function filasTabla(actividades = []) {
-    if (!actividades.length) {
-      return `
-        <tr><td colspan="2" class="right">Sin registros</td></tr>
-      `;
-    }
 
-    return actividades.map(a => `
-      <tr>
-        <td>${a.nombre}</td>
-        <td class="right">${a.obtenido} / ${a.maximo}</td>
-      </tr>
-    `).join('');
-  }
-
+  /**
+   * Crea el bloque completo de una sección (card de acordeón + tabla).
+   *
+   * @param {{id:number, nombre:string, resumenTipo:object|null, actividades:Array}} sec Sección normalizada.
+   * @returns {HTMLDivElement} Nodo listo para insertar en el DOM.
+   */
   function crearBloqueSeccion(sec) {
     const wrapper = document.createElement('div');
     wrapper.className = 'accordion-card-wrapper';
@@ -67,10 +190,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const header = document.createElement('div');
     header.className = 'accordion-card__header';
+
+    // Título con puntos ponderados del tipo, si existen
+    let tituloSeccion = sec.nombre;
+    if (sec.resumenTipo && typeof sec.resumenTipo.puntos_tipo === 'number') {
+      const ganados = Number(
+        sec.resumenTipo.puntos_asegurados ??
+          sec.resumenTipo.ganados ??
+          0
+      );
+      const totalTipo = Number(sec.resumenTipo.puntos_tipo);
+      tituloSeccion = `${sec.nombre} (${ganados.toFixed(2)} / ${totalTipo.toFixed(
+        2
+      )})`;
+    }
+
     header.innerHTML = `
       <div class="accordion-card__header-main">
         <span class="accordion-card__icon"><i data-feather="layers"></i></span>
-        <h3 class="accordion-card__title">${sec.nombre}</h3>
+        <h3 class="accordion-card__title">${tituloSeccion}</h3>
       </div>
     `;
 
@@ -93,108 +231,129 @@ document.addEventListener('DOMContentLoaded', () => {
     return wrapper;
   }
 
+  /**
+   * Renderiza todas las secciones en el contenedor principal del acordeón.
+   *
+   * @param {Array<{id:number, nombre:string, resumenTipo:object|null, actividades:Array}>} secciones
+   */
   function renderSecciones(secciones) {
+    if (!contenedorSecciones) {
+      return;
+    }
+
     contenedorSecciones.innerHTML = '';
 
-    secciones.forEach(sec => {
+    for (const sec of secciones) {
       contenedorSecciones.appendChild(crearBloqueSeccion(sec));
-    });
+    }
 
-    if (window.feather) feather.replace();
+    if (globalThis.feather) {
+      feather.replace();
+    }
   }
 
-  contenedorSecciones.addEventListener('click', e => {
-    const header = e.target.closest('.accordion-card__header');
-    if (!header) return;
+  // Comportamiento de abrir/cerrar tarjetas del acordeón
+  if (contenedorSecciones) {
+    contenedorSecciones.addEventListener('click', event => {
+      const header = event.target.closest('.accordion-card__header');
+      if (!header) return;
 
-    const card = header.closest('.accordion-card');
-    card.classList.toggle('open');
-  });
+      const card = header.closest('.accordion-card');
+      if (card) {
+        card.classList.toggle('open');
+      }
+    });
+  }
 
   // ------------------------------------------------------
-  // 4) Informe + diagnóstico
+  // Informe + diagnóstico
   // ------------------------------------------------------
-  function actualizarInformeYDiagnostico(progreso) {
+
+  /**
+   * Actualiza los valores de la tabla de informe y la sección de diagnóstico
+   * a partir del objeto de progreso que devuelve la API.
+   *
+   * @param {object} progreso Objeto con métricas calculadas en el backend.
+   */
+ function actualizarInformeYDiagnostico(progreso) {
     if (!progreso) return;
 
-    const porc       = Number(progreso.porcentaje_obtenido ?? 0);
-    const obtenidos  = Number(progreso.puntos_obtenidos ?? 0);
-    const perdidos   = Number(progreso.puntos_perdidos ?? 0);
-    const posibles   = Number(progreso.puntos_posibles_obtener ?? 0);
-    const necesarios = Number(progreso.puntos_necesarios_aprobar ?? 0);
-    const calMin     = Number(progreso.calificacion_minima ?? 70);
-    const calMaxPos  = Number(progreso.calificacion_maxima_posible ?? 0);
+    // ============
+    // CONSTANTES
+    // ============
+    const DEFAULT_APROBATORIA = 70;     // mínimo aprobatorio por defecto
+    const TOTAL_ESCALA = 100;           // escala completa 0–100 para porcentaje
 
-    // ----- rellenar tabla -----
-    if (rowPorc) rowPorc.textContent = `${porc.toFixed(1)} / 100`;
+    // ============
+    // MÉTRICAS
+    // ============
+    const porc        = Number(progreso.porcentaje_obtenido ?? 0);
+    const obtenidos   = Number(progreso.puntos_obtenidos ?? 0);
+    const perdidos    = Number(progreso.puntos_perdidos ?? 0);
+    const posibles    = Number(progreso.puntos_posibles_obtener ?? 0);
+    const necesarios  = Number(progreso.puntos_necesarios_aprobar ?? 0);
+
+    const minAprobatoria = Number(
+      progreso.calificacion_minima ?? DEFAULT_APROBATORIA
+    );
+
+    const minDinamica = Number(
+      progreso.calificacion_minima_dinamica ?? 0
+    );
+
+    const maxPosible = Number(
+      progreso.calificacion_maxima_posible ?? 0
+    );
+
+    // ============
+    // TABLA DE INFORME
+    // ============
+    if (rowPorc) rowPorc.textContent = `${porc.toFixed(1)} / ${TOTAL_ESCALA}`;
     if (rowObt)  rowObt.textContent  = obtenidos.toFixed(2);
     if (rowPerd) rowPerd.textContent = perdidos.toFixed(2);
     if (rowPosi) rowPosi.textContent = posibles.toFixed(2);
     if (rowNec)  rowNec.textContent  = necesarios.toFixed(2);
-    if (rowMin)  rowMin.textContent  = calMin.toFixed(2);
-    if (rowMax)  rowMax.textContent  = calMaxPos.toFixed(2);
 
+  
+    if (rowMin) rowMin.textContent = minDinamica.toFixed(2);
+    if (rowMax) rowMax.textContent = maxPosible.toFixed(2);
+
+    // ============
+    // DIAGNÓSTICO
+    //  (se evalúa con la mínima aprobatoria)
+    // ============
     if (!diagCircle || !diagGrade || !diagStatus) return;
 
-    const diag   = progreso.diagnostico || {};
-    const grado  = Number(diag.grado ?? porc);
-    let   estado = diag.estado ?? '—';
-    let   nivel  = diag.nivel; // ok / risk / fail (si viene del backend)
-
-    // 🔁 Recalcular nivel por si no viene bien del backend
-    if (!nivel) {
-      if (porc >= calMin) {
-        nivel = 'ok';
-        estado = 'Aprobado';
-      } else if (porc < calMin - 10) {
-        nivel = 'fail';
-        estado = 'Reprobado';
-      } else {
-        nivel = 'risk';
-        estado = 'En riesgo';
-      }
-    }
-
-    // mostrar grado y estado
-    diagGrade.textContent  = grado.toFixed(1);
-    diagStatus.textContent = estado;
-
-    // limpiar clases anteriores
-    diagCircle.classList.remove(
-      'diagnosis-circle--ok',
-      'diagnosis-circle--warn',
-      'diagnosis-circle--fail'
-    );
-    diagStatus.classList.remove(
-      'diag-status--ok',
-      'diag-status--risk',
-      'diag-status--fail'
+    const diagnostico = progreso.diagnostico || {};
+    const resultado = determinarNivelDiagnostico(
+      porc,
+      minAprobatoria,
+      diagnostico
     );
 
-    // aplicar color según nivel FINAL
-    if (nivel === 'ok') {
-      diagCircle.classList.add('diagnosis-circle--ok');
-      diagStatus.classList.add('diag-status--ok');
-    } else if (nivel === 'fail') {
-      diagCircle.classList.add('diagnosis-circle--fail');
-      diagStatus.classList.add('diag-status--fail');
-    } else {
-      diagCircle.classList.add('diagnosis-circle--warn');
-      diagStatus.classList.add('diag-status--risk');
-    }
-  }
+    diagGrade.textContent = resultado.grado.toFixed(1);
+    diagStatus.textContent = resultado.estado;
+
+    aplicarClasesDiagnostico(diagCircle, diagStatus, resultado.nivel);
+}
+
 
   // ------------------------------------------------------
-  // 5) Filtro actividades
+  // Filtro de actividades por texto
   // ------------------------------------------------------
+
+  /**
+   * Aplica el filtro de texto sobre el nombre de las actividades
+   * y vuelve a renderizar las secciones.
+   */
   function filtrarActividades() {
     const term = (buscadorInput?.value || '').toLowerCase().trim();
 
     const filtradas = seccionesOriginal.map(sec => ({
       ...sec,
-      actividades: sec.actividades.filter(a =>
-        a.nombre.toLowerCase().includes(term)
-      )
+      actividades: sec.actividades.filter(actividad =>
+        actividad.nombre.toLowerCase().includes(term)
+      ),
     }));
 
     renderSecciones(filtradas);
@@ -203,9 +362,12 @@ document.addEventListener('DOMContentLoaded', () => {
   buscadorInput?.addEventListener('input', filtrarActividades);
 
   buscadorBtn?.addEventListener('click', () => {
+    if (!buscadorWrapper || !buscadorInput) return;
+
     buscadorWrapper.classList.toggle('active');
+
     if (buscadorWrapper.classList.contains('active')) {
-      buscadorInput?.focus();
+      buscadorInput.focus();
     } else {
       buscadorInput.value = '';
       renderSecciones(seccionesOriginal);
@@ -213,61 +375,89 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ------------------------------------------------------
-  // 6) Cargar data de API
+  // Cargar datos desde la API
   // ------------------------------------------------------
+
+  /**
+   * Consulta la API de detalle de calificaciones de una materia
+   * y actualiza la UI (acordeón, título e informe).
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
   async function cargarDetalleMateria() {
-    const url = `../php/api/calificaciones_detalle.php?id_materia=${encodeURIComponent(idMateria)}`;
+    const url = `../php/api/calificaciones_detalle.php?id_materia=${encodeURIComponent(
+      idMateria
+    )}`;
 
     try {
-      const resp = await fetch(url);
-      const raw  = await resp.text();
-
-      let json;
-      try {
-        json = JSON.parse(raw);
-      } catch {
-        console.error('JSON inválido');
+      const resp = await fetch(url, { credentials: 'include' });
+      if (!resp.ok) {
+        console.error('Error HTTP al cargar detalles:', resp.status);
         return;
       }
 
-      if (!resp.ok || json.status !== 'success') {
+      const json = await resp.json();
+      if (json.status !== 'success' || !json.data) {
         console.error('Error API detalle:', json?.message);
         return;
       }
 
-      const data = json.data || {};
+      const data = json.data;
 
       // Actualizar título con el nombre de la materia
       if (tituloPagina && data.materia?.nombre_materia) {
-        tituloPagina.textContent =
-          `Mis calificaciones - detalles (${data.materia.nombre_materia})`;
+        tituloPagina.textContent = `Mis calificaciones - detalles (${data.materia.nombre_materia})`;
       }
 
       const seccionesAPI = Array.isArray(data.secciones) ? data.secciones : [];
 
-      seccionesOriginal = seccionesAPI.map(sec => ({
-        id: sec.id_tipo,
-        nombre: sec.nombre_tipo,
-        actividades: (sec.actividades || []).map(a => ({
-          id_actividad: a.id_actividad,
-          nombre: a.nombre,
-          fecha_entrega: a.fecha_entrega,
-          estado: a.estado,
-          obtenido: Number(a.obtenido ?? 0),
-          maximo: Number(a.maximo ?? 0)
-        }))
-      }));
+      // Mapa auxiliar: id_tipo -> resumen ponderado del tipo (puntos asegurados, perdidos, pendientes)
+      const resumenPorTipo = {};
+      const listaResumenTipo = Array.isArray(data.progreso?.por_tipo)
+        ? data.progreso.por_tipo
+        : [];
+      for (const t of listaResumenTipo) {
+        if (t && typeof t.id_tipo === 'number') {
+          resumenPorTipo[t.id_tipo] = t;
+        }
+      }
+
+      seccionesOriginal = seccionesAPI.map(sec => {
+        const resumenTipo = resumenPorTipo[sec.id_tipo] || null;
+
+        return {
+          id: sec.id_tipo,
+          nombre: sec.nombre_tipo,
+          resumenTipo,
+          actividades: (sec.actividades || []).map(a => ({
+            id_actividad: a.id_actividad,
+            nombre: a.nombre,
+            fecha_entrega: a.fecha_entrega,
+            estado: a.estado,
+            // null = sin calificar; 0 = calificación de 0
+            obtenido:
+              a.obtenido === null || a.obtenido === undefined
+                ? null
+                : Number(a.obtenido),
+            // null = actividad no calificable (puntos_posibles NULL o 0)
+            maximo:
+              a.maximo === null || a.maximo === undefined
+                ? null
+                : Number(a.maximo),
+          })),
+        };
+      });
 
       renderSecciones(seccionesOriginal);
       actualizarInformeYDiagnostico(data.progreso);
-
-    } catch (e) {
-      console.error('Error de red:', e);
+    } catch (error) {
+      console.error('Error de red al cargar detalle de materia:', error);
     }
   }
 
   // ------------------------------------------------------
-  // 7) Iniciar
+  // Inicialización
   // ------------------------------------------------------
   cargarDetalleMateria();
 });

@@ -2,8 +2,10 @@
   Sidebar vertical fijo con header de usuario, menú principal y bloque inferior
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
 /* =========================
-   Variables y reset
+   Variables
    ========================= */
 :root {
   --sb-bg: #120C18;
@@ -14,24 +16,6 @@
   --item-hover: rgba(255, 255, 255, 0.03);
   --item-active: rgba(255, 255, 255, 0.045);
   --item-border: rgba(255, 255, 255, 0.12);
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  min-height: 100vh;
-  display: flex;
-  background: #f3f3f3;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-main {
-  flex: 1;
-  padding: 30px;
 }
 
 /* =========================
@@ -51,6 +35,7 @@ main {
   isolation: isolate;
   position: fixed;
 }
+
 
 /* Borde/ring con degradado radial */
 .sidebar::before {
@@ -103,9 +88,10 @@ main {
 
 .user-label {
   font-size: 0.58rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 4px;
 }
 
 .user-name {
@@ -159,7 +145,7 @@ main {
    Sección de menú
    ========================= */
 .sidebar-section {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--sb-muted);
@@ -176,6 +162,11 @@ main {
 /* Menú principal (ej. Dashboard, Materias, Calificaciones) */
 .sidebar-menu.main-menu {
   flex: 0 0 auto;
+}
+
+.nav-item span {
+  font-size: 0.9rem;
+  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* =========================

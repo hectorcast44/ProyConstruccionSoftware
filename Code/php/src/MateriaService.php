@@ -30,8 +30,8 @@ class MateriaService {
         }
 
         $sql = "INSERT INTO MATERIA (
-                    id_usuario, 
-                    nombre_materia, 
+                    id_usuario,
+                    nombre_materia,
                     calif_minima,
                     calificacion_actual,
                     puntos_ganados,
@@ -69,8 +69,8 @@ class MateriaService {
             throw new Exception('Ya existe otra materia con ese nombre.');
         }
 
-        $sql = "UPDATE MATERIA 
-                SET nombre_materia = ?, calif_minima = ? 
+        $sql = "UPDATE MATERIA
+                SET nombre_materia = ?, calif_minima = ?
                 WHERE id_materia = ? AND id_usuario = ?";
         
         $stmt = $this->pdo->prepare($sql);
@@ -89,19 +89,19 @@ class MateriaService {
      * @return bool True si se actualizó correctamente
      */
     public function actualizarEstadisticas($id_materia, $calificacion_actual, $puntos_ganados, $puntos_perdidos, $puntos_pendientes) {
-        $sql = "UPDATE MATERIA 
-                SET calificacion_actual = ?, 
-                    puntos_ganados = ?, 
-                    puntos_perdidos = ?, 
-                    puntos_pendientes = ? 
+        $sql = "UPDATE MATERIA
+                SET calificacion_actual = ?,
+                    puntos_ganados = ?,
+                    puntos_perdidos = ?,
+                    puntos_pendientes = ?
                 WHERE id_materia = ?";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
-            $calificacion_actual, 
-            $puntos_ganados, 
-            $puntos_perdidos, 
-            $puntos_pendientes, 
+            $calificacion_actual,
+            $puntos_ganados,
+            $puntos_perdidos,
+            $puntos_pendientes,
             $id_materia
         ]);
         
@@ -138,7 +138,7 @@ class MateriaService {
      * @return array Lista de materias con todas sus estadísticas
      */
     public function obtenerPorUsuario($id_usuario) {
-        $sql = "SELECT 
+        $sql = "SELECT
                     id_materia,
                     id_usuario,
                     nombre_materia,
@@ -147,8 +147,8 @@ class MateriaService {
                     puntos_ganados,
                     puntos_perdidos,
                     puntos_pendientes
-                FROM MATERIA 
-                WHERE id_usuario = ? 
+                FROM MATERIA
+                WHERE id_usuario = ?
                 ORDER BY nombre_materia";
         
         $stmt = $this->pdo->prepare($sql);
@@ -164,7 +164,7 @@ class MateriaService {
      * @return array|false Datos de la materia o false si no existe
      */
     public function obtenerPorId($id_materia, $id_usuario) {
-        $sql = "SELECT 
+        $sql = "SELECT
                     id_materia,
                     id_usuario,
                     nombre_materia,
@@ -173,7 +173,7 @@ class MateriaService {
                     puntos_ganados,
                     puntos_perdidos,
                     puntos_pendientes
-                FROM MATERIA 
+                FROM MATERIA
                 WHERE id_materia = ? AND id_usuario = ?";
         
         $stmt = $this->pdo->prepare($sql);
@@ -189,7 +189,7 @@ class MateriaService {
      * @return bool True si existe
      */
     private function existeMateria($id_usuario, $nombre_materia) {
-        $sql = "SELECT COUNT(*) FROM MATERIA 
+        $sql = "SELECT COUNT(*) FROM MATERIA
                 WHERE id_usuario = ? AND nombre_materia = ?";
         
         $stmt = $this->pdo->prepare($sql);
@@ -206,7 +206,7 @@ class MateriaService {
      * @return bool True si existe otra materia con ese nombre
      */
     private function existeMateriaExcepto($id_usuario, $nombre_materia, $id_materia_actual) {
-        $sql = "SELECT COUNT(*) FROM MATERIA 
+        $sql = "SELECT COUNT(*) FROM MATERIA
                 WHERE id_usuario = ? AND nombre_materia = ? AND id_materia != ?";
         
         $stmt = $this->pdo->prepare($sql);
@@ -222,7 +222,7 @@ class MateriaService {
      * @return bool True si pertenece al usuario
      */
     private function verificarPropiedad($id_materia, $id_usuario) {
-        $sql = "SELECT COUNT(*) FROM MATERIA 
+        $sql = "SELECT COUNT(*) FROM MATERIA
                 WHERE id_materia = ? AND id_usuario = ?";
         
         $stmt = $this->pdo->prepare($sql);
@@ -244,4 +244,3 @@ class MateriaService {
         return $stmt->fetchColumn() > 0;
     }
 }
-?>

@@ -1,15 +1,18 @@
 <?php
 /**
- * API Endpoint (Controlador RESTful) para Actividades
-
+ * API Endpoint RESTful para Actividades.
+ *
+ * Responsabilidades:
+ *  - Crear actividades (POST)
+ *  - Editar actividades (PUT)
+ *  - Eliminar actividades (DELETE)
+ *  - Recalcular la materia asociada después de cambios
  */
 
-// 1. Dependencias
-require_once '../src/db.php'; 
+require_once '../src/db.php';
 require_once '../src/CalculadoraService.php';
-require_once '../src/ActividadService.php'; 
+require_once '../src/ActividadService.php';
 
-// 2. Iniciar Sesión
 session_start();
 
 // 3. Configuración de CORS
@@ -25,15 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] != 'OPTIONS' && !isset($_SESSION['id_usuario'])) 
         'message' => 'No autorizado. Por favor, inicie sesión.'
     ]);
 }
-$id_usuario = $_SESSION['id_usuario'] ?? 0; // Asignar 0 si es OPTIONS
 
-// 5. Instanciar Servicios
+// Servicios
 $actividadService = new ActividadService($pdo);
 $calculadora = new CalculadoraService($pdo);
-
-// -------------------------------------------------
-// --- Enrutador Principal (Manejo de Métodos)
-// -------------------------------------------------
 
 try {
     switch ($_SERVER['REQUEST_METHOD']) {
@@ -81,45 +79,32 @@ try {
         case 'POST':
             $pdo->beginTransaction();
             $data = obtenerDatosJSON();
-            // Validar y preparar datos
-            $datosParaGuardar = validarYPrepararDatos($data, $id_usuario);
+            $datos = validarYPrepararDatos($data, $idUsuario);
             
-            // Llamar al servicio
-            $id_actividad_guardada = $actividadService->crearActividad($datosParaGuardar);
-            
-            // Recalcular
-            $calculadora->recalcularMateria($datosParaGuardar['id_materia'], $id_usuario);
-            
-            // Enviar respuesta
+            $idActividad = $actividadService->crearActividad($datos);
+            $calculadora->recalcularMateria($datos['id_materia'], $idUsuario);
+
             $pdo->commit();
             enviarRespuesta(201, [
                 'status' => 'success',
                 'message' => 'Actividad creada.',
-                'id_actividad' => $id_actividad_guardada
+                'id_actividad' => $idActividad
             ]);
             break;
 
-        // --- EDITAR (PUT) ---
         case 'PUT':
             $pdo->beginTransaction();
             $data = obtenerDatosJSON();
-            
-            // PUT requiere un ID
             if (empty($data->id_actividad)) {
                 throw new Exception("Se requiere 'id_actividad' para editar.", 400);
             }
-            $id_actividad = (int)$data->id_actividad;
-            
-            // Validar y preparar datos
-            $datosParaGuardar = validarYPrepararDatos($data, $id_usuario);
-            
-            // Llamar al servicio
-            $actividadService->editarActividad($id_actividad, $datosParaGuardar);
-            
-            // Recalcular
-            $calculadora->recalcularMateria($datosParaGuardar['id_materia'], $id_usuario);
-            
-            // Enviar respuesta
+
+            $idActividad = (int) $data->id_actividad;
+            $datos = validarYPrepararDatos($data, $idUsuario);
+
+            $actividadService->editarActividad($idActividad, $datos);
+            $calculadora->recalcularMateria($datos['id_materia'], $idUsuario);
+
             $pdo->commit();
             enviarRespuesta(200, [
                 'status' => 'success',
@@ -127,93 +112,106 @@ try {
             ]);
             break;
 
-        // --- ELIMINAR (DELETE) ---
         case 'DELETE':
             $pdo->beginTransaction();
             // El ID vendrá por la URL (ej. ?id=15)
             if (empty($_GET['id'])) {
                 throw new Exception("Se requiere 'id' en la URL para eliminar.", 400);
             }
-            $id_actividad = (int)$_GET['id'];
-            
-            // Llamar al servicio (devuelve id_materia para recalcular)
-            $id_materia = $actividadService->eliminarActividad($id_actividad, $id_usuario);
-            
-            $calculadora->recalcularMateria($id_materia, $id_usuario);
-            
-            // Enviar respuesta
+
+            $idActividad = (int) $_GET['id'];
+            $idMateria = $actividadService->eliminarActividad($idActividad, $idUsuario);
+
+            $calculadora->recalcularMateria($idMateria, $idUsuario);
+
             $pdo->commit();
             enviarRespuesta(200, [
                 'status' => 'success',
                 'message' => 'Actividad eliminada.'
             ]);
             break;
-            
-        // --- Pre-flight (OPTIONS) ---
+
         case 'OPTIONS':
             enviarRespuesta(204, []);
             break;
 
-        // --- Otros métodos (GET, etc.) ---
         default:
             throw new Exception("Método no permitido.", 405);
     }
 
 } catch (Exception $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    
-    // Usar el código de la excepción si está disponible (ej. 400, 404), si no, 500
-    $codigo = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
-    
-    // Loguear el error real
-    if ($codigo == 500) error_log("Error en actividad.php: " . $e->getMessage());
-    
-    // Enviar mensaje amigable
-    enviarRespuesta($codigo, ['status' => 'error', 'message' => $e->getMessage()]);
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
+    $codigo = ($e->getCode() >= 400 && $e->getCode() < 600)
+        ? $e->getCode()
+        : 500;
+
+    if ($codigo === 500) {
+        error_log("Error en actividad.php: " . $e->getMessage());
+    }
+
+    enviarRespuesta($codigo, [
+        'status' => 'error',
+        'message' => $e->getMessage()
+    ]);
 }
 
-
 /**
- * Función Auxiliar de Validación
- * Reúne la lógica de validación que es común para CREAR y EDITAR.
+ * Valida y prepara los datos de entrada para crear o editar una actividad.
+ *
+ * Reglas:
+ *  - Campos obligatorios
+ *  - Coherencia entre puntos posibles y puntos obtenidos
+ *
+ * @return array Datos listos para el servicio
  */
-function validarYPrepararDatos($data, $id_usuario) {
-    $campos_requeridos = ['id_materia', 'id_tipo_actividad', 'nombre_actividad', 'fecha_entrega', 'estado'];
-    foreach ($campos_requeridos as $campo) {
+function validarYPrepararDatos(object $data, int $idUsuario): array
+{
+    $camposRequeridos = ['id_materia', 'id_tipo_actividad', 'nombre_actividad', 'fecha_entrega', 'estado'];
+
+    foreach ($camposRequeridos as $campo) {
         if (empty($data->{$campo})) {
             throw new Exception("Datos incompletos. El campo '$campo' es obligatorio.", 400);
         }
     }
 
-    $puntos_posibles = null;
-    $puntos_obtenidos = null;
-    
+    $puntosPosibles = null;
+    $puntosObtenidos = null;
+
     if (isset($data->puntos_posibles) && is_numeric($data->puntos_posibles) && $data->puntos_posibles > 0) {
-        $puntos_posibles = (float)$data->puntos_posibles;
+        $puntosPosibles = (float) $data->puntos_posibles;
+
         if (isset($data->puntos_obtenidos) && $data->puntos_obtenidos !== null) {
             if (!is_numeric($data->puntos_obtenidos) || $data->puntos_obtenidos < 0) {
                 throw new Exception("RF-037: 'Puntos obtenidos' debe ser un número (0 o más).", 400);
             }
-            if ($data->puntos_obtenidos > $puntos_posibles) {
+
+            if ($data->puntos_obtenidos > $puntosPosibles) {
                 throw new Exception("RF-036: 'Puntos obtenidos' no pueden ser mayores a 'Puntos posibles'.", 400);
             }
-            $puntos_obtenidos = (float)$data->puntos_obtenidos;
+
+            $puntosObtenidos = (float) $data->puntos_obtenidos;
         }
+
     } else {
         if (isset($data->puntos_obtenidos) && $data->puntos_obtenidos !== null) {
-            throw new Exception("RF-034: No se pueden asignar 'Puntos obtenidos' si la actividad no tiene 'Puntos posibles' (o si son 0).", 400);
+            throw new Exception(
+                "RF-034: No se pueden asignar 'Puntos obtenidos' si la actividad no tiene 'Puntos posibles' (o si son 0).",
+                400
+            );
         }
     }
 
-    // Devolver un array limpio para el servicio
     return [
-        'id_materia'        => (int)$data->id_materia,
-        'id_tipo_actividad' => (int)$data->id_tipo_actividad,
-        'id_usuario'        => (int)$id_usuario,
-        'nombre_actividad'  => $data->nombre_actividad,
-        'fecha_entrega'     => $data->fecha_entrega,
-        'estado'            => $data->estado,
-        'puntos_posibles'   => $puntos_posibles,
-        'puntos_obtenidos'  => $puntos_obtenidos
+        'id_materia' => (int) $data->id_materia,
+        'id_tipo_actividad' => (int) $data->id_tipo_actividad,
+        'id_usuario' => $idUsuario,
+        'nombre_actividad' => $data->nombre_actividad,
+        'fecha_entrega' => $data->fecha_entrega,
+        'estado' => $data->estado,
+        'puntos_posibles' => $puntosPosibles,
+        'puntos_obtenidos' => $puntosObtenidos
     ];
 }

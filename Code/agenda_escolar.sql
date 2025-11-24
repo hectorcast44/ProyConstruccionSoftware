@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 17-11-2025 a las 07:42:55
+-- Tiempo de generación: 23-11-2025 a las 04:20:54
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -44,27 +44,28 @@ CREATE TABLE `actividad` (
 --
 
 INSERT INTO `actividad` (`id_actividad`, `id_materia`, `id_tipo_actividad`, `id_usuario`, `nombre_actividad`, `fecha_entrega`, `estado`, `puntos_posibles`, `puntos_obtenidos`) VALUES
-(1, 1, 5, 1, 'Ejercicio 1: Repaso de sintaxis', '2025-09-01', 'Listo', 0.00, 0.00),
-(2, 1, 5, 1, 'Ejercicio 2: Clases y objetos', '2025-09-05', 'En curso', 0.00, 0.00),
-(3, 1, 5, 1, 'Ejercicio 3: Herencia básica', '2025-09-10', 'Sin iniciar', 0.00, 0.00),
 (4, 2, 1, 1, 'Tarea 1: Integrales básicas', '2025-09-10', 'Listo', 10.00, 10.00),
 (5, 2, 1, 1, 'Tarea 2: Regla de sustitución', '2025-09-15', 'Listo', 10.00, 9.00),
 (6, 2, 2, 1, 'Proyecto: Aplicaciones de integrales', '2025-09-25', 'Listo', 20.00, 18.00),
 (7, 2, 3, 1, 'Examen Parcial', '2025-10-01', 'Listo', 25.00, 18.00),
-(8, 2, 4, 1, 'Exposición: Integración numérica', '2025-10-10', 'En curso', 5.00, 0.00),
-(9, 2, 5, 1, 'Ejercicio: Práctica rápida de integrales', '2025-10-12', 'Listo', 0.00, 0.00),
+(8, 2, 4, 1, 'Exposición: Integración numérica', '2025-10-10', 'En curso', NULL, NULL),
+(9, 2, 5, 1, 'Ejercicio: Práctica rápida de integrales', '2025-10-12', 'Listo', 10.00, 0.00),
 (10, 3, 1, 1, 'Tarea 1: Probabilidad condicional', '2025-09-12', 'Listo', 10.00, 10.00),
 (11, 3, 4, 1, 'Exposición: Distribuciones', '2025-09-18', 'Listo', 10.00, 9.00),
 (12, 3, 2, 1, 'Proyecto: Inferencia Bayesiana', '2025-10-05', 'Listo', 25.00, 24.00),
 (13, 3, 3, 1, 'Examen Parcial', '2025-09-30', 'Listo', 38.00, 35.00),
-(14, 3, 1, 1, 'Tarea Pendiente: Intervalos de confianza', '2025-10-15', 'En curso', 2.00, 0.00),
-(15, 3, 5, 1, 'Ejercicio: Cálculo de probabilidades', '2025-10-18', 'Listo', 0.00, 0.00),
-(16, 204, 1, 1, 'Tarea 1: Normalización', '2025-09-10', 'Listo', 10.00, 10.00),
-(17, 204, 2, 1, 'Proyecto: Modelo ER', '2025-09-22', 'Listo', 30.00, 27.00),
-(18, 204, 3, 1, 'Examen Parcial', '2025-09-29', 'Listo', 28.00, 23.00),
-(19, 204, 4, 1, 'Exposición: Joins avanzados', '2025-10-12', 'En curso', 5.00, 0.00),
-(20, 204, 3, 1, 'Examen Final', '2025-10-20', 'En curso', 7.00, 0.00),
-(21, 204, 5, 1, 'Ejercicio: Consultas de práctica', '2025-10-22', 'Listo', 0.00, 0.00);
+(14, 3, 1, 1, 'Tarea Pendiente: Intervalos de confianza', '2025-10-15', 'En curso', 2.00, NULL),
+(15, 3, 5, 1, 'Ejercicio: Cálculo de probabilidades', '2025-10-18', 'Listo', 5.00, 5.00),
+(22, 5, 1, 1, 'Tarea 1: Cinemática', '2025-09-05', 'Listo', 10.00, 5.00),
+(23, 5, 1, 1, 'Tarea 2: Leyes de Newton', '2025-09-12', 'Listo', 10.00, 5.00),
+(24, 5, 2, 1, 'Proyecto: Análisis de fuerzas', '2025-09-25', 'Listo', 20.00, 10.00),
+(25, 5, 3, 1, 'Examen Parcial I', '2025-10-03', 'Listo', 40.00, 20.00),
+(26, 5, 4, 1, 'Exposición: Movimiento circular', '2025-10-10', 'Listo', 20.00, 10.00),
+(27, 6, 1, 1, 'Tarea 1: Fundamentos HTML', '2025-09-03', 'Listo', 10.00, 6.00),
+(28, 6, 1, 1, 'Tarea 2: CSS responsivo', '2025-09-12', 'Listo', 10.00, 6.00),
+(29, 6, 2, 1, 'Proyecto: Mini sitio web', '2025-09-28', 'Listo', 20.00, 12.00),
+(30, 6, 3, 1, 'Examen Parcial I', '2025-10-04', 'Listo', 40.00, 24.00),
+(31, 6, 4, 1, 'Exposición: Accesibilidad Web', '2025-10-11', 'Listo', 20.00, 12.00);
 
 -- --------------------------------------------------------
 
@@ -88,10 +89,10 @@ CREATE TABLE `materia` (
 --
 
 INSERT INTO `materia` (`id_materia`, `id_usuario`, `nombre_materia`, `calif_minima`, `calificacion_actual`, `puntos_ganados`, `puntos_perdidos`, `puntos_pendientes`) VALUES
-(1, 1, 'POO', 70, 0.00, 0.00, 0.00, 0.00),
-(2, 1, 'Cálculo Integral', 70, 85.00, 55.00, 10.00, 5.00),
-(3, 1, 'Inferencia Estadística', 70, 92.00, 78.00, 5.00, 2.00),
-(204, 1, 'BD', 70, 88.00, 60.00, 8.00, 12.00);
+(2, 1, 'Cálculo Integral', 70, 82.20, 44.20, 15.80, 40.00),
+(3, 1, 'Inferencia Estadística', 70, 97.32, 57.32, 2.68, 40.00),
+(5, 1, 'Física General I', 70, 50.00, 40.00, 40.00, 20.00),
+(6, 1, 'Programación Web', 70, 60.00, 48.00, 32.00, 20.00);
 
 -- --------------------------------------------------------
 
@@ -110,11 +111,6 @@ CREATE TABLE `ponderacion` (
 --
 
 INSERT INTO `ponderacion` (`id_materia`, `id_tipo_actividad`, `porcentaje`) VALUES
-(1, 1, 40.00),
-(1, 2, 20.00),
-(1, 3, 25.00),
-(1, 4, 10.00),
-(1, 5, 5.00),
 (2, 1, 60.00),
 (2, 2, 20.00),
 (2, 3, 10.00),
@@ -125,11 +121,16 @@ INSERT INTO `ponderacion` (`id_materia`, `id_tipo_actividad`, `porcentaje`) VALU
 (3, 3, 15.00),
 (3, 4, 5.00),
 (3, 5, 5.00),
-(204, 1, 40.00),
-(204, 2, 30.00),
-(204, 3, 20.00),
-(204, 4, 5.00),
-(204, 5, 5.00);
+(5, 1, 40.00),
+(5, 2, 20.00),
+(5, 3, 30.00),
+(5, 4, 10.00),
+(5, 5, 0.00),
+(6, 1, 40.00),
+(6, 2, 20.00),
+(6, 3, 30.00),
+(6, 4, 10.00),
+(6, 5, 0.00);
 
 -- --------------------------------------------------------
 
@@ -226,7 +227,7 @@ ALTER TABLE `usuario`
 -- AUTO_INCREMENT de la tabla `actividad`
 --
 ALTER TABLE `actividad`
-  MODIFY `id_actividad` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id_actividad` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT de la tabla `materia`

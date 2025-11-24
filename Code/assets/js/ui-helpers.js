@@ -1,106 +1,137 @@
-// Helpers genéricos para UI: acordeón, búsqueda, estilos de tags
-
+/**
+ * Helpers genéricos para la UI.
+ *
+ * Proporciona:
+ *  - TagStyleManager: asigna clases de color pastel consistentes a los tags.
+ *  - initAccordionGrid: controla la interacción de las cards tipo acordeón.
+ *  - initSearchBar: gestiona la barra de búsqueda flotante y sus eventos.
+ */
 (function (global) {
   'use strict';
 
   // ==========================================================================
-  // 1) TAG STYLE MANAGER
-  //    Asigna una clase de tag pastel consistente por "clave" (id o nombre)
+  // TagStyleManager
+  //   Asigna una clase de tag pastel consistente por "clave" (id o nombre).
   // ==========================================================================
 
   const TagStyleManager = (function () {
-    // 15 colores pastel
-  const PALETTE = [
-    'tag-rojo',        
-    'tag-azul',        
-    'tag-amarillo',    
-    'tag-morado',      
-    'tag-naranja',     
-    'tag-agua',        
-    'tag-magenta',     
-    'tag-verde',       
-    'tag-rosa',        
-    'tag-azul-claro',  
-    'tag-melocoton',   
-    'tag-lavanda',     
-    'tag-verde-lima',  
-    'tag-dorado',      
-    'tag-durazno'      
-  ];
+    /**
+     * Paleta de clases CSS para tags pastel.
+     * Se usan de forma cíclica conforme aparecen nuevos tipos.
+     * @type {string[]}
+     */
+    const PALETTE = [
+      'tag-rojo',
+      'tag-azul',
+      'tag-amarillo',
+      'tag-morado',
+      'tag-naranja',
+      'tag-agua',
+      'tag-magenta',
+      'tag-verde',
+      'tag-rosa',
+      'tag-azul-claro',
+      'tag-melocoton',
+      'tag-lavanda',
+      'tag-verde-lima',
+      'tag-dorado',
+      'tag-durazno'
+    ];
 
-
-    // clave de tipo → clase CSS asignada
+    /**
+     * Mapa clave → clase CSS asignada.
+     * Mantiene la consistencia entre recargas de datos.
+     * @type {Map<string, string>}
+     */
     const assigned = new Map();
 
     /**
      * Devuelve una clase de la paleta para una clave (id o nombre de tipo).
-     * Mientras haya <= 15 tipos, no habrá repetidos.
+     * Mientras haya menos o igual a PALETTE.length claves distintas,
+     * no se repiten colores.
+     *
+     * @param {string|number|null|undefined} key Clave lógica del tipo.
+     * @returns {string} Clase CSS a aplicar en el tag.
      */
     function getClassFor(key) {
       if (key === undefined || key === null) {
         return 'tag-lavanda';
       }
 
-      const k = String(key);
+      const normalizedKey = String(key);
 
-      // Si ya se asignó antes, devuelve la misma
-      if (assigned.has(k)) {
-        return assigned.get(k);
+      // Si ya se asignó antes, devolver siempre la misma clase
+      if (assigned.has(normalizedKey)) {
+        return assigned.get(normalizedKey);
       }
 
-      // Nuevo tipo → siguiente color de la paleta
+      // Nuevo tipo → siguiente color de la paleta (uso cíclico)
       const index = assigned.size % PALETTE.length;
       const cssClass = PALETTE[index];
-      assigned.set(k, cssClass);
+
+      assigned.set(normalizedKey, cssClass);
       return cssClass;
     }
 
     return { getClassFor };
   })();
 
-
   // ==========================================================================
-  // 2) ACCORDION GRID
-  //    Maneja abrir/cerrar cards y menú contextual para .accordion-card
+  // Accordion grid
+  //   Maneja abrir/cerrar cards y el menú contextual de .accordion-card
   // ==========================================================================
 
   /**
    * Inicializa el comportamiento de acordeón sobre un grid de cards.
-   * @param {HTMLElement} container  Contenedor que envuelve las .accordion-card
+   *
+   * - Abre/cierra el panel de una card al hacer clic en el header.
+   * - Abre/cierra el menú contextual de la card (tres puntitos).
+   * - Cierra menús de otras cards cuando se abre uno nuevo.
+   *
+   * @param {HTMLElement|null} container Contenedor que envuelve las .accordion-card.
+   * @returns {void}
    */
   function initAccordionGrid(container) {
     if (!container) return;
 
-    container.addEventListener('click', e => {
-      const menuToggle      = e.target.closest('.accordion-card__menu-toggle');
-      const menuItemDetalle = e.target.closest('.js-card-detail');
-      const header          = e.target.closest('.accordion-card__header');
-      const actions         = e.target.closest('.accordion-card__actions');
+    container.addEventListener('click', event => {
+      const menuToggle = event.target.closest('.accordion-card__menu-toggle');
+      const menuItemDetalle = event.target.closest('.js-card-detail');
+      const header = event.target.closest('.accordion-card__header');
+      const actions = event.target.closest('.accordion-card__actions');
 
-      // Abrir/cerrar menú (tres puntitos)
+      // Abrir/cerrar menú contextual (tres puntitos)
       if (menuToggle) {
-        e.stopPropagation();
+        event.stopPropagation();
+
         const card = menuToggle.closest('.accordion-card');
         const menu = card.querySelector('.accordion-card__menu');
 
-        document
-          .querySelectorAll('.accordion-card__menu.accordion-card__menu--visible')
-          .forEach(m => {
-            if (m !== menu) m.classList.remove('accordion-card__menu--visible');
-          });
+        const openMenus = document.querySelectorAll(
+          '.accordion-card__menu.accordion-card__menu--visible'
+        );
+
+        for (const m of openMenus) {
+          if (m !== menu) {
+            m.classList.remove('accordion-card__menu--visible');
+          }
+        }
 
         menu.classList.toggle('accordion-card__menu--visible');
         return;
       }
 
-      // Clic en "Detalles" dentro del menú
+      // Clic en "Detalles" dentro del menú contextual
       if (menuItemDetalle) {
-        e.stopPropagation();
+        event.stopPropagation();
+
         const card = menuItemDetalle.closest('.accordion-card');
         card.classList.toggle('open');
 
         const menu = menuItemDetalle.closest('.accordion-card__menu');
-        menu.classList.remove('accordion-card__menu--visible');
+        if (menu) {
+          menu.classList.remove('accordion-card__menu--visible');
+        }
         return;
       }
 
@@ -109,36 +140,48 @@
         const card = header.closest('.accordion-card');
         card.classList.toggle('open');
 
-        document
-          .querySelectorAll('.accordion-card__menu.accordion-card__menu--visible')
-          .forEach(m => m.classList.remove('accordion-card__menu--visible'));
+        const openMenus = document.querySelectorAll(
+          '.accordion-card__menu.accordion-card__menu--visible'
+        );
 
-        return;
+        for (const m of openMenus) {
+          m.classList.remove('accordion-card__menu--visible');
+        }
       }
     });
 
-    // Cerrar menú contextual al hacer clic fuera
-    document.addEventListener('click', e => {
-      if (!e.target.closest('.accordion-card__actions')) {
-        document
-          .querySelectorAll('.accordion-card__menu.accordion-card__menu--visible')
-          .forEach(m => m.classList.remove('accordion-card__menu--visible'));
+    // Cerrar menú contextual al hacer clic fuera de las acciones
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.accordion-card__actions')) {
+        const openMenus = document.querySelectorAll(
+          '.accordion-card__menu.accordion-card__menu--visible'
+        );
+
+        for (const m of openMenus) {
+          m.classList.remove('accordion-card__menu--visible');
+        }
       }
     });
   }
 
   // ==========================================================================
-  // 3) SEARCH BAR
-  //    Maneja el input + botón de mostrar/ocultar y notifica cambios
+  // Search bar
+  //   Maneja el input + botón de mostrar/ocultar y notifica cambios
   // ==========================================================================
 
   /**
    * Inicializa la barra de búsqueda flotante.
-   * @param {Object} cfg
-   * @param {HTMLInputElement|null} cfg.input
-   * @param {HTMLButtonElement|null} cfg.toggleBtn
-   * @param {HTMLElement|null} cfg.wrapper
-   * @param {Function} cfg.onFilter  Callback que se ejecuta al cambiar el texto
+   *
+   * - Llama a `onFilter(valor)` cada vez que cambia el texto del input.
+   * - Muestra u oculta el wrapper al hacer clic en el botón de toggle.
+   * - Limpia el input y notifica filtro vacío al cerrar la barra.
+   *
+   * @param {Object} params Parámetros de configuración.
+   * @param {HTMLInputElement|null} params.input Campo de texto donde se escribe el filtro.
+   * @param {HTMLButtonElement|null} params.toggleBtn Botón que abre/cierra la barra.
+   * @param {HTMLElement|null} params.wrapper Contenedor visual de la barra.
+   * @param {(valor:string) => void} params.onFilter Callback que se ejecuta al cambiar el filtro.
+   * @returns {void}
    */
   function initSearchBar({ input, toggleBtn, wrapper, onFilter }) {
     if (!input && !toggleBtn) return;
@@ -152,20 +195,28 @@
     if (toggleBtn && wrapper) {
       toggleBtn.addEventListener('click', () => {
         wrapper.classList.toggle('active');
+
         if (wrapper.classList.contains('active')) {
-          input && input.focus();
+          if (input) input.focus();
         } else if (input) {
           input.value = '';
-          typeof onFilter === 'function' && onFilter('');
+          if (typeof onFilter === 'function') {
+            onFilter('');
+          }
         }
       });
     }
   }
 
-  // Exponer en un único namespace
+  /**
+   * Namespace global para utilidades de interfaz.
+   * @type {{TagStyleManager: {getClassFor: function(string|number|null|undefined):string},
+   *         initAccordionGrid: function(HTMLElement|null):void,
+   *         initSearchBar: function(Object):void}}
+   */
   global.UIHelpers = {
     TagStyleManager,
     initAccordionGrid,
     initSearchBar
   };
-})(window);
+})(globalThis);
