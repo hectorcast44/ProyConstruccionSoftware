@@ -15,19 +15,18 @@ require_once '../src/ActividadService.php';
 
 session_start();
 
-// CORS
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Credentials: true');
+// 3. Configuración de CORS
+header("Access-Control-Allow-Origin: *"); 
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS"); 
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
 
-$metodoHttp = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-
-// Seguridad: para cualquier método que no sea OPTIONS, se requiere usuario
-if ($metodoHttp !== 'OPTIONS') {
-    $idUsuario = obtenerIdUsuarioActual();
-} else {
-    $idUsuario = 0;
+// 4. Seguridad: Verificar Sesión de Usuario
+if ($_SERVER['REQUEST_METHOD'] != 'OPTIONS' && !isset($_SESSION['id_usuario'])) {
+    enviarRespuesta(401, [
+        'status' => 'error', 
+        'message' => 'No autorizado. Por favor, inicie sesión.'
+    ]);
 }
 
 // Servicios
@@ -35,11 +34,50 @@ $actividadService = new ActividadService($pdo);
 $calculadora = new CalculadoraService($pdo);
 
 try {
-    $pdo->beginTransaction();
-
-    switch ($metodoHttp) {
+    switch ($_SERVER['REQUEST_METHOD']) {
         
+        // --- OBTENER (GET) ---
+        case 'GET':
+            // Construir filtros desde los parámetros de consulta
+            $filtros = [];
+            
+            if (!empty($_GET['id_materia'])) {
+                $filtros['id_materia'] = (int)$_GET['id_materia'];
+            }
+            
+            if (!empty($_GET['id_tipo_actividad'])) {
+                $filtros['id_tipo_actividad'] = (int)$_GET['id_tipo_actividad'];
+            }
+            
+            if (!empty($_GET['estado'])) {
+                $filtros['estado'] = $_GET['estado'];
+            }
+            
+            if (!empty($_GET['fecha_desde'])) {
+                $filtros['fecha_desde'] = $_GET['fecha_desde'];
+            }
+            
+            if (!empty($_GET['fecha_hasta'])) {
+                $filtros['fecha_hasta'] = $_GET['fecha_hasta'];
+            }
+            
+            if (!empty($_GET['buscar'])) {
+                $filtros['buscar'] = $_GET['buscar'];
+            }
+            
+            // Obtener actividades con filtros
+            $actividades = $actividadService->obtenerActividades($id_usuario, $filtros);
+            
+            enviarRespuesta(200, [
+                'status' => 'success',
+                'data' => $actividades,
+                'total' => count($actividades)
+            ]);
+            break;
+        
+        // --- CREAR (POST) ---
         case 'POST':
+            $pdo->beginTransaction();
             $data = obtenerDatosJSON();
             $datos = validarYPrepararDatos($data, $idUsuario);
             
@@ -55,6 +93,7 @@ try {
             break;
 
         case 'PUT':
+            $pdo->beginTransaction();
             $data = obtenerDatosJSON();
             if (empty($data->id_actividad)) {
                 throw new Exception("Se requiere 'id_actividad' para editar.", 400);
@@ -74,6 +113,8 @@ try {
             break;
 
         case 'DELETE':
+            $pdo->beginTransaction();
+            // El ID vendrá por la URL (ej. ?id=15)
             if (empty($_GET['id'])) {
                 throw new Exception("Se requiere 'id' en la URL para eliminar.", 400);
             }
@@ -91,7 +132,6 @@ try {
             break;
 
         case 'OPTIONS':
-            $pdo->rollBack();
             enviarRespuesta(204, []);
             break;
 
