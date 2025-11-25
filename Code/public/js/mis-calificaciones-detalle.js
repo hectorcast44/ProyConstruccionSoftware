@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Crea el bloque completo de una sección (card de acordeón + tabla).
    *
-   * @param {{id:number, nombre:string, actividades:Array}} sec Sección normalizada.
+   * @param {{id:number, nombre:string, resumenTipo:object|null, actividades:Array}} sec Sección normalizada.
    * @returns {HTMLDivElement} Nodo listo para insertar en el DOM.
    */
   function crearBloqueSeccion(sec) {
@@ -173,10 +173,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const header = document.createElement('div');
     header.className = 'accordion-card__header';
+
+    // Título con puntos ponderados del tipo, si existen
+    let tituloSeccion = sec.nombre;
+    if (sec.resumenTipo && typeof sec.resumenTipo.puntos_tipo === 'number') {
+      const ganados = Number(
+        sec.resumenTipo.puntos_asegurados ??
+        sec.resumenTipo.ganados ??
+        0
+      );
+      const totalTipo = Number(sec.resumenTipo.puntos_tipo);
+      tituloSeccion = `${sec.nombre} (${ganados.toFixed(2)} / ${totalTipo.toFixed(
+        2
+      )})`;
+    }
+
     header.innerHTML = `
       <div class="accordion-card__header-main">
         <span class="accordion-card__icon"><i data-feather="layers"></i></span>
-        <h3 class="accordion-card__title">${sec.nombre}</h3>
+        <h3 class="accordion-card__title">${tituloSeccion}</h3>
       </div>
     `;
 
@@ -202,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Renderiza todas las secciones en el contenedor principal del acordeón.
    *
-   * @param {Array<{id:number, nombre:string, actividades:Array}>} secciones
+   * @param {Array<{id:number, nombre:string, resumenTipo:object|null, actividades:Array}>} secciones
    */
   function renderSecciones(secciones) {
     if (!contenedorSecciones) {
@@ -252,6 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const posibles = Number(progreso.puntos_posibles_obtener ?? 0);
     const necesarios = Number(progreso.puntos_necesarios_aprobar ?? 0);
     const calMin = Number(progreso.calificacion_minima ?? 70);
+    const calMinDinamica = Number(progreso.calificacion_minima_dinamica ?? 0);
     const calMaxPos = Number(progreso.calificacion_maxima_posible ?? 0);
 
     // Rellenar tabla de resumen
@@ -260,7 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (rowPerd) rowPerd.textContent = perdidos.toFixed(2);
     if (rowPosi) rowPosi.textContent = posibles.toFixed(2);
     if (rowNec) rowNec.textContent = necesarios.toFixed(2);
-    if (rowMin) rowMin.textContent = calMin.toFixed(2);
+
+    // CORRECCIÓN: Mostrar la calificación mínima DINÁMICA (lo asegurado), no la aprobatoria
+    if (rowMin) rowMin.textContent = calMinDinamica.toFixed(2);
+
     if (rowMax) rowMax.textContent = calMaxPos.toFixed(2);
 
     if (!diagCircle || !diagGrade || !diagStatus) {
@@ -322,12 +341,6 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   async function cargarDetalleMateria() {
     // Fallback: si BASE_URL no está definido o está vacío, usamos ruta relativa.
-    // La URL es .../mis-calificaciones/detalle
-    // ../ nos lleva a .../mis-calificaciones/ (NO, nos lleva a public/)
-    // Espera, si estamos en /mis-calificaciones/detalle
-    // ./ es /mis-calificaciones/
-    // ../ es /public/
-    // Probemos con ../api/actividades
     const baseUrl = globalThis.BASE_URL || '../';
     const url = `${baseUrl}api/actividades?id_materia=${encodeURIComponent(idMateria)}`;
 
@@ -353,18 +366,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const seccionesAPI = Array.isArray(data.secciones) ? data.secciones : [];
 
-      seccionesOriginal = seccionesAPI.map(sec => ({
-        id: sec.id_tipo,
-        nombre: sec.nombre_tipo,
-        actividades: (sec.actividades || []).map(a => ({
-          id_actividad: a.id_actividad,
-          nombre: a.nombre,
-          fecha_entrega: a.fecha_entrega,
-          estado: a.estado,
-          obtenido: Number(a.obtenido ?? 0),
-          maximo: Number(a.maximo ?? 0)
-        }))
-      }));
+      // Mapa auxiliar: id_tipo -> resumen ponderado del tipo (puntos asegurados, perdidos, pendientes)
+      const resumenPorTipo = {};
+      const listaResumenTipo = Array.isArray(data.progreso?.por_tipo)
+        ? data.progreso.por_tipo
+        : [];
+      for (const t of listaResumenTipo) {
+        if (t && typeof t.id_tipo === 'number') {
+          resumenPorTipo[t.id_tipo] = t;
+        }
+      }
+
+      seccionesOriginal = seccionesAPI.map(sec => {
+        const resumenTipo = resumenPorTipo[sec.id_tipo] || null;
+
+        return {
+          id: sec.id_tipo,
+          nombre: sec.nombre_tipo,
+          resumenTipo,
+          actividades: (sec.actividades || []).map(a => ({
+            id_actividad: a.id_actividad,
+            nombre: a.nombre,
+            fecha_entrega: a.fecha_entrega,
+            estado: a.estado,
+            obtenido: a.obtenido === null ? null : Number(a.obtenido),
+            maximo: a.maximo === null ? null : Number(a.maximo)
+          }))
+        };
+      });
 
       renderSecciones(seccionesOriginal);
       actualizarInformeYDiagnostico(data.progreso);
