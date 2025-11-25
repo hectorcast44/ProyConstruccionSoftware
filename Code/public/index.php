@@ -38,6 +38,11 @@ $router->post('/api/materias', [App\Controllers\Api\MateriaController::class, 's
 $router->delete('/api/materias', [App\Controllers\Api\MateriaController::class, 'delete']);
 
 $router->get('/api/actividades', [App\Controllers\Api\ActividadController::class, 'index']);
-// Add other API routes as needed
+
+// Tipo Actividad Routes
+$router->get('/api/tipos-actividad', [App\Controllers\Api\TipoActividadController::class, 'index']);
+$router->post('/api/tipos-actividad', [App\Controllers\Api\TipoActividadController::class, 'store']);
+$router->post('/api/tipos-actividad/update', [App\Controllers\Api\TipoActividadController::class, 'update']);
+$router->delete('/api/tipos-actividad', [App\Controllers\Api\TipoActividadController::class, 'delete']);
 
 $router->resolve();
