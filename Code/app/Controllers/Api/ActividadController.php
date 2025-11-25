@@ -72,13 +72,69 @@ class ActividadController extends Controller
 
     public function store()
     {
-        // Implement create/update logic similar to MateriaController
-        // ...
+        $idUsuario = AuthController::getUserId();
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        // Validaciones básicas
+        if (empty($data['id_materia']) || empty($data['id_tipo_actividad']) || empty($data['nombre_actividad'])) {
+            $this->json(['status' => 'error', 'message' => 'Faltan campos obligatorios'], 400);
+            return;
+        }
+
+        // Preparar datos
+        $actividadData = [
+            'id_materia' => $data['id_materia'],
+            'id_tipo_actividad' => $data['id_tipo_actividad'],
+            'id_usuario' => $idUsuario,
+            'nombre_actividad' => trim($data['nombre_actividad']),
+            'fecha_entrega' => $data['fecha_entrega'] ?? date('Y-m-d'),
+            'estado' => $data['estado'] ?? 'pendiente',
+            'puntos_posibles' => isset($data['puntos_posibles']) && $data['puntos_posibles'] !== '' ? (float)$data['puntos_posibles'] : null,
+            'puntos_obtenidos' => isset($data['puntos_obtenidos']) && $data['puntos_obtenidos'] !== '' ? (float)$data['puntos_obtenidos'] : null
+        ];
+
+        try {
+            if (isset($data['id_actividad']) && $data['id_actividad'] > 0) {
+                // Actualizar
+                $this->actividadModel->actualizar($data['id_actividad'], $actividadData);
+                $message = 'Actividad actualizada correctamente';
+            } else {
+                // Crear
+                $this->actividadModel->crear($actividadData);
+                $message = 'Actividad creada correctamente';
+            }
+
+            // Recalcular materia
+            $this->calculadoraModel->recalcularMateria($data['id_materia'], $idUsuario);
+
+            $this->json(['status' => 'success', 'message' => $message]);
+
+        } catch (\Exception $e) {
+            $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
+        }
     }
 
     public function delete()
     {
-        // Implement delete logic
-        // ...
+        $idUsuario = AuthController::getUserId();
+        $idActividad = $_GET['id'] ?? 0;
+
+        if ($idActividad <= 0) {
+            $this->json(['status' => 'error', 'message' => 'ID Actividad requerido'], 400);
+            return;
+        }
+
+        try {
+            // Eliminar y obtener ID de materia para recalcular
+            $idMateria = $this->actividadModel->eliminar($idActividad, $idUsuario);
+
+            // Recalcular materia
+            $this->calculadoraModel->recalcularMateria($idMateria, $idUsuario);
+
+            $this->json(['status' => 'success', 'message' => 'Actividad eliminada correctamente']);
+
+        } catch (\Exception $e) {
+            $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
+        }
     }
 }
