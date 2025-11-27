@@ -15,22 +15,24 @@ function cargarPartial(ruta, contenedorId, botonId, callback) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const basePath = globalThis.BASE_URL || '';
+
   cargarPartial(
-    '../partials/boton-nueva.html',
+    basePath + 'partials/boton-nueva.html',
     'contenedor-boton-nueva',
     'boton-nueva',
     abrirModalNueva
   );
 
   cargarPartial(
-    '../partials/boton-editar.html',
+    basePath + 'partials/boton-editar.html',
     'contenedor-boton-editar',
     'boton-editar',
     actualizarColumnaAcciones
   );
 
   cargarPartial(
-    '../partials/boton-eliminar.html',
+    basePath + 'partials/boton-eliminar.html',
     'contenedor-boton-eliminar',
     'boton-eliminar',
     botonEliminarMasivo

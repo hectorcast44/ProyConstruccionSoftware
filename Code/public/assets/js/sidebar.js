@@ -12,22 +12,53 @@ document.addEventListener('DOMContentLoaded', () => {
   const mount = document.getElementById('sidebar-mount');
   if (!mount) return;
 
-  fetch('../partials/sidebar.html')
-    .then(resp => resp.text())
-    .then(html => {
-      mount.innerHTML = html;
+  // Detectar base path para fetch correcto en subdirectorios
+  const basePath = globalThis.BASE_URL || '';
 
-      if (globalThis.feather) {
-        feather.replace();
-      }
+  // Lista de rutas a intentar
+  const pathsToTry = [
+    basePath + 'partials/sidebar.html',
+    '../partials/sidebar.html',
+    '../../partials/sidebar.html',
+    '/partials/sidebar.html',
+    'partials/sidebar.html'
+  ];
 
-      cargarUsuarioEnSidebar();
-      activarEnlaceActual();
-      inicializarColapsoSidebar();
-    })
-    .catch(err => {
-      console.error('No se pudo cargar el sidebar:', err);
-    });
+  // Función recursiva para intentar cargar el sidebar
+  const tryLoadSidebar = (index) => {
+    if (index >= pathsToTry.length) {
+      console.error('No se pudo cargar el sidebar después de varios intentos.');
+      mount.innerHTML = `<div style="padding: 20px; color: red; border: 1px solid red;">
+        <strong>Error cargando sidebar.</strong><br>
+        No se encontró el archivo en ninguna de las rutas esperadas.
+      </div>`;
+      return;
+    }
+
+    const url = pathsToTry[index];
+    fetch(url)
+      .then(resp => {
+        if (!resp.ok) throw new Error('Status ' + resp.status);
+        return resp.text();
+      })
+      .then(html => {
+        if (html.includes('<title>404') || html.includes('Not Found')) {
+          throw new Error('Contenido 404');
+        }
+        mount.innerHTML = html;
+        if (globalThis.feather) feather.replace();
+        // Usamos la URL exitosa para deducir la ruta base correcta para la API
+        cargarUsuarioEnSidebar(url);
+        activarEnlaceActual();
+        inicializarColapsoSidebar();
+      })
+      .catch(err => {
+        console.warn(`Fallo al cargar sidebar desde ${url}:`, err);
+        tryLoadSidebar(index + 1);
+      });
+  };
+
+  tryLoadSidebar(0);
 });
 
 /**
@@ -37,9 +68,17 @@ document.addEventListener('DOMContentLoaded', () => {
  * @async
  * @returns {Promise<void>}
  */
-async function cargarUsuarioEnSidebar() {
+async function cargarUsuarioEnSidebar(basePath = '') {
+  // Si basePath viene de una ruta relativa exitosa (ej: ../partials/sidebar.html),
+  // debemos ajustar la ruta de la API para que sea consistente (ej: ../auth/me).
+  // Quitamos 'partials/sidebar.html' del final para obtener el prefijo real.
+  let apiBase = basePath;
+  if (apiBase.endsWith('partials/sidebar.html')) {
+    apiBase = apiBase.replace('partials/sidebar.html', '');
+  }
+
   try {
-    const resp = await fetch('../php/api/usuario_info.php', {
+    const resp = await fetch(apiBase + 'auth/me', {
       credentials: 'include'
     });
 
@@ -67,7 +106,8 @@ async function cargarUsuarioEnSidebar() {
  */
 function activarEnlaceActual() {
   const fullPath = globalThis.location.pathname;
-  const currentPage = fullPath.substring(fullPath.lastIndexOf('/') + 1);
+  // Obtener el último segmento de la URL (ej: dashboard, mis-calificaciones)
+  const currentPage = fullPath.split('/').pop() || 'dashboard';
 
   const links = document.querySelectorAll('.sidebar .nav-item[href]');
 

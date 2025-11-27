@@ -26,6 +26,7 @@ function filasTabla(actividades = []) {
     .map(a => {
       let textoPuntuacion;
 
+<<<<<<< HEAD:Code/js/mis-calificaciones-detalle.js
       if (a.maximo === null) {
         // Actividad no calificable
         textoPuntuacion = '—';
@@ -36,6 +37,11 @@ function filasTabla(actividades = []) {
         // Ya calificada (0, 5, 7, etc.)
         textoPuntuacion = `${a.obtenido} / ${a.maximo}`;
       }
+=======
+  for (const actividad of actividades) {
+    const obtenido = actividad.obtenido;
+    const maximo = actividad.maximo;
+>>>>>>> 18c100c7e9468e930b8aa9c740d0c3e68cb8dc8f:Code/public/js/mis-calificaciones-detalle.js
 
       return `
         <tr>
@@ -196,8 +202,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sec.resumenTipo && typeof sec.resumenTipo.puntos_tipo === 'number') {
       const ganados = Number(
         sec.resumenTipo.puntos_asegurados ??
+<<<<<<< HEAD:Code/js/mis-calificaciones-detalle.js
           sec.resumenTipo.ganados ??
           0
+=======
+        sec.resumenTipo.ganados ??
+        0
+>>>>>>> 18c100c7e9468e930b8aa9c740d0c3e68cb8dc8f:Code/public/js/mis-calificaciones-detalle.js
       );
       const totalTipo = Number(sec.resumenTipo.puntos_tipo);
       tituloSeccion = `${sec.nombre} (${ganados.toFixed(2)} / ${totalTipo.toFixed(
@@ -278,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
  function actualizarInformeYDiagnostico(progreso) {
     if (!progreso) return;
 
+<<<<<<< HEAD:Code/js/mis-calificaciones-detalle.js
     // ============
     // CONSTANTES
     // ============
@@ -313,6 +325,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (rowPerd) rowPerd.textContent = perdidos.toFixed(2);
     if (rowPosi) rowPosi.textContent = posibles.toFixed(2);
     if (rowNec)  rowNec.textContent  = necesarios.toFixed(2);
+=======
+    const porc = Number(progreso.porcentaje_obtenido ?? 0);
+    const obtenidos = Number(progreso.puntos_obtenidos ?? 0);
+    const perdidos = Number(progreso.puntos_perdidos ?? 0);
+    const posibles = Number(progreso.puntos_posibles_obtener ?? 0);
+    const necesarios = Number(progreso.puntos_necesarios_aprobar ?? 0);
+    const calMin = Number(progreso.calificacion_minima ?? 70);
+    const calMinDinamica = Number(progreso.calificacion_minima_dinamica ?? 0);
+    const calMaxPos = Number(progreso.calificacion_maxima_posible ?? 0);
+
+    // Rellenar tabla de resumen
+    if (rowPorc) rowPorc.textContent = `${porc.toFixed(1)} / 100`;
+    if (rowObt) rowObt.textContent = obtenidos.toFixed(2);
+    if (rowPerd) rowPerd.textContent = perdidos.toFixed(2);
+    if (rowPosi) rowPosi.textContent = posibles.toFixed(2);
+    if (rowNec) rowNec.textContent = necesarios.toFixed(2);
+
+    // CORRECCIÓN: Mostrar la calificación mínima DINÁMICA (lo asegurado), no la aprobatoria
+    if (rowMin) rowMin.textContent = calMinDinamica.toFixed(2);
+
+    if (rowMax) rowMax.textContent = calMaxPos.toFixed(2);
+>>>>>>> 18c100c7e9468e930b8aa9c740d0c3e68cb8dc8f:Code/public/js/mis-calificaciones-detalle.js
 
   
     if (rowMin) rowMin.textContent = minDinamica.toFixed(2);
@@ -381,14 +415,17 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Consulta la API de detalle de calificaciones de una materia
    * y actualiza la UI (acordeón, título e informe).
-   *
-   * @async
-   * @returns {Promise<void>}
    */
   async function cargarDetalleMateria() {
+<<<<<<< HEAD:Code/js/mis-calificaciones-detalle.js
     const url = `../php/api/calificaciones_detalle.php?id_materia=${encodeURIComponent(
       idMateria
     )}`;
+=======
+    // Fallback: si BASE_URL no está definido o está vacío, usamos ruta relativa.
+    const baseUrl = globalThis.BASE_URL || '../';
+    const url = `${baseUrl}api/actividades?id_materia=${encodeURIComponent(idMateria)}`;
+>>>>>>> 18c100c7e9468e930b8aa9c740d0c3e68cb8dc8f:Code/public/js/mis-calificaciones-detalle.js
 
     try {
       const resp = await fetch(url, { credentials: 'include' });
@@ -396,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Error HTTP al cargar detalles:', resp.status);
         return;
       }
-
       const json = await resp.json();
       if (json.status !== 'success' || !json.data) {
         console.error('Error API detalle:', json?.message);
@@ -435,6 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nombre: a.nombre,
             fecha_entrega: a.fecha_entrega,
             estado: a.estado,
+<<<<<<< HEAD:Code/js/mis-calificaciones-detalle.js
             // null = sin calificar; 0 = calificación de 0
             obtenido:
               a.obtenido === null || a.obtenido === undefined
@@ -446,11 +483,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? null
                 : Number(a.maximo),
           })),
+=======
+            obtenido: a.obtenido === null ? null : Number(a.obtenido),
+            maximo: a.maximo === null ? null : Number(a.maximo)
+          }))
+>>>>>>> 18c100c7e9468e930b8aa9c740d0c3e68cb8dc8f:Code/public/js/mis-calificaciones-detalle.js
         };
       });
 
       renderSecciones(seccionesOriginal);
       actualizarInformeYDiagnostico(data.progreso);
+
     } catch (error) {
       console.error('Error de red al cargar detalle de materia:', error);
     }

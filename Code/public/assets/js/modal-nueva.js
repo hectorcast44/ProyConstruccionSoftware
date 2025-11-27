@@ -3,7 +3,8 @@ function abrirModalNueva() {
 
   if (!modal) {
     // cargar parcial del modal (una sola vez)
-    fetch('../partials/modal-nueva.html')
+    const basePath = globalThis.BASE_URL || '';
+    fetch(basePath + 'partials/modal-nueva.html')
       .then(r => r.text())
       .then(html => {
         document.body.insertAdjacentHTML('beforeend', html);
@@ -54,7 +55,14 @@ function inicializarModalNueva() {
         .replaceAll("'",'&#39;'); 
     }
 
+<<<<<<< HEAD:Code/assets/js/modal-nueva.js
     const tbody = document.getElementById('tabla-body');
+=======
+    // Escapar texto sencillo para evitar inyección
+    function esc(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;'); }
+
+    const tbody = document.getElementById('tbody');
+>>>>>>> 18c100c7e9468e930b8aa9c740d0c3e68cb8dc8f:Code/public/assets/js/modal-nueva.js
     if (!tbody) {
       console.error('No se encontró #tbody en la página.');
       return;
