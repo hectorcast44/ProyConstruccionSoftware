@@ -1,84 +1,49 @@
 /**
  * Sidebar dinámico de la aplicación.
- *
- * Este módulo se encarga de:
- *  - Cargar el HTML del sidebar desde un partial externo.
- *  - Activar automáticamente el enlace del menú correspondiente a la página actual.
- *  - Permitir colapsar/expandir el sidebar.
- *  - Cargar el nombre, correo y avatar del usuario desde la API.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const mount = document.getElementById('sidebar-mount');
   if (!mount) return;
 
-  // Detectar base path para fetch correcto en subdirectorios
-  const basePath = globalThis.BASE_URL || '';
+  // Como tenemos <base href>, podemos usar rutas relativas a /public/
+  const sidebarUrl = (globalThis.BASE_URL || '') + 'partials/sidebar.html';
 
-  // Lista de rutas a intentar
-  const pathsToTry = [
-    basePath + 'partials/sidebar.html',
-    '../partials/sidebar.html',
-    '../../partials/sidebar.html',
-    '/partials/sidebar.html',
-    'partials/sidebar.html'
-  ];
+  fetch(sidebarUrl)
+    .then(resp => {
+      if (!resp.ok) throw new Error('Status ' + resp.status);
+      return resp.text();
+    })
+    .then(html => {
+      if (html.includes('<title>404') || html.includes('Not Found')) {
+        throw new Error('Contenido 404');
+      }
 
-  // Función recursiva para intentar cargar el sidebar
-  const tryLoadSidebar = (index) => {
-    if (index >= pathsToTry.length) {
-      console.error('No se pudo cargar el sidebar después de varios intentos.');
+      mount.innerHTML = html;
+
+      if (globalThis.feather) {
+        feather.replace();
+      }
+
+      activarEnlaceActual();
+      inicializarColapsoSidebar();
+      cargarUsuarioEnSidebar();
+    })
+    .catch(err => {
+      console.error('Error cargando sidebar:', err);
       mount.innerHTML = `<div style="padding: 20px; color: red; border: 1px solid red;">
         <strong>Error cargando sidebar.</strong><br>
-        No se encontró el archivo en ninguna de las rutas esperadas.
+        No se encontró el archivo en la ruta esperada.
       </div>`;
-      return;
-    }
-
-    const url = pathsToTry[index];
-    fetch(url)
-      .then(resp => {
-        if (!resp.ok) throw new Error('Status ' + resp.status);
-        return resp.text();
-      })
-      .then(html => {
-        if (html.includes('<title>404') || html.includes('Not Found')) {
-          throw new Error('Contenido 404');
-        }
-        mount.innerHTML = html;
-        if (globalThis.feather) feather.replace();
-        // Usamos la URL exitosa para deducir la ruta base correcta para la API
-        cargarUsuarioEnSidebar(url);
-        activarEnlaceActual();
-        inicializarColapsoSidebar();
-      })
-      .catch(err => {
-        console.warn(`Fallo al cargar sidebar desde ${url}:`, err);
-        tryLoadSidebar(index + 1);
-      });
-  };
-
-  tryLoadSidebar(0);
+    });
 });
 
 /**
- * Obtiene los datos del usuario desde la API y los inserta
- * en los elementos del sidebar (.user-name, .user-label, .user-avatar).
- *
- * @async
- * @returns {Promise<void>}
+ * Cargar usuario (opcional, igual que antes pero usando BASE_URL).
  */
-async function cargarUsuarioEnSidebar(basePath = '') {
-  // Si basePath viene de una ruta relativa exitosa (ej: ../partials/sidebar.html),
-  // debemos ajustar la ruta de la API para que sea consistente (ej: ../auth/me).
-  // Quitamos 'partials/sidebar.html' del final para obtener el prefijo real.
-  let apiBase = basePath;
-  if (apiBase.endsWith('partials/sidebar.html')) {
-    apiBase = apiBase.replace('partials/sidebar.html', '');
-  }
-
+async function cargarUsuarioEnSidebar() {
   try {
-    const resp = await fetch(apiBase + 'auth/me', {
+    const resp = await fetch((globalThis.BASE_URL || '') + 'auth/me', {
       credentials: 'include'
     });
 
@@ -94,26 +59,31 @@ async function cargarUsuarioEnSidebar(basePath = '') {
     if (userName) userName.textContent = user.nombre || 'Usuario';
     if (userLabel) userLabel.textContent = user.correo || 'USUARIO';
     if (avatar && user.avatar) avatar.src = user.avatar;
-
   } catch (error) {
     console.error('Error cargando usuario en sidebar:', error);
   }
 }
 
 /**
- * Determina la página actual a partir de la URL del navegador
- * y activa el enlace correspondiente dentro del sidebar.
+ * Marca activo el enlace de la página actual.
  */
-function activarEnlaceActual() {
-  const fullPath = globalThis.location.pathname;
-  // Obtener el último segmento de la URL (ej: dashboard, mis-calificaciones)
-  const currentPage = fullPath.split('/').pop() || 'dashboard';
+function normalizarRuta(path) {
+  if (!path) return '';
+  path = path.split('?')[0];
+  const segments = path.split('/');
+  path = segments[segments.length - 1] || '';
+  return path.replace(/\.php$/i, '');
+}
 
-  const links = document.querySelectorAll('.sidebar .nav-item[href]');
+function activarEnlaceActual() {
+  const currentPage = normalizarRuta(globalThis.location.pathname);
+  const links = document.querySelectorAll('#sidebar a[href]');
 
   for (const link of links) {
     const href = link.getAttribute('href');
-    if (href === currentPage) {
+    const hrefNorm = normalizarRuta(href);
+
+    if (hrefNorm === currentPage) {
       link.classList.add('active');
     } else {
       link.classList.remove('active');
@@ -122,7 +92,7 @@ function activarEnlaceActual() {
 }
 
 /**
- * Inicializa el comportamiento de colapso/expansión del sidebar.
+ * Colapso/expansión del sidebar.
  */
 function inicializarColapsoSidebar() {
   const sidebar = document.getElementById('sidebar');

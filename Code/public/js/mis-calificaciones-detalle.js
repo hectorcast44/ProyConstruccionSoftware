@@ -110,10 +110,7 @@ function aplicarClasesDiagnostico(diagCircle, diagStatus, nivel) {
 }
 
 /**
- * Script principal para la página mis-calificaciones-detalle.html
- * - Lee ?id_materia= o ?id= de la URL.
- * - Consume ../php/api/calificaciones_detalle.php.
- * - Rellena acordeón, informe y diagnóstico.
+ * Script principal para la página mis-calificaciones-detalle
  */
 document.addEventListener('DOMContentLoaded', () => {
   // ------------------------------------------------------
@@ -158,12 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helpers UI (acordeón)
   // ------------------------------------------------------
 
-  /**
-   * Crea el bloque completo de una sección (card de acordeón + tabla).
-   *
-   * @param {{id:number, nombre:string, resumenTipo:object|null, actividades:Array}} sec Sección normalizada.
-   * @returns {HTMLDivElement} Nodo listo para insertar en el DOM.
-   */
   function crearBloqueSeccion(sec) {
     const wrapper = document.createElement('div');
     wrapper.className = 'accordion-card-wrapper';
@@ -214,11 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return wrapper;
   }
 
-  /**
-   * Renderiza todas las secciones en el contenedor principal del acordeón.
-   *
-   * @param {Array<{id:number, nombre:string, resumenTipo:object|null, actividades:Array}>} secciones
-   */
   function renderSecciones(secciones) {
     if (!contenedorSecciones) {
       return;
@@ -252,12 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Informe + diagnóstico
   // ------------------------------------------------------
 
-  /**
-   * Actualiza los valores de la tabla de informe y la sección de diagnóstico
-   * a partir del objeto de progreso que devuelve la API.
-   *
-   * @param {object} progreso Objeto con métricas calculadas en el backend.
-   */
   function actualizarInformeYDiagnostico(progreso) {
     if (!progreso) return;
 
@@ -270,16 +250,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const calMinDinamica = Number(progreso.calificacion_minima_dinamica ?? 0);
     const calMaxPos = Number(progreso.calificacion_maxima_posible ?? 0);
 
-    // Rellenar tabla de resumen
     if (rowPorc) rowPorc.textContent = `${porc.toFixed(1)} / 100`;
     if (rowObt) rowObt.textContent = obtenidos.toFixed(2);
     if (rowPerd) rowPerd.textContent = perdidos.toFixed(2);
     if (rowPosi) rowPosi.textContent = posibles.toFixed(2);
     if (rowNec) rowNec.textContent = necesarios.toFixed(2);
-
-    // CORRECCIÓN: Mostrar la calificación mínima DINÁMICA (lo asegurado), no la aprobatoria
     if (rowMin) rowMin.textContent = calMinDinamica.toFixed(2);
-
     if (rowMax) rowMax.textContent = calMaxPos.toFixed(2);
 
     if (!diagCircle || !diagGrade || !diagStatus) {
@@ -299,10 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Filtro de actividades por texto
   // ------------------------------------------------------
 
-  /**
-   * Aplica el filtro de texto sobre el nombre de las actividades
-   * y vuelve a renderizar las secciones.
-   */
   function filtrarActividades() {
     const term = (buscadorInput?.value || '').toLowerCase().trim();
 
@@ -335,30 +307,43 @@ document.addEventListener('DOMContentLoaded', () => {
   // Cargar datos desde la API
   // ------------------------------------------------------
 
-  /**
-   * Consulta la API de detalle de calificaciones de una materia
-   * y actualiza la UI (acordeón, título e informe).
-   */
   async function cargarDetalleMateria() {
-    // Fallback: si BASE_URL no está definido o está vacío, usamos ruta relativa.
-    const baseUrl = globalThis.BASE_URL || '../';
-    const url = `${baseUrl}api/actividades?id_materia=${encodeURIComponent(idMateria)}`;
+    // Igual que en mis-calificaciones.js, usamos BASE_URL tal cual
+    const apiBase = (globalThis.BASE_URL || '');
+    const url = `${apiBase}api/actividades?id_materia=${encodeURIComponent(idMateria)}`;
+    console.log('Llamando a detalle de materia:', url);
 
     try {
-      const resp = await fetch(url, { credentials: 'include' });
+      const resp = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'include'
+      });
+
+      const text = await resp.text();
+      console.log('Respuesta cruda detalle:', text);
+
       if (!resp.ok) {
         console.error('Error HTTP al cargar detalles:', resp.status);
         return;
       }
-      const json = await resp.json();
-      if (json.status !== 'success' || !json.data) {
+
+      /** @type {{status:string,data?:object,message?:string}|null} */
+      let json = null;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error('La respuesta de detalle NO es JSON válido.');
+        return;
+      }
+
+      if (!json || json.status !== 'success' || !json.data) {
         console.error('Error API detalle:', json?.message);
         return;
       }
 
       const data = json.data;
 
-      // Actualizar título con el nombre de la materia
       if (tituloPagina && data.materia?.nombre_materia) {
         tituloPagina.textContent =
           `Mis calificaciones - detalles (${data.materia.nombre_materia})`;
@@ -366,7 +351,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const seccionesAPI = Array.isArray(data.secciones) ? data.secciones : [];
 
-      // Mapa auxiliar: id_tipo -> resumen ponderado del tipo (puntos asegurados, perdidos, pendientes)
       const resumenPorTipo = {};
       const listaResumenTipo = Array.isArray(data.progreso?.por_tipo)
         ? data.progreso.por_tipo
