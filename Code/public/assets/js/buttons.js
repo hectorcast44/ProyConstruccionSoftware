@@ -2,13 +2,23 @@ function cargarPartial(ruta, contenedorId, botonId, callback) {
   fetch(ruta)
     .then(r => r.text())
     .then(html => {
-      document.getElementById(contenedorId).innerHTML = html;
+      const contenedor = document.getElementById(contenedorId);
+      if (!contenedor) {
+        console.warn(`No se encontró el contenedor ${contenedorId} al cargar ${ruta}`);
+        return;
+      }
 
-      if (window.feather) feather.replace();
+      contenedor.innerHTML = html;
 
-      if (botonId && callback) {
+      if (window.feather) {
+        feather.replace();
+      }
+
+      if (botonId && typeof callback === 'function') {
         const btn = document.getElementById(botonId);
-        if (btn) btn.addEventListener('click', callback);
+        if (btn) {
+          btn.addEventListener('click', callback);
+        }
       }
     })
     .catch(err => console.error(`Error cargando ${ruta}:`, err));
@@ -17,31 +27,35 @@ function cargarPartial(ruta, contenedorId, botonId, callback) {
 document.addEventListener('DOMContentLoaded', () => {
   const basePath = globalThis.BASE_URL || '';
 
+  // Botón "Nueva"
   cargarPartial(
     basePath + 'partials/boton-nueva.html',
     'contenedor-boton-nueva',
     'boton-nueva',
-    abrirModalNueva
+    globalThis.abrirModalNueva || null
   );
 
+  // Botón "Editar"
   cargarPartial(
     basePath + 'partials/boton-editar.html',
     'contenedor-boton-editar',
     'boton-editar',
-    actualizarColumnaAcciones
+    globalThis.actualizarColumnaAcciones || null
   );
 
+  // Botón "Eliminar"
   cargarPartial(
     basePath + 'partials/boton-eliminar.html',
     'contenedor-boton-eliminar',
     'boton-eliminar',
-    botonEliminarMasivo
+    globalThis.botonEliminarMasivo || null
   );
 
+  // Botón "Filtro"
   cargarPartial(
-    '../partials/boton-filtro.html',
+    basePath + 'partials/boton-filtro.html',
     'contenedor-boton-filtro',
     'boton-filtro',
-    abrirModalFiltro
+    globalThis.abrirModalFiltro || null
   );
 });
