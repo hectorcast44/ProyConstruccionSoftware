@@ -1,0 +1,33 @@
+<dialog class="contenedor-modal" id="modal-nueva-materia">
+  <a id="cerrar-modal-materia">
+    <i data-feather="x"></i>
+  </a>
+
+  <div class="form-container">
+    <form id="form-materia" method="post">
+      <div class="modal-form">
+        <div class="modal-title">
+          <i data-feather="book"></i>
+          <h2> Nueva Materia</h2>
+        </div>
+
+        <div class="modal-form-section">
+          <input type="text" name="nombre_materia" id="nombre_materia" class="modal-form-input" placeholder=" " required />
+          <label for="nombre_materia" class="modal-form-label"> Nombre de la materia </label>
+        </div>
+
+        <div class="modal-form-section">
+          <input type="number" name="calif_minima" id="calif_minima" class="modal-form-input" placeholder=" " min="0" max="100" value="70" />
+          <label for="calif_minima" class="modal-form-label"> Calificación mínima (%) </label>
+        </div>
+
+        <div class="row-submit">
+          <button type="submit" id="crear-materia" class="boton-crear">
+            <span>Crear</span>
+            <i data-feather="plus-circle"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</dialog>

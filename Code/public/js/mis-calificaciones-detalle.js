@@ -372,7 +372,17 @@ document.addEventListener('DOMContentLoaded', () => {
             id_actividad: a.id_actividad,
             nombre: a.nombre,
             fecha_entrega: a.fecha_entrega,
-            estado: a.estado,
+            // Accept only 'listo', 'en curso' or 'pendiente' (case-insensitive). Default to 'pendiente'.
+            estado: (function(raw){
+              try {
+                if (!raw && raw !== 0) return 'pendiente';
+                const s = String(raw).toLowerCase().trim();
+                if (s === 'listo') return 'listo';
+                if (s === 'en curso' || s === 'encurso' || s === 'en_curso') return 'en curso';
+                if (s === 'pendiente') return 'pendiente';
+                return 'pendiente';
+              } catch (e) { return 'pendiente'; }
+            })(a.estado),
             obtenido: a.obtenido === null ? null : Number(a.obtenido),
             maximo: a.maximo === null ? null : Number(a.maximo)
           }))
@@ -386,6 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error de red al cargar detalle de materia:', error);
     }
   }
+
+  // Exponer función para que otros módulos (ejemplo: modal de creación) puedan refrescar este detalle
+  window.cargarDetalleMateria = cargarDetalleMateria;
 
   // ------------------------------------------------------
   // Inicialización

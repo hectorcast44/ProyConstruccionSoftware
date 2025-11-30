@@ -32,6 +32,8 @@
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/table-theme.css" />
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/buttons.css" />
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/modal.css">
+    <!-- estilos específicos -->
+    <link rel="stylesheet" href="<?php echo $baseUrl; ?>styles/dashboard.css">
 </head>
 
 <body class="has-sidebar" data-page="dashboard">
@@ -52,38 +54,80 @@
             </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="content-group">
-            <div class="search-content">
-                <input type="text" id="search-input" class="search-input" placeholder="Buscar...">
+        <!-- Search Bar y Filtro -->
+         <div id="content-group" class="content-group">
+            <div class="search-box" id="search-box">
+                <i data-feather="search" class="d-search-icon"></i>
+                <input type="text" id="d-search-input" class="d-search-input" placeholder="Buscar...">
             </div>
+            <div id="contenedor-boton-filtro"></div>
         </div>
 
 
 
         <!-- Contenido de tabla -->
-        <table id="tabla" style="margin-top: 20px; width:100%">
-            <thead>
-                <tr>
-                    <th>Actividad</th>
-                    <th>Materia</th>
-                    <th>Tipo</th>
-                    <th>Puntaje Máx</th>
-                    <th>Puntaje</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-body"></tbody>
-        </table>
-
-    </main>
+        <!-- Contenido de tabla -->
+            <table id="tabla" class="dashboard-table-wrapper">
+                <thead >
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Actividad</th>
+                        <th>Materia</th>
+                        <th>Tipo</th>
+                        <th>Progreso</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body">
+                    <tr>
+                        <td>2025-11-21</td>
+                        <td>Actividad 1	</td>
+                        <td>Inferencia</td>
+                        <td>Tarea</td>
+                        <td>
+                            <span class="progress-badge progress-encurso" data-progreso="en curso">
+                                En curso
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2025-12-25</td>
+                        <td>Proyecto 1</td>
+                        <td>Bases de datos</td>
+                        <td>Proyecto</td>
+                        <td>
+                            <span class="progress-badge progress-completado" data-progreso="listo">
+                                Listo
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2025-11-19</td>
+                        <td>Examen</td>
+                        <td>Construcción de Software</td>
+                        <td>Examen</td>
+                        <td>
+                            <span class="progress-badge progress-sininiciar" data-progreso="sin iniciar">
+                                Sin iniciar
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p id="tabla-vacia" class="oculto">No se han encontrado actividades que coincidan con la búsqueda.</p>
+            <div id="mensaje-vacio" class="oculto">
+                <h3>No se han registrado actividades.</h3>
+                <p>Presiona el botón "Nueva" para agregar una.</p>
+            </div>
+        </main>
     <!-- feather icons -->
     <script src="https://unpkg.com/feather-icons"></script>
     <!-- sidebar dinámico -->
     <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
-    <!-- Lógica del modal -->
+     <!-- Modal nueva -->
     <script src="<?php echo $baseUrl; ?>assets/js/modal-nueva.js"></script>
-    <!-- Lógica de boton nueva calificación -->
+    <!-- Modal filtro (define abrirModalFiltro) -->
+    <script src="<?php echo $baseUrl; ?>assets/js/modal-filtro.js"></script>
+    <!-- Lógica de botones -->
     <script src="<?php echo $baseUrl; ?>assets/js/buttons.js"></script>
     <!-- Lógica de la página Dashboard -->
     <script src="<?php echo $baseUrl; ?>js/dashboard.js"></script>
