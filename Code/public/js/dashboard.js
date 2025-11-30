@@ -2,6 +2,11 @@ let modoEdicionActivo = false;
 
 document.addEventListener('DOMContentLoaded', verificarTablaVacia);
 
+// Al cargar la página, obtener actividades desde la API y renderizarlas
+document.addEventListener('DOMContentLoaded', () => {
+    cargarActividadesDesdeAPI();
+});
+
 // Si la tabla está vacía, oculta elementos y muestra mensaje
 function verificarTablaVacia() {
     const grupoFiltros = document.getElementById('content-group');
@@ -11,18 +16,137 @@ function verificarTablaVacia() {
     const filas = document.querySelectorAll('#tabla-body tr');
     const msg = document.getElementById('mensaje-vacio');
 
-    if (filas.length === 0) {
-        msg.classList.remove('oculto');
-        tabla.classList.add('oculto');
-        grupoFiltros.classList.add('oculto');
-        btnEditar.classList.add('oculto');
-        btnEliminar.classList.add('oculto');
+    // Si la página no contiene elementos del dashboard (tabla y mensaje), salir temprano.
+    if (!tabla && !document.getElementById('tabla-body') && !msg) return;
+
+    // A partir de aquí, usamos comprobaciones defensivas antes de tocar classList
+    const hayFilas = filas.length > 0;
+
+    if (!hayFilas) {
+        if (msg) msg.classList.remove('oculto');
+        if (tabla) tabla.classList.add('oculto');
+        if (grupoFiltros) grupoFiltros.classList.add('oculto');
+        if (btnEditar) btnEditar.classList.add('oculto');
+        if (btnEliminar) btnEliminar.classList.add('oculto');
     } else {
-        msg.classList.add('oculto');
-        tabla.classList.remove('oculto');
-        grupoFiltros.classList.remove('oculto');
-        btnEditar.classList.remove('oculto');
-        btnEliminar.classList.remove('oculto');
+        if (msg) msg.classList.add('oculto');
+        if (tabla) tabla.classList.remove('oculto');
+        if (grupoFiltros) grupoFiltros.classList.remove('oculto');
+        if (btnEditar) btnEditar.classList.remove('oculto');
+        if (btnEliminar) btnEliminar.classList.remove('oculto');
+    }
+}
+
+
+// Cargar actividades desde la API: primero obtenemos las materias, luego por cada materia sus actividades
+function cargarActividadesDesdeAPI(){
+    const base = globalThis.BASE_URL || '';
+    const urlMaterias = base + 'api/materias';
+    const tbody = document.getElementById('tabla-body');
+    if (!tbody) return;
+
+    // mostrar carga temporal
+    tbody.innerHTML = '<tr><td colspan="5">Cargando actividades...</td></tr>';
+
+    fetch(urlMaterias, { credentials: 'same-origin' })
+        .then(async r => {
+            const txt = await r.text();
+            let json = null;
+            try { json = JSON.parse(txt); } catch(e){ throw new Error('Respuesta inválida de /api/materias'); }
+            if (!r.ok) throw new Error(json.message || ('HTTP ' + r.status));
+            return json.data || [];
+        })
+        .then(async materias => {
+            // Para cada materia hacemos una petición de actividades
+            const promesas = materias.map(m => {
+                const urlActs = base + 'api/actividades?id_materia=' + encodeURIComponent(m.id);
+                return fetch(urlActs, { credentials: 'same-origin' })
+                    .then(async r => {
+                        const txt = await r.text();
+                        let json = null;
+                        try { json = JSON.parse(txt); } catch(e){ throw new Error('Respuesta inválida de /api/actividades'); }
+                        if (!r.ok) throw new Error(json.message || ('HTTP ' + r.status));
+                        return { materia: m, data: json.data };
+                    });
+            });
+
+            return Promise.all(promesas);
+        })
+        .then(resultados => {
+            // Vaciar tabla
+            const filas = [];
+
+            resultados.forEach(res => {
+                const materia = res.materia;
+                const data = res.data || {};
+
+                // data.secciones -> cada sección contiene actividades
+                const secciones = data.secciones || [];
+                secciones.forEach(sec => {
+                    const tipoNombre = sec.nombre_tipo || sec.nombre || '';
+                    (sec.actividades || []).forEach(act => {
+                        filas.push({
+                            id: act.id_actividad || act.id || '',
+                            fecha: act.fecha_entrega || act.fecha || '',
+                            nombre: act.nombre || act.nombre_actividad || '',
+                            materia: materia.nombre || '',
+                            tipo: tipoNombre,
+                            estado: (act.estado || act.obtenido !== null) ? (act.estado || (act.obtenido !== null ? 'completada' : 'en curso')) : 'en curso',
+                            obtenido: act.obtenido ?? null,
+                            maximo: act.maximo ?? null
+                        });
+                    });
+                });
+            });
+
+            // Renderizar filas
+            tbody.innerHTML = '';
+            if (filas.length === 0) {
+                verificarTablaVacia();
+                return;
+            }
+
+            filas.forEach(f => {
+                const tr = document.createElement('tr');
+                const progreso = generarBadgeProgreso(f.estado, f.obtenido, f.maximo);
+                tr.dataset.idActividad = f.id;
+                tr.innerHTML = `
+                    <td>${escapeHtml(f.fecha)}</td>
+                    <td>${escapeHtml(f.nombre)}</td>
+                    <td>${escapeHtml(f.materia)}</td>
+                    <td>${escapeHtml(f.tipo)}</td>
+                    <td>${progreso}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // inicializar iconos si los hay
+            if (window.feather) feather.replace();
+
+            verificarTablaVacia();
+        })
+        .catch(err => {
+            console.error('Error cargando actividades:', err);
+            const tbody = document.getElementById('tabla-body');
+            if (tbody) tbody.innerHTML = `<tr><td colspan="5">Error: ${escapeHtml(err.message)}</td></tr>`;
+            verificarTablaVacia();
+        });
+
+    function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+
+    function generarBadgeProgreso(estado, obtenido, maximo){
+        const est = (estado || '').toLowerCase();
+        let clase = 'progress-encurso';
+        let label = 'En curso';
+        if (est === 'sin iniciar' || est === 'sininiciar') { clase = 'progress-sininiciar'; label = 'Sin iniciar'; }
+        else if (est === 'completada' || est === 'listo' || est === 'completado') { clase = 'progress-completado'; label = 'Completada'; }
+
+        // Si hay puntaje, mostrar puntos
+        if (obtenido !== null && maximo !== null) {
+            label = `${obtenido}/${maximo}`;
+        }
+
+        return `<span class="progress-badge ${clase}" data-progreso="${escapeHtml(est)}">${escapeHtml(label)}</span>`;
     }
 }
 
@@ -35,32 +159,42 @@ function botonEliminarMasivo() {
     verificarTablaVacia();
 }
 
-// Barra de busqueda funcional
-// Barra de búsqueda funcional + manejo de tabla vacía
-document.getElementById("d-search-input").addEventListener("input", function () {
-    const filtro = this.value.toLowerCase();
-    const filas = document.querySelectorAll("#tabla-body tr");
-    const tabla = document.getElementById("tabla");
-    const mensajeVacio = document.getElementById("tabla-vacia");
+// Barra de busqueda funcional (compatible con diferentes templates)
+function inicializarBuscador() {
+    const searchInput = document.getElementById('d-search-input') || document.getElementById('search-input') || document.querySelector('.search-input');
+    if (!searchInput) return;
 
-    let hayCoincidencias = false;
+    searchInput.addEventListener('input', function () {
+        const filtro = this.value.toLowerCase();
+        const filas = document.querySelectorAll('#tabla-body tr');
+        const tabla = document.getElementById('tabla');
+        const mensajeVacio = document.getElementById('mensaje-vacio') || document.getElementById('tabla-vacia');
 
-    filas.forEach(fila => {
-        const textoFila = fila.innerText.toLowerCase();
-        const coincide = textoFila.includes(filtro);
+        let hayCoincidencias = false;
 
-        fila.style.display = coincide ? "" : "none";
-        if (coincide) hayCoincidencias = true;
+        filas.forEach(fila => {
+            const textoFila = fila.innerText.toLowerCase();
+            const coincide = textoFila.includes(filtro);
+
+            fila.style.display = coincide ? '' : 'none';
+            if (coincide) hayCoincidencias = true;
+        });
+
+        if (hayCoincidencias) {
+            if (tabla) tabla.classList.remove('oculto');
+            if (mensajeVacio) mensajeVacio.classList.add('oculto');
+        } else {
+            if (tabla) tabla.classList.add('oculto');
+            if (mensajeVacio) mensajeVacio.classList.remove('oculto');
+        }
     });
+}
 
-    if (hayCoincidencias) {
-        tabla.classList.remove("oculto");
-        mensajeVacio.classList.add("oculto");
-    } else {
-        tabla.classList.add("oculto");
-        mensajeVacio.classList.remove("oculto");
-    }
-});
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarBuscador);
+} else {
+    inicializarBuscador();
+}
 
 
 // Actualizar la columna de acciones (editar/eliminar) en la tabla

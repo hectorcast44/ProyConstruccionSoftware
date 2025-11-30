@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/table-theme.css" />
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/buttons.css" />
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/modal.css">
+    <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/dashboard-table.css">
 </head>
 
 <body class="has-sidebar" data-page="dashboard">
@@ -55,21 +56,60 @@
 
 
         <!-- Contenido de tabla -->
-        <table id="tabla" style="margin-top: 20px; width:100%">
-            <thead>
-                <tr>
-                    <th>Actividad</th>
-                    <th>Materia</th>
-                    <th>Tipo</th>
-                    <th>Puntaje Máx</th>
-                    <th>Puntaje</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-body"></tbody>
-        </table>
-
-    </main>
+        <!-- Contenido de tabla -->
+            <table id="tabla" class="dashboard-table-wrapper">
+                <thead >
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Actividad</th>
+                        <th>Materia</th>
+                        <th>Tipo</th>
+                        <th>Progreso</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body">
+                    <tr>
+                        <td>2025-11-21</td>
+                        <td>Actividad 1	</td>
+                        <td>Inferencia</td>
+                        <td>Tarea</td>
+                        <td>
+                            <span class="progress-badge progress-encurso" data-progreso="en curso">
+                                En curso
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2025-12-25</td>
+                        <td>Proyecto 1</td>
+                        <td>Bases de datos</td>
+                        <td>Proyecto</td>
+                        <td>
+                            <span class="progress-badge progress-completado" data-progreso="listo">
+                                Listo
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2025-11-19</td>
+                        <td>Examen</td>
+                        <td>Construcción de Software</td>
+                        <td>Examen</td>
+                        <td>
+                            <span class="progress-badge progress-sininiciar" data-progreso="sin iniciar">
+                                Sin iniciar
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p id="tabla-vacia" class="oculto">No se han encontrado actividades que coincidan con la búsqueda.</p>
+            <div id="mensaje-vacio" class="oculto">
+                <h3>No se han registrado actividades.</h3>
+                <p>Presiona el botón "Nueva" para agregar una.</p>
+                <img src="<?php echo $baseUrl; ?>/assets/img/empty-dashboard.png" alt="Lista vacía" height="250px">
+            </div>
+        </main>
     <!-- feather icons -->
     <script src="https://unpkg.com/feather-icons"></script>
     <!-- sidebar dinámico -->
