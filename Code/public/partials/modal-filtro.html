@@ -17,16 +17,19 @@
                 <option value="">Todos</option>
                 <option value="en curso">En curso</option>
                 <option value="listo">Listo</option>
-                <option value="sin iniciar">Sin iniciar</option>
+                <option value="pendiente">Pendiente</option>
             </select>
             <label>Materia:</label>
-            <input type="text" id="filtro-materia" placeholder="Materia..." />
+            <select id="filtro-materia">
+                <option value="">Todas</option>
+            </select>
             <label>Fecha mínima:</label>
             <input type="date" id="filtro-fecha-min" />
             <label>Fecha máxima:</label>
             <input type="date" id="filtro-fecha-max" />
         </div>
         <div class="modal-filtro-footer">
+            <button id="reset-filtros" class="reset-btn">Restablecer</button>
             <button id="aplicar-filtros" class="apply-btn">Aplicar</button>
         </div>
     </div>

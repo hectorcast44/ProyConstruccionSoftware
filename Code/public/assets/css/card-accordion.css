@@ -201,3 +201,17 @@
 .accordion-card__menu-item:hover {
   background: var(--accordion-menu-item-hover-bg);
 }
+
+.js-card-edit,
+.js-card-delete {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  transition: color 1s;
+}
+
+.js-card-delete:hover{
+  svg {
+    color: rgb(255, 101, 101);
+  }
+}

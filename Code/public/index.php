@@ -55,6 +55,8 @@ $router->get('/', function () {
 $router->get('/dashboard', [App\Controllers\DashboardController::class, 'index']);
 $router->get('/mis-calificaciones', [App\Controllers\CalificacionesController::class, 'index']);
 $router->get('/mis-calificaciones/detalle', [App\Controllers\CalificacionesController::class, 'detalle']);
+// Mis materias
+$router->get('/mis-materias', [App\Controllers\MisMateriasController::class, 'index']);
 
 /* ============================
  * RUTAS API
@@ -64,6 +66,8 @@ $router->get('/api/materias', [App\Controllers\Api\MateriaController::class, 'in
 $router->post('/api/materias', [App\Controllers\Api\MateriaController::class, 'store']);
 $router->delete('/api/materias', [App\Controllers\Api\MateriaController::class, 'delete']);
 $router->get('/api/actividades', [App\Controllers\Api\ActividadController::class, 'index']);
+$router->post('/api/actividades', [App\Controllers\Api\ActividadController::class, 'store']);
+$router->delete('/api/actividades', [App\Controllers\Api\ActividadController::class, 'delete']);
 
 // Tipo Actividad Routes
 $router->get('/api/tipos-actividad', [App\Controllers\Api\TipoActividadController::class, 'index']);

@@ -24,6 +24,7 @@ if (!version_compare(PHP_VERSION, PHP_VERSION, '=')) {
     die(1);
 }
 
+/*
 if (version_compare('8.3.0', PHP_VERSION, '>')) {
     fwrite(
         STDERR,
@@ -37,6 +38,7 @@ if (version_compare('8.3.0', PHP_VERSION, '>')) {
 
     die(1);
 }
+*/
 
 if (!ini_get('date.timezone')) {
     ini_set('date.timezone', 'UTC');

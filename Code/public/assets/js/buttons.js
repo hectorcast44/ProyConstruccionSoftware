@@ -28,12 +28,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const basePath = globalThis.BASE_URL || '';
 
   // Botón "Nueva"
-  cargarPartial(
-    basePath + 'partials/boton-nueva.html',
-    'contenedor-boton-nueva',
-    'boton-nueva',
-    globalThis.abrirModalNueva || null
-  );
+  // Botón "Nueva" - elegir callback según la página (mis-materias usa abrirModalCrearMateria)
+  (function() {
+    const page = document.body?.dataset?.page || document.body?.className || '';
+    let callback = null;
+    if (String(page).includes('mis-materias') && typeof globalThis.abrirModalCrearMateria === 'function') {
+      callback = globalThis.abrirModalCrearMateria;
+    } else if (typeof globalThis.abrirModalNueva === 'function') {
+      callback = globalThis.abrirModalNueva;
+    }
+
+    // Wrap only the 'Nueva' callback so it first deactivates edit mode, preserving toggle behavior for the Edit button
+    let callbackToUse = callback;
+    if (typeof callback === 'function') {
+      callbackToUse = function (e) {
+        try {
+          if (typeof globalThis.desactivarModoEdicion === 'function') {
+            globalThis.desactivarModoEdicion();
+          }
+        } catch (err) {
+          console.error('Error al desactivar modo edición:', err);
+        }
+        try { return callback(e); } catch (err) { console.error('callback error', err); }
+      };
+    }
+
+    cargarPartial(
+      basePath + 'partials/boton-nueva.html',
+      'contenedor-boton-nueva',
+      'boton-nueva',
+      callbackToUse
+    );
+  })();
 
   // Botón "Editar"
   cargarPartial(
