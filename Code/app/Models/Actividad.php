@@ -78,9 +78,9 @@ class Actividad
             throw new Exception('Actividad no encontrada.');
         }
 
-        if ($actividad['puntos_posibles'] !== null && $actividad['puntos_posibles'] > 0) {
-            throw new Exception('RF-003: No se puede eliminar una actividad calificable (con puntos posibles).', 400);
-        }
+        // if ($actividad['puntos_posibles'] !== null && $actividad['puntos_posibles'] > 0) {
+        //     throw new Exception('RF-003: No se puede eliminar una actividad calificable (con puntos posibles).', 400);
+        // }
 
         $sql = "DELETE FROM ACTIVIDAD WHERE id_actividad = ? AND id_usuario = ?";
         $stmt = $this->pdo->prepare($sql);

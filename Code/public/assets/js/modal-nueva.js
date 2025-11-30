@@ -36,6 +36,9 @@ function inicializarModalNueva() {
   // cerrar
   if (cerrar) cerrar.addEventListener('click', () => modal.close());
 
+  // Desactivar la validación nativa para controlar validaciones desde JS
+  form.noValidate = true;
+
   // submit del form: enviar al backend via fetch (JSON)
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -53,9 +56,9 @@ function inicializarModalNueva() {
       puntos_obtenidos: f.get('puntaje') !== null && f.get('puntaje') !== '' ? Number(f.get('puntaje')) : null
     };
 
-    // Validación mínima
-    if (!payload.id_materia || !payload.id_tipo_actividad || !payload.nombre_actividad) {
-      console.warn('Faltan campos obligatorios o selects no poblados con IDs.');
+    // Validación mínima (controlada por JS porque desactivamos la validación nativa)
+    if (!payload.id_materia || !payload.id_tipo_actividad || !payload.nombre_actividad || payload.puntos_posibles === null || payload.fecha_entrega === '') {
+      showToast('Por favor completa los campos obligatorios: Materia, Tipo, Actividad, Puntaje máximo y Fecha.', { type: 'error' });
       return;
     }
 
@@ -74,21 +77,35 @@ function inicializarModalNueva() {
 
       if (!res.ok) throw new Error(json.message || ('HTTP ' + res.status));
 
-      // éxito: cerrar modal y refrescar lista si hay función global
+      // éxito: cerrar modal y refrescar listas si hay funciones globales
       form.reset();
       modal.close();
-      if (typeof window.cargarActividadesDesdeAPI === 'function') {
-        window.cargarActividadesDesdeAPI();
-      } else if (typeof window.cargarActividades === 'function') {
-        window.cargarActividades();
+      try {
+        if (typeof window.cargarActividadesDesdeAPI === 'function') {
+          window.cargarActividadesDesdeAPI();
+        } else if (typeof window.cargarActividades === 'function') {
+          window.cargarActividades();
+        }
+
+        // refrescar lista de materias si existe
+        if (typeof window.cargarMateriasDesdeAPI === 'function') {
+          window.cargarMateriasDesdeAPI();
+        }
+
+        // refrescar vista de detalle si está presente
+        if (typeof window.cargarDetalleMateria === 'function') {
+          window.cargarDetalleMateria();
+        }
+      } catch (e) {
+        console.warn('No se pudieron invocar funciones de recarga tras crear actividad', e);
       }
 
-      // opcional: mostrar notificación
-      alert(json.message || 'Actividad creada');
+      // notificación no bloqueante
+      showToast(json.message || 'Actividad creada', { type: 'success' });
 
     } catch (err) {
       console.error('Error creando actividad:', err);
-      alert('Error al crear actividad: ' + (err.message || err));
+      showToast('Error al crear actividad: ' + (err.message || err), { type: 'error' });
     }
   });
 }
@@ -133,4 +150,65 @@ async function poblarSelectsModal() {
   }
 
   function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+}
+
+// Toast helper: muestra notificaciones temporales en la esquina inferior derecha
+function showToast(message, { duration = 4000, type = 'info' } = {}) {
+  try {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      Object.assign(container.style, {
+        position: 'fixed',
+        right: '1rem',
+        bottom: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
+        zIndex: 99999,
+        pointerEvents: 'none'
+      });
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'app-toast app-toast-' + type;
+    toast.textContent = message;
+    Object.assign(toast.style, {
+      pointerEvents: 'auto',
+      minWidth: '200px',
+      maxWidth: '360px',
+      background: type === 'error' ? '#ff4d4f' : (type === 'success' ? '#22c55e' : '#333'),
+      color: '#fff',
+      padding: '10px 14px',
+      borderRadius: '8px',
+      boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+      opacity: '0',
+      transform: 'translateY(8px)',
+      transition: 'opacity 240ms ease, transform 240ms ease',
+      fontSize: '0.95rem'
+    });
+
+    container.appendChild(toast);
+
+    // force reflow then show
+    void toast.offsetWidth;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+
+    const hide = () => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(8px)';
+      setTimeout(() => { try { toast.remove(); } catch(e){} }, 260);
+    };
+
+    const timer = setTimeout(hide, duration);
+
+    toast.addEventListener('click', () => { clearTimeout(timer); hide(); });
+
+    return toast;
+  } catch (e) {
+    console.error('showToast error', e);
+  }
 }

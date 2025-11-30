@@ -32,7 +32,8 @@
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/table-theme.css" />
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/buttons.css" />
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/modal.css">
-    <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/dashboard-table.css">
+    <!-- estilos específicos -->
+    <link rel="stylesheet" href="<?php echo $baseUrl; ?>styles/dashboard.css">
 </head>
 
 <body class="has-sidebar" data-page="dashboard">
@@ -53,10 +54,11 @@
             </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="content-group">
-            <div class="search-content">
-                <input type="text" id="search-input" class="search-input" placeholder="Buscar...">
+        <!-- Search Bar y Filtro -->
+         <div id="content-group" class="content-group">
+            <div class="search-box" id="search-box">
+                <i data-feather="search" class="d-search-icon"></i>
+                <input type="text" id="d-search-input" class="d-search-input" placeholder="Buscar...">
             </div>
             <div id="contenedor-boton-filtro"></div>
         </div>
@@ -115,7 +117,6 @@
             <div id="mensaje-vacio" class="oculto">
                 <h3>No se han registrado actividades.</h3>
                 <p>Presiona el botón "Nueva" para agregar una.</p>
-                <img src="<?php echo $baseUrl; ?>/assets/img/empty-dashboard.png" alt="Lista vacía" height="250px">
             </div>
         </main>
     <!-- feather icons -->
@@ -124,6 +125,8 @@
     <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
      <!-- Modal nueva -->
     <script src="<?php echo $baseUrl; ?>assets/js/modal-nueva.js"></script>
+    <!-- Modal filtro (define abrirModalFiltro) -->
+    <script src="<?php echo $baseUrl; ?>assets/js/modal-filtro.js"></script>
     <!-- Lógica de botones -->
     <script src="<?php echo $baseUrl; ?>assets/js/buttons.js"></script>
     <!-- Lógica de la página Dashboard -->

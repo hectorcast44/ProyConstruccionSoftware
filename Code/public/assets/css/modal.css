@@ -101,3 +101,13 @@ input[type="number"]::-webkit-outer-spin-button {
 .row-fecha-crear input[type="date"] {
     width: 200%;
 }
+
+.row-submit {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.modal-filtro-body label {
+    margin-top: 1rem;             
+}

@@ -151,7 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
     listaCalificaciones.innerHTML = '';
 
     if (!lista.length) {
-      listaCalificaciones.innerHTML = `<p class="texto-vacio">No hay materias para mostrar.</p>`;
+      listaCalificaciones.innerHTML = `
+        <div id="mensaje-vacio" class="oculto">
+            <h3>Aún no hay materias por mostrar.</h3>
+        </div>
+      `;
       return;
     }
 

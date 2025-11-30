@@ -1,3 +1,20 @@
+<?php
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    if (empty($_SESSION['id_usuario'])) {
+        header('Location: /auth/login');
+        exit;
+    }
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+    $publicPos = strpos($scriptName, '/public/');
+    if ($publicPos === false) {
+        $baseUrl = '/';
+    } else {
+        $baseUrl = substr($scriptName, 0, $publicPos + strlen('/public/'));
+    }
+?>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -19,30 +36,29 @@
   <!-- estilos globales -->
   <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/sidebar.css" />
   <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/layout.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/buttons.css" />
   <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/search-bar.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/modal.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/table-theme.css" />
   <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/card-accordion.css" />
 
   <!-- estilos específicos -->
   <link rel="stylesheet" href="<?php echo $baseUrl; ?>styles/mis-materias.css" />
 </head>
 
-<body class="has-sidebar page-mis-materias">
+<body class="has-sidebar page-mis-materias" data-page="mis-materias">
   <div id="sidebar-mount"></div>
 
   <main>
-    <!-- buscador flotante -->
-    <div class="search-wrapper">
-      <div class="input-holder">
-        <input type="text" class="search-input" placeholder="Buscar materia..." id="buscador-materias" />
-        <button class="search-icon" aria-label="Buscar / Cerrar" id="search-toggle">
-          <i data-feather="search"></i>
-        </button>
+    <div class="main-bar">
+      <div class="page-title">
+        <i data-feather="book"></i>
+        <h1>Mis materias</h1>
       </div>
-    </div>
 
-    <div class="page-title">
-      <i data-feather="book"></i>
-      <h1>Mis materias</h1>
+      <div class="contenedor-botones" style="display:inline-block; margin-left: 12px; vertical-align: middle;">
+        <div id="contenedor-boton-nueva"></div>
+      </div>
     </div>
 
     <!-- listado de materias (cards) -->
@@ -52,6 +68,8 @@
   <script src="https://unpkg.com/feather-icons"></script>
   <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
   <script src="<?php echo $baseUrl; ?>assets/js/ui-helpers.js"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/modal-nueva-materia.js"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/buttons.js"></script>
   <script src="<?php echo $baseUrl; ?>js/mis-materias.js?v=<?php echo time(); ?>"></script>
 </body>
 
