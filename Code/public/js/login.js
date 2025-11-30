@@ -1,0 +1,38 @@
+document.addEventListener('DOMContentLoaded', () => {
+
+    const container = document.getElementById('container');
+    const btnSignUp = document.getElementById('signUp');
+    const btnSignIn = document.getElementById('signIn');
+
+    if (btnSignUp && btnSignIn && container) {
+        btnSignUp.addEventListener('click', () => {
+            container.classList.add('right-panel-active');
+        });
+
+        btnSignIn.addEventListener('click', () => {
+            container.classList.remove('right-panel-active');
+        });
+    }
+
+    // Abrir panel de registro automáticamente
+    if (window.SIGNUP_OPEN === true && container) {
+        container.classList.add('right-panel-active');
+    }
+
+    // Spinner del login
+    const loginForm    = document.getElementById('signInForm');
+    const loginBtn     = document.getElementById('btnLogin');
+    const loginSpinner = document.getElementById('loginSpinner');
+    const loginText    = document.getElementById('loginText');
+
+    if (loginForm && loginBtn && loginSpinner && loginText) {
+        loginForm.addEventListener('submit', function () {
+            const delay = 500;
+            setTimeout(() => {
+                loginBtn.disabled = true;
+                loginSpinner.style.display = 'inline-block';
+                loginText.textContent = 'Ingresando...';
+            }, delay);
+        });
+    }
+});

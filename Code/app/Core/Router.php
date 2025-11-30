@@ -25,12 +25,6 @@ class Router
     {
         $method = $_SERVER['REQUEST_METHOD'];
         $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-
-        // Remove base path if project is in a subdirectory
-        // Assuming project is at /ProyConstruccionSoftware/Code/public
-        // Adjust this logic if needed based on server config
-        // Remove base path if project is in a subdirectory
-        // Fix: Normalize slashes for Windows compatibility
         $scriptName = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
 
         if (strpos($path, $scriptName) === 0) {
@@ -41,12 +35,10 @@ class Router
         $callback = $this->routes[$method][$path] ?? false;
 
         if ($callback === false) {
-            // Try regex matching for dynamic routes
             foreach ($this->routes[$method] as $route => $handler) {
-                $pattern = "@^" . preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[a-zA-Z0-9_]+)', $route) . "$@";
+                $pattern = "@^" . preg_replace('/\{(\w+)\}/', '(?P<$1>\w+)', $route) . "$@";
                 if (preg_match($pattern, $path, $matches)) {
                     $callback = $handler;
-                    // Filter out numeric keys
                     $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
                     return call_user_func($callback, $params);
                 }

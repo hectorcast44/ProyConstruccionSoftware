@@ -1,12 +1,20 @@
-    <?php
-    // Mismo cálculo de BASE_URL que en mis-calificaciones.php
-    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
-    $dirName = dirname($scriptName);
-    if ($dirName === '.' || $dirName === '/') {
-        $dirName = '';
-    }
-    $baseUrl = rtrim($dirName, '/') . '/';
-    ?>
+<?php
+  if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+  }
+
+  if (empty($_SESSION['id_usuario'])) {
+      header('Location: /auth/login');
+      exit;
+  }
+
+  $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+  $dirName = dirname($scriptName);
+  if ($dirName === '.' || $dirName === '/') {
+      $dirName = '';
+  }
+  $baseUrl = rtrim($dirName, '/') . '/';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
