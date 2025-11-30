@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 23-11-2025 a las 04:20:54
+-- Tiempo de generación: 30-11-2025 a las 03:08:04
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -173,7 +173,8 @@ CREATE TABLE `usuario` (
 --
 
 INSERT INTO `usuario` (`id_usuario`, `correo`, `password`, `nombre_usuario`) VALUES
-(1, 'admin@correo.com', 'admin123', 'Administrador');
+(1, 'admin@correo.com', '$2y$10$7JQZOtMLLVFFCSIlWB94TugCng2ifAoMlynRIIoQlQ7rHdAdQrKsO', 'Administrador'),
+(3, 'elika234@hotmail.com', '$2y$10$Hm2bvHnVSyzHJBSvA0tfJOH/itHladpHV/FxWptbKvL1GQG8v/kLm', 'Karen');
 
 --
 -- Índices para tablas volcadas
@@ -245,7 +246,7 @@ ALTER TABLE `tipo_actividad`
 -- AUTO_INCREMENT de la tabla `usuario`
 --
 ALTER TABLE `usuario`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Restricciones para tablas volcadas
