@@ -15,4 +15,9 @@ class CalificacionesController extends Controller
     {
         $this->view('mis-calificaciones-detalle');
     }
+
+    public function materias()
+    {
+        $this->view('mis-materias');
+    }
 }

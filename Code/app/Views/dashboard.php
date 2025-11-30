@@ -47,6 +47,7 @@
             <div class="search-content">
                 <input type="text" id="search-input" class="search-input" placeholder="Buscar...">
             </div>
+            <div id="contenedor-boton-filtro"></div>
         </div>
 
 
@@ -71,9 +72,9 @@
     <script src="https://unpkg.com/feather-icons"></script>
     <!-- sidebar dinámico -->
     <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
-    <!-- Lógica del modal -->
+     <!-- Modal nueva -->
     <script src="<?php echo $baseUrl; ?>assets/js/modal-nueva.js"></script>
-    <!-- Lógica de boton nueva calificación -->
+    <!-- Lógica de botones -->
     <script src="<?php echo $baseUrl; ?>assets/js/buttons.js"></script>
     <!-- Lógica de la página Dashboard -->
     <script src="<?php echo $baseUrl; ?>js/dashboard.js"></script>

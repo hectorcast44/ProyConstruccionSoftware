@@ -31,6 +31,8 @@ $router->get('/auth/me', [App\Controllers\AuthController::class, 'me']);
 
 $router->get('/mis-calificaciones', [App\Controllers\CalificacionesController::class, 'index']);
 $router->get('/mis-calificaciones/detalle', [App\Controllers\CalificacionesController::class, 'detalle']);
+// Mis materias
+$router->get('/mis-materias', [App\Controllers\CalificacionesController::class, 'materias']);
 
 // API Routes
 $router->get('/api/materias', [App\Controllers\Api\MateriaController::class, 'index']);

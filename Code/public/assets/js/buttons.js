@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   );
 
   cargarPartial(
-    '../partials/boton-filtro.html',
+    basePath + 'partials/boton-filtro.html',
     'contenedor-boton-filtro',
     'boton-filtro',
     abrirModalFiltro
