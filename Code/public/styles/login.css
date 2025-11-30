@@ -1,0 +1,530 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+/* ================================================================ */
+/* VARIABLES GLOBALES */
+/* ================================================================ */
+:root {
+    /* Colores base */
+    --color-primary: #5162af;
+    --color-primary-alt: #764ba2;
+    --color-primary-light: #667eea;
+
+    --color-bg-body: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-alt) 100%);
+    --color-bg-card: #ffffff;
+
+    --color-text-main: #2e2e2e;
+    --color-text-muted: #666666;
+    --color-text-placeholder: #999999;
+
+    --color-border-input: rgba(81, 98, 175, 0.2);
+    --color-border-input-focus: rgba(81, 98, 175, 0.6);
+    --color-shadow-input-focus: rgba(81, 98, 175, 0.1);
+    --color-btn-shadow: rgba(81, 98, 175, 0.3);
+    --color-btn-shadow-hover: rgba(81, 98, 175, 0.4);
+
+    --color-overlay-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --color-overlay-text: #ffffff;
+
+    /* Mensajes */
+    --color-success-bg: #d4edda;
+    --color-success-text: #155724;
+    --color-success-border: #c3e6cb;
+
+    --color-error-bg: #f8d7da;
+    --color-error-text: #721c24;
+    --color-error-border: #f5c6cb;
+
+    /* Tipografía */
+    --font-family-base: "Poppins", sans-serif;
+    --font-size-title: 28px;
+    --font-size-subtitle: 13px;
+    --font-size-input: 14px;
+    --font-size-message: 13px;
+
+    /* Dimensiones */
+    --border-radius-card: 12px;
+    --border-radius-input: 6px;
+    --border-radius-button: 20px;
+    --auth-width: 850px;
+    --auth-min-height: 550px;
+
+    /* Botones */
+    --btn-padding-y: 12px;
+    --btn-padding-x: 45px;
+    --btn-font-size: 12px;
+    --btn-font-weight: 600;
+    --btn-letter-spacing: 1px;
+
+    /* Transiciones / animaciones */
+    --transition-base: 0.3s ease;
+    --transition-panel: 0.6s ease-in-out;
+
+    /* Spinner */
+    --spinner-size: 14px;
+    --spinner-border-width: 2px;
+}
+
+/* ================================================================ */
+/* RESET Y GLOBALES */
+/* ================================================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family-base);
+    background: var(--color-bg-body);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* ================================================================ */
+/* ANIMACIONES */
+/* ================================================================ */
+@keyframes slideInFromRight {
+    0% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes showPanel {
+    0%,
+    49.99% {
+        opacity: 0;
+        z-index: 1;
+    }
+    50%,
+    100% {
+        opacity: 1;
+        z-index: 5;
+    }
+}
+
+/* ================================================================ */
+/* CONTENEDOR PRINCIPAL */
+/* ================================================================ */
+.auth-container {
+    position: relative;
+    overflow: hidden;
+    width: var(--auth-width);
+    max-width: 100%;
+    min-height: var(--auth-min-height);
+    background-color: var(--color-bg-card);
+    border-radius: var(--border-radius-card);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+    animation: slideInFromRight 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ================================================================ */
+/* CONTENEDORES DE FORMULARIOS */
+/* ================================================================ */
+.form-container {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    transition: all var(--transition-panel);
+}
+
+.sign-in-container {
+    left: 0;
+    width: 50%;
+    z-index: 2;
+}
+
+.auth-container.right-panel-active .sign-in-container {
+    transform: translateX(100%);
+}
+
+.sign-up-container {
+    left: 0;
+    width: 50%;
+    opacity: 0;
+    z-index: 1;
+}
+
+.auth-container.right-panel-active .sign-up-container {
+    transform: translateX(100%);
+    opacity: 1;
+    z-index: 5;
+    animation: showPanel 0.6s;
+}
+
+/* ================================================================ */
+/* ESTILOS DE FORMULARIOS */
+/* ================================================================ */
+form {
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0 50px;
+    height: 100%;
+    text-align: center;
+}
+
+h1 {
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 10px;
+    font-size: var(--font-size-title);
+}
+
+.subtitle {
+    font-size: var(--font-size-subtitle);
+    color: var(--color-text-muted);
+    margin-bottom: 25px;
+    font-weight: 400;
+}
+
+.form-group {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* Si en el HTML usas class="form-control", tendrás este estilo */
+.form-control,
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    background-color: #f0f0f0;
+    border: 1px solid var(--color-border-input);
+    padding: 12px 15px;
+    width: 100%;
+    border-radius: var(--border-radius-input);
+    font-size: var(--font-size-input);
+    font-family: var(--font-family-base);
+    transition: all var(--transition-base);
+}
+
+.form-control:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: var(--color-border-input-focus);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px var(--color-shadow-input-focus);
+}
+
+.form-control::placeholder,
+input::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+/* ================================================================ */
+/* BOTONES */
+/* ================================================================ */
+.btn-primary,
+button[type="submit"] {
+    border-radius: var(--border-radius-button);
+    border: none;
+    background: linear-gradient(
+        135deg,
+        rgba(81, 98, 175, 0.9),
+        rgba(118, 75, 162, 0.9)
+    );
+    color: #ffffff;
+    font-size: var(--btn-font-size);
+    font-weight: var(--btn-font-weight);
+    padding: var(--btn-padding-y) var(--btn-padding-x);
+    letter-spacing: var(--btn-letter-spacing);
+    text-transform: uppercase;
+    transition: all var(--transition-base);
+    cursor: pointer;
+    margin-top: 15px;
+    box-shadow: 0 4px 15px var(--color-btn-shadow);
+}
+
+.btn-primary:hover:not(:disabled),
+button[type="submit"]:hover:not(:disabled) {
+    background: linear-gradient(
+        135deg,
+        rgba(81, 98, 175, 1),
+        rgba(118, 75, 162, 1)
+    );
+    box-shadow: 0 6px 20px var(--color-btn-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.btn-primary:active:not(:disabled),
+button[type="submit"]:active:not(:disabled) {
+    transform: scale(0.95) translateY(0);
+}
+
+.btn-primary:disabled,
+button[type="submit"]:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-ghost {
+    background-color: transparent;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    border-radius: var(--border-radius-button);
+    padding: var(--btn-padding-y) var(--btn-padding-x);
+    font-size: var(--btn-font-size);
+    font-weight: var(--btn-font-weight);
+    letter-spacing: var(--btn-letter-spacing);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.btn-ghost:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+/* ================================================================ */
+/* OVERLAY DESLIZANTE */
+/* ================================================================ */
+.overlay-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+    transition: transform var(--transition-panel);
+    z-index: 100;
+}
+
+.auth-container.right-panel-active .overlay-container {
+    transform: translateX(-100%);
+}
+
+.overlay {
+    background: var(--color-overlay-gradient);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: 0 0;
+    color: var(--color-overlay-text);
+    position: relative;
+    left: -100%;
+    height: 100%;
+    width: 200%;
+    transform: translateX(0);
+    transition: transform var(--transition-panel);
+}
+
+.auth-container.right-panel-active .overlay {
+    transform: translateX(50%);
+}
+
+.overlay-panel {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0 40px;
+    text-align: center;
+    top: 0;
+    height: 100%;
+    width: 50%;
+    transform: translateX(0);
+    transition: transform var(--transition-panel);
+}
+
+.overlay-panel h1 {
+    color: var(--color-overlay-text);
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.overlay-panel p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 22px;
+    letter-spacing: 0.5px;
+    margin: 20px 0 30px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.overlay-left {
+    transform: translateX(-20%);
+}
+
+.auth-container.right-panel-active .overlay-left {
+    transform: translateX(0);
+}
+
+.overlay-right {
+    right: 0;
+    transform: translateX(0);
+}
+
+.auth-container.right-panel-active .overlay-right {
+    transform: translateX(20%);
+}
+
+/* ================================================================ */
+/* MENSAJES */
+/* ================================================================ */
+.mensaje {
+    padding: 10px 15px;
+    border-radius: var(--border-radius-input);
+    margin-bottom: 15px;
+    font-size: var(--font-size-message);
+    font-weight: 500;
+    display: none;
+    width: 100%;
+    animation: fadeIn 0.3s ease;
+}
+
+.mensaje.success {
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+    border: 1px solid var(--color-success-border);
+    display: block;
+}
+
+.mensaje.error {
+    background-color: var(--color-error-bg);
+    color: var(--color-error-text);
+    border: 1px solid var(--color-error-border);
+    display: block;
+}
+
+/* ================================================================ */
+/* SPINNER */
+/* ================================================================ */
+.spinner-border {
+    display: inline-block;
+    width: var(--spinner-size);
+    height: var(--spinner-size);
+    border: var(--spinner-border-width) solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* ================================================================ */
+/* ENLACES */
+/* ================================================================ */
+.forgot-link {
+    color: rgba(81, 98, 175, 0.9);
+    font-size: 13px;
+    text-decoration: none;
+    margin-top: 12px;
+    display: inline-block;
+    transition: color var(--transition-base);
+}
+
+.forgot-link:hover {
+    color: rgba(118, 75, 162, 0.9);
+    text-decoration: underline;
+}
+
+/* ================================================================ */
+/* RESPONSIVO */
+/* ================================================================ */
+@media (max-width: 768px) {
+    .auth-container {
+        width: 100%;
+        min-height: 600px;
+    }
+
+    .form-container {
+        width: 100% !important;
+    }
+
+    .overlay-container {
+        display: none;
+    }
+
+    .sign-in-container,
+    .sign-up-container {
+        position: relative;
+        width: 100%;
+    }
+
+    .auth-container.right-panel-active .sign-in-container {
+        display: none;
+    }
+
+    .sign-up-container {
+        display: none;
+    }
+
+    .auth-container.right-panel-active .sign-up-container {
+        display: flex;
+        transform: translateX(0);
+    }
+
+    form {
+        padding: 40px 30px;
+    }
+
+    .mobile-switch {
+        margin-top: 20px;
+        font-size: 13px;
+        color: var(--color-text-muted);
+    }
+
+    .mobile-switch a {
+        color: rgba(81, 98, 175, 0.9);
+        text-decoration: none;
+        font-weight: 600;
+    }
+}
+
+@media (max-width: 480px) {
+    form {
+        padding: 30px 20px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    .btn-primary,
+    button[type="submit"] {
+        padding: 10px 35px;
+        font-size: 11px;
+    }
+}
+
+.mobile-switch {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-switch {
+        display: block;
+    }
+}

@@ -1,0 +1,130 @@
+<?php
+  if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+  }
+
+  if (empty($_SESSION['id_usuario'])) {
+      header('Location: /auth/login');
+      exit;
+  }
+
+  $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+  $dirName = dirname($scriptName);
+  if ($dirName === '.' || $dirName === '/') {
+      $dirName = '';
+  }
+  $baseUrl = rtrim($dirName, '/') . '/';
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis calificaciones - detalle</title>
+  <base href="<?php echo htmlspecialchars($baseUrl, ENT_QUOTES); ?>">
+  <script>
+    const BASE_URL = "<?php echo $baseUrl; ?>";
+  </script>
+
+  <!-- estilos globales -->
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/sidebar.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/layout.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/search-bar.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/table-theme.css" />
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/card-accordion.css" />
+
+  <!-- estilos específicos de esta página (informe + diagnóstico, ajustes) -->
+  <link rel="stylesheet" href="<?php echo $baseUrl; ?>styles/mis-calificaciones-detalle.css" />
+</head>
+
+<body class="has-sidebar page-calificaciones-detalle">
+  <!-- sidebar dinámico -->
+  <div id="sidebar-mount"></div>
+
+  <main>
+    <!-- buscador flotante -->
+    <div class="search-wrapper">
+      <div class="input-holder">
+        <input type="text" class="search-input" placeholder="Buscar actividad..." id="buscador-menu" />
+        <button class="search-icon" aria-label="Buscar / Cerrar" id="search-toggle">
+          <i data-feather="search"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="page-title">
+      <i data-feather="bar-chart-2"></i>
+      <h1>Mis calificaciones - detalles</h1>
+    </div>
+
+    <!-- cards con acordeón para actividades de esta materia -->
+    <section id="lista-usuarios" class="accordion-card-grid"></section>
+
+
+    <!-- bloque informe + diagnóstico -->
+    <section class="progress-and-diagnosis">
+      <!-- tarjeta de informe que usa la tabla reutilizable -->
+      <div class="progress-card">
+        <div class="progress-card__header">
+          Informe de Progreso
+        </div>
+
+        <!-- usa las clases de table-theme.css -->
+        <div class="item-table-wrapper">
+          <table class="item-table">
+            <tbody>
+              <tr data-field="porcentaje-obtenido">
+                <td>Porcentaje obtenido %</td>
+                <td class="right">--</td>
+              </tr>
+              <tr data-field="puntos-obtenidos">
+                <td>Puntos obtenidos</td>
+                <td class="right">--</td>
+              </tr>
+              <tr data-field="puntos-perdidos">
+                <td>Puntos perdidos</td>
+                <td class="right">--</td>
+              </tr>
+              <tr data-field="puntos-posibles">
+                <td>Puntos posibles a obtener</td>
+                <td class="right">--</td>
+              </tr>
+              <tr data-field="puntos-necesarios">
+                <td>Puntos necesarios para aprobar</td>
+                <td class="right">--</td>
+              </tr>
+              <tr data-field="calificacion-minima">
+                <td>Calificación mínima</td>
+                <td class="right">--</td>
+              </tr>
+              <tr data-field="calificacion-maxima">
+                <td>Calificación máxima</td>
+                <td class="right">--</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- diagnóstico -->
+      <div class="diagnosis-card">
+        <p class="diagnosis-title">Diagnóstico</p>
+        <!-- clase neutra; el JS añadirá --ok / --warn / --fail -->
+        <div class="diagnosis-circle">
+          <span class="diag-label">Calificación</span>
+          <span class="diag-grade">--</span>
+          <span class="diag-status">Calculando...</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+
+
+  <script src="https://unpkg.com/feather-icons"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
+  <script src="<?php echo $baseUrl; ?>assets/js/ui-helpers.js"></script>
+  <script src="<?php echo $baseUrl; ?>js/mis-calificaciones-detalle.js?v=<?php echo time(); ?>"></script>
+</body>
+
+</html>

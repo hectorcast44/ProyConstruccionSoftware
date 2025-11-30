@@ -1,0 +1,183 @@
+/* ==================================================
+   MIS CALIFICACIONES: INFORME + DIAGNÓSTICO
+   (las cards+acordeón las maneja card-accordion.css)
+   ================================================== */
+
+/* ---------- Variables del módulo ---------- */
+:root {
+  /* Progress card */
+  --progress-card-bg: #fff;
+  --progress-card-radius: 12px;
+  --progress-card-shadow: 0 12px 30px rgba(0, 0, 0, 0.03);
+  --progress-card-min-width: 280px;
+  --progress-card-max-width: 360px;
+
+  --progress-header-gradient: linear-gradient(90deg, #5162AF 0%, #222949 100%);
+  --progress-header-text-color: #fff;
+  --progress-header-padding-y: .8rem;
+  --progress-header-padding-x: 1rem;
+  --progress-header-font-size: .85rem;
+  --progress-header-font-weight: 600;
+
+  --progress-right-text-color: #222;
+  --progress-right-font-weight: 500;
+
+  /* Layout bloque informe + diagnóstico */
+  --progress-diag-gap: 2.5rem;
+  --progress-diag-margin-top: 2rem;
+
+  /* Diagnosis circle */
+  --diag-circle-size: 220px;
+
+  /* Status colors (text) */
+  --diag-status-ok:    #2c8c77;   /* Verde frío */
+  --diag-status-risk:  #b88a2e;   /* Ámbar sobrio */
+  --diag-status-fail:  #b84a4a;   /* Rojo vino */
+
+  /* Diagnosis gradients */
+  --diag-warn-grad: radial-gradient(circle at top, #e8c55a 0%, #c5962e 80%);
+  --diag-warn-shadow: 0 14px 30px rgba(197, 150, 46, 0.25);
+
+  --diag-ok-grad: radial-gradient(circle at top, #3d9e8a 0%, #2e7f6e 80%);
+  --diag-ok-shadow: 0 14px 30px rgba(46, 127, 110, 0.25);
+
+  --diag-fail-grad: radial-gradient(circle at top, #c45b5b 0%, #a74343 80%);
+  --diag-fail-shadow: 0 14px 30px rgba(167, 67, 67, 0.25);
+}
+
+/* contenedor de la tarjeta de progreso + círculo de diagnóstico */
+.progress-and-diagnosis {
+  display: flex;
+  justify-content: center;
+  gap: var(--progress-diag-gap);
+  align-items: center;
+  margin-top: var(--progress-diag-margin-top);
+  flex-wrap: wrap;
+}
+
+/* tarjeta de informe (usando la tabla reutilizable) */
+.progress-card {
+  background: var(--progress-card-bg);
+  border-radius: var(--progress-card-radius);
+  overflow: hidden;
+  min-width: var(--progress-card-min-width);
+  max-width: var(--progress-card-max-width);
+  box-shadow: var(--progress-card-shadow);
+}
+
+/* header azul del informe */
+.progress-card__header {
+  background: var(--progress-header-gradient);
+  color: var(--progress-header-text-color);
+  text-align: center;
+  padding: var(--progress-header-padding-y) var(--progress-header-padding-x);
+  font-weight: var(--progress-header-font-weight);
+  font-size: var(--progress-header-font-size);
+}
+
+/* adaptación del tema de tabla dentro del progress-card */
+.progress-card .item-table-wrapper {
+  border-radius: 0 0 var(--progress-card-radius) var(--progress-card-radius);
+  border-top: none;
+}
+
+/* columnas derechas dentro del informe */
+.progress-card .item-table td.right {
+  text-align: right;
+  font-weight: var(--progress-right-font-weight);
+  color: var(--progress-right-text-color);
+}
+
+/* --------- DIAGNÓSTICO CÍRCULO ---------- */
+.diagnosis-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.diagnosis-title {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 700;
+  color: #222;
+}
+
+.diagnosis-circle {
+  width: var(--diag-circle-size);
+  height: var(--diag-circle-size);
+  border-radius: 999px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  text-align: center;
+}
+
+/* variantes de color según estado */
+.diagnosis-circle--warn {
+  background: var(--diag-warn-grad);
+  box-shadow: var(--diag-warn-shadow);
+}
+
+.diagnosis-circle--ok {
+  background: var(--diag-ok-grad);
+  box-shadow: var(--diag-ok-shadow);
+}
+
+.diagnosis-circle--fail {
+  background: var(--diag-fail-grad);
+  box-shadow: var(--diag-fail-shadow);
+}
+
+/* estado (texto) */
+.diag-status--ok {
+  color: var(--diag-status-ok);
+}
+
+.diag-status--risk {
+  color: var(--diag-status-risk);
+}
+
+.diag-status--fail {
+  color: var(--diag-status-fail);
+}
+
+.diag-label {
+  font-size: .75rem;
+  color: #fff;
+  opacity: 0.95;
+}
+
+.diag-grade {
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.diag-status {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.diag-status--risk {
+  text-transform: capitalize;
+}
+
+@media (max-width: 900px) {
+  .progress-and-diagnosis {
+    flex-direction: column;
+    align-items: center; 
+    text-align: center;  /
+  }
+
+  .diagnosis-card {
+    align-items: center; 
+    justify-content: center;
+    text-align: center; 
+  }
+}
