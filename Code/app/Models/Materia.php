@@ -10,9 +10,9 @@ class Materia
 {
     private $pdo;
 
-    public function __construct()
+    public function __construct(?PDO $pdo = null)
     {
-        $this->pdo = Database::getInstance()->getConnection();
+        $this->pdo = $pdo ?? Database::getInstance()->getConnection();
     }
 
     public function crear($id_usuario, $nombre_materia, $calif_minima = 70)

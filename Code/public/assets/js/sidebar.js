@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
       activarEnlaceActual();
       inicializarColapsoSidebar();
       cargarUsuarioEnSidebar();
+      inicializarLogoutSidebar(); 
     })
     .catch(err => {
       console.error('Error cargando sidebar:', err);
@@ -38,9 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-/**
- * Cargar usuario (opcional, igual que antes pero usando BASE_URL).
- */
+
 async function cargarUsuarioEnSidebar() {
   try {
     const resp = await fetch((globalThis.BASE_URL || '') + 'auth/me', {
@@ -64,9 +63,6 @@ async function cargarUsuarioEnSidebar() {
   }
 }
 
-/**
- * Marca activo el enlace de la página actual.
- */
 function normalizarRuta(path) {
   if (!path) return '';
   path = path.split('?')[0];
@@ -91,9 +87,6 @@ function activarEnlaceActual() {
   }
 }
 
-/**
- * Colapso/expansión del sidebar.
- */
 function inicializarColapsoSidebar() {
   const sidebar = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('sidebarToggle');
@@ -105,3 +98,15 @@ function inicializarColapsoSidebar() {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
   });
 }
+
+function inicializarLogoutSidebar() {
+  const btnLogout = document.getElementById('sidebarLogout');
+  if (!btnLogout) return;
+
+  btnLogout.addEventListener('click', (event) => {
+    event.preventDefault();
+    const base = globalThis.BASE_URL || '';
+    globalThis.location.href = base + 'logout';
+  });
+}
+

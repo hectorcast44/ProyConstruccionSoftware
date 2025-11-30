@@ -31,9 +31,9 @@ class Calculadora
     private const DEFAULT_APROBATORIA = 70.0;
     private const RIESGO_MARGEN = 10.0;
 
-    public function __construct()
+    public function __construct(?PDO $pdo = null)
     {
-        $this->pdo = Database::getInstance()->getConnection();
+        $this->pdo = $pdo ?? Database::getInstance()->getConnection();
     }
 
     /**
@@ -160,8 +160,8 @@ class Calculadora
 
                 $sumPos = (float) $info['sum_pos'];
                 $sumCalifPos = (float) $info['sum_calif_pos'];
-                $sumPendPos  = (float) $info['sum_pend_pos'];
-                $sumObt  = (float) $info['sum_obt'];
+                $sumPendPos = (float) $info['sum_pend_pos'];
+                $sumObt = (float) $info['sum_obt'];
 
                 // ---------------------------
                 // Calificación actual (promedio ponderado)
@@ -178,7 +178,7 @@ class Calculadora
                 // ---------------------------
                 // "Total interno final" para este tipo:
                 //  - Si sumPos < puntosTipo → aún hay puntos futuros (puntosTipo - sumPos)
-               
+
                 $totalInternoFinal = max($puntosTipo, $sumPos);
 
                 if ($totalInternoFinal <= 0.0) {
@@ -190,7 +190,7 @@ class Calculadora
                     $factor = $puntosTipo / $totalInternoFinal;
 
                     // Asegurados (ya ganados)
-                    $ganadosTipo  = $sumObt * $factor;
+                    $ganadosTipo = $sumObt * $factor;
 
                     // Perdidos (de actividades calificadas)
                     $perdidosTipo = max(0.0, ($sumCalifPos - $sumObt) * $factor);
@@ -306,8 +306,8 @@ class Calculadora
 
         $puntosGanados = (float) $fila['puntos_ganados'];
         $puntosPerdidos = (float) $fila['puntos_perdidos'];
-        $puntosPendientes  = (float) $fila['puntos_pendientes'];
-        $califMinimaAprob  = (float) ($fila['calif_minima'] ?? self::DEFAULT_APROBATORIA);
+        $puntosPendientes = (float) $fila['puntos_pendientes'];
+        $califMinimaAprob = (float) ($fila['calif_minima'] ?? self::DEFAULT_APROBATORIA);
         $califActual = (float) $fila['calificacion_actual'];
 
         // Total de la “escala real” (≈ suma de ponderaciones)
@@ -356,10 +356,10 @@ class Calculadora
 
         if ($porcentajeObtenido >= $califMinimaAprob) {
             $estado = 'Aprobado';
-            $nivel  = 'ok';
+            $nivel = 'ok';
         } elseif ($porcentajeObtenido < ($califMinimaAprob - self::RIESGO_MARGEN)) {
             $estado = 'Reprobado';
-            $nivel  = 'fail';
+            $nivel = 'fail';
         }
 
         $progreso = [
@@ -376,7 +376,7 @@ class Calculadora
             'por_tipo' => array_values($this->resultadosPorTipo),
             'diagnostico' => [
                 'grado' => round($porcentajeObtenido),
-                'estado'=> $estado,
+                'estado' => $estado,
                 'nivel' => $nivel,
             ],
         ];

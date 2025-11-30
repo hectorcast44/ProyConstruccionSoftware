@@ -24,21 +24,45 @@ spl_autoload_register(function ($class) {
 
 $router = new Router();
 
-// Web Routes
-$router->get('/', [App\Controllers\DashboardController::class, 'index']);
-$router->get('/dashboard', [App\Controllers\DashboardController::class, 'index']);
+/* ============================
+ * RUTAS DE AUTENTICACIÓN
+ * ============================ */
+
+$router->get('/auth/login', [App\Controllers\AuthController::class, 'showLogin']);
+$router->post('/auth/login', [App\Controllers\AuthController::class, 'login']);
+$router->post('/auth/register', [App\Controllers\AuthController::class, 'register']);
+$router->get('/logout', [App\Controllers\AuthController::class, 'logout']);
 $router->get('/auth/me', [App\Controllers\AuthController::class, 'me']);
 
+/* ============================
+ * RUTAS WEB
+ * ============================ */
+
+$router->get('/', function () {
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+    $baseDir = rtrim(dirname($scriptName), '/');
+    $baseUrl = $baseDir . '/'; 
+
+    if (empty($_SESSION['id_usuario'])) {
+        header('Location: ' . $baseUrl . 'auth/login');
+    } else {
+        header('Location: ' . $baseUrl . 'dashboard');
+    }
+    exit;
+});
+
+// Dashboard (protegida por el middleware "manual" en la vista)
+$router->get('/dashboard', [App\Controllers\DashboardController::class, 'index']);
 $router->get('/mis-calificaciones', [App\Controllers\CalificacionesController::class, 'index']);
 $router->get('/mis-calificaciones/detalle', [App\Controllers\CalificacionesController::class, 'detalle']);
 
-$router->get('/mis-materias', [App\Controllers\MisMateriasController::class, 'index']);
+/* ============================
+ * RUTAS API
+ * ============================ */
 
-// API Routes
 $router->get('/api/materias', [App\Controllers\Api\MateriaController::class, 'index']);
 $router->post('/api/materias', [App\Controllers\Api\MateriaController::class, 'store']);
 $router->delete('/api/materias', [App\Controllers\Api\MateriaController::class, 'delete']);
-
 $router->get('/api/actividades', [App\Controllers\Api\ActividadController::class, 'index']);
 $router->post('/api/actividades', [App\Controllers\Api\ActividadController::class, 'store']);
 

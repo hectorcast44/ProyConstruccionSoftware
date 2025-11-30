@@ -10,9 +10,9 @@ class TipoActividad
 {
     private $pdo;
 
-    public function __construct()
+    public function __construct(?PDO $pdo = null)
     {
-        $this->pdo = Database::getInstance()->getConnection();
+        $this->pdo = $pdo ?? Database::getInstance()->getConnection();
     }
 
     public function obtenerTodos($id_usuario)
@@ -23,10 +23,10 @@ class TipoActividad
         $sql = "SELECT *, (id_usuario = ?) as es_propio FROM TIPO_ACTIVIDAD 
                 WHERE id_usuario = ? OR id_usuario = 1 
                 ORDER BY nombre_tipo ASC";
-        
+
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$id_usuario, $id_usuario]);
-        
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -48,7 +48,7 @@ class TipoActividad
         $sql = "INSERT INTO TIPO_ACTIVIDAD (id_usuario, nombre_tipo) VALUES (?, ?)";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$id_usuario, $nombre]);
-        
+
         return $this->pdo->lastInsertId();
     }
 
@@ -67,7 +67,7 @@ class TipoActividad
         $sql = "UPDATE TIPO_ACTIVIDAD SET nombre_tipo = ? WHERE id_tipo_actividad = ?";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$nombre, $id_tipo]);
-        
+
         return $stmt->rowCount() > 0;
     }
 
@@ -101,7 +101,7 @@ class TipoActividad
         $sql = "DELETE FROM TIPO_ACTIVIDAD WHERE id_tipo_actividad = ?";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$id_tipo]);
-        
+
         return true;
     }
 
@@ -111,7 +111,7 @@ class TipoActividad
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$id_tipo]);
         $owner = $stmt->fetchColumn();
-        
+
         return $owner == $id_usuario;
     }
 
@@ -119,9 +119,9 @@ class TipoActividad
     {
         $sql = "SELECT COUNT(*) FROM TIPO_ACTIVIDAD 
                 WHERE nombre_tipo = ? AND (id_usuario = ? OR id_usuario = 1)";
-        
+
         $params = [$nombre, $id_usuario];
-        
+
         if ($excluirId) {
             $sql .= " AND id_tipo_actividad != ?";
             $params[] = $excluirId;
@@ -129,7 +129,7 @@ class TipoActividad
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
-        
+
         return $stmt->fetchColumn() > 0;
     }
 }
