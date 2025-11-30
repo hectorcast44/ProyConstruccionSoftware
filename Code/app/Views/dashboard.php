@@ -1,4 +1,12 @@
 <?php
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    if (empty($_SESSION['id_usuario'])) {
+        header('Location: /auth/login');
+        exit;
+    }
     $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
     $publicPos = strpos($scriptName, '/public/');
     if ($publicPos === false) {
