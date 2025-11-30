@@ -19,6 +19,20 @@ class TipoActividadController extends Controller
     {
         $idUsuario = AuthController::getUserId();
         try {
+            // Si se pide un id en particular, devolver detalle y conteos de referencias
+            if (isset($_GET['id'])) {
+                $id = $_GET['id'];
+                $tipo = $this->tipoModel->obtenerPorId($id, $idUsuario);
+                if (!$tipo) {
+                    $this->json(['status' => 'error', 'message' => 'Tipo no encontrado'], 404);
+                    return;
+                }
+                $refs = $this->tipoModel->contarReferencias($id, $idUsuario);
+                $tipo['referencias'] = $refs;
+                $this->json(['status' => 'success', 'data' => $tipo]);
+                return;
+            }
+
             $tipos = $this->tipoModel->obtenerTodos($idUsuario);
             $this->json(['status' => 'success', 'data' => $tipos]);
         } catch (\Exception $e) {
@@ -72,15 +86,20 @@ class TipoActividadController extends Controller
     {
         $idUsuario = AuthController::getUserId();
         $id = $_GET['id'] ?? null;
-
         if (!$id) {
             $this->json(['status' => 'error', 'message' => 'ID requerido'], 400);
             return;
         }
 
+        $force = isset($_GET['force']) && ($_GET['force'] === '1' || $_GET['force'] === 'true');
+
         try {
-            $this->tipoModel->eliminar($id, $idUsuario);
-            $this->json(['status' => 'success', 'message' => 'Tipo eliminado correctamente']);
+            $result = $this->tipoModel->eliminar($id, $idUsuario, $force);
+            if (is_array($result)) {
+                $this->json(['status' => 'success', 'message' => 'Tipo eliminado correctamente', 'deleted' => $result]);
+            } else {
+                $this->json(['status' => 'success', 'message' => 'Tipo eliminado correctamente']);
+            }
         } catch (\Exception $e) {
             $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
         }

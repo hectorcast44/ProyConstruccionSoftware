@@ -208,28 +208,27 @@ async function botonEliminarMasivo() {
                 : (await (async () => {
                         // fallback: crear modal mínimo si no existe showConfirm
                         return new Promise(resolve => {
-                            const modalId = '__temp_confirm_modal_all_acts';
-                            const overlay = document.createElement('div');
-                            overlay.id = modalId;
-                            Object.assign(overlay.style, { position: 'fixed', inset: '0', background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999 });
-                            overlay.innerHTML = `
-                                <div role="dialog" aria-modal="true" class="modal-eliminar-masivo">
-                                    <h3>Confirmar eliminación</h3>
-                                    <p>¿Estás seguro de que deseas eliminar todas las actividades listadas? Esta acción eliminará las actividades del servidor y no se podrá deshacer.</p>
-                                    <div>
-                                        <button id="__temp_confirm_cancel">Cancelar</button>
-                                        <button id="__temp_confirm_ok" class="btn-delete-fila">Eliminar</button>
+                                const dlg = document.createElement('dialog');
+                                dlg.className = 'confirm-dialog';
+                                dlg.innerHTML = `
+                                    <div style="padding:16px;border-radius:8px;max-width:480px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,0.12);">
+                                        <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
+                                        <p style="margin:0 0 12px 0">¿Estás seguro de que deseas eliminar todas las actividades listadas? Esta acción eliminará las actividades del servidor y no se podrá deshacer.</p>
+                                        <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                            <button id="__temp_confirm_cancel" style="background:#eee;border:0;padding:8px 12px;border-radius:6px;">Cancelar</button>
+                                            <button id="__temp_confirm_ok" style="background:#0d6efd;color:#fff;border:0;padding:8px 12px;border-radius:6px;">Eliminar</button>
+                                        </div>
                                     </div>
-                                </div>
-                            `;
-                            document.body.appendChild(overlay);
-                            const ok = overlay.querySelector('#__temp_confirm_ok');
-                            const cancel = overlay.querySelector('#__temp_confirm_cancel');
-                            ok.focus();
-                            const cleanup = (res) => { try { overlay.remove(); } catch(e){}; resolve(res); };
-                            ok.addEventListener('click', () => cleanup(true));
-                            cancel.addEventListener('click', () => cleanup(false));
-                            overlay.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') cleanup(false); });
+                                `;
+                                document.body.appendChild(dlg);
+                                try { dlg.showModal(); } catch(e) {}
+                                const ok = dlg.querySelector('#__temp_confirm_ok');
+                                const cancel = dlg.querySelector('#__temp_confirm_cancel');
+                                ok && ok.focus();
+                                const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
+                                ok && ok.addEventListener('click', () => cleanup(true));
+                                cancel && cancel.addEventListener('click', () => cleanup(false));
+                                dlg.addEventListener('cancel', () => cleanup(false));
                         });
                 })()) );
         if (!confirmar) return;
