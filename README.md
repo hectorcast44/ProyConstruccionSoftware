@@ -53,7 +53,12 @@ El proyecto sigue una estructura estricta para garantizar la seguridad y la mant
 
 ## 👥 Autores
 
-*   **JosephGarcia24** - *Desarrollador Principal*
+
+*   **KarenCampos842** - *Desarrolladora Frontend*
+*   **HectorCast44** - *Desarrollador Backend*
+*   **JosephGarcia24** - *Desarrollador Backend*
+*   **RubenPerez55** - *Desarrollador Frontend*
+
 
 ---
 *Proyecto desarrollado para la materia de Construcción de Software.*
