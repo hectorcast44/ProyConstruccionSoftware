@@ -13,6 +13,17 @@ function abrirModalNueva() {
         inicializarModalNueva();
         poblarSelectsModal();
 
+        // asegurar estado limpio para crear: resetear form e id oculto
+        try {
+          const f = document.getElementById('form-actividad');
+          if (f) {
+            f.reset();
+            delete f.dataset.editIndex;
+          }
+          const hid = document.getElementById('id_actividad');
+          if (hid) hid.value = '';
+        } catch (e) { /* ignore */ }
+
         // renderizar iconos dentro del modal
         if (window.feather) feather.replace();
 
@@ -22,6 +33,17 @@ function abrirModalNueva() {
       .catch(err => console.error('Error cargando modal:', err));
     return;
   }
+
+  // al abrir (cuando ya existe), limpiar estado por defecto (crear)
+  try {
+    const f = document.getElementById('form-actividad');
+    if (f) {
+      f.reset();
+      delete f.dataset.editIndex;
+    }
+    const hid = document.getElementById('id_actividad');
+    if (hid) hid.value = '';
+  } catch (e) { /* ignore */ }
 
   modal.showModal();
 }
@@ -47,6 +69,8 @@ function inicializarModalNueva() {
     const f = new FormData(form);
 
     const payload = {
+      // include id_actividad when editing (modal sets hidden input)
+      ...(f.get('id_actividad') ? { id_actividad: Number(f.get('id_actividad')) } : {}),
       id_materia: f.get('materia') ? Number(f.get('materia')) : null,
       id_tipo_actividad: f.get('tipo') ? Number(f.get('tipo')) : null,
       nombre_actividad: f.get('actividad') || '',
@@ -134,16 +158,44 @@ async function poblarSelectsModal() {
     }
 
     if (selectTipo) {
-      const r2 = await fetch(base + 'api/tipos-actividad', { credentials: 'same-origin' });
-      const txt2 = await r2.text();
-      const json2 = JSON.parse(txt2);
-      const tipos = json2.data || [];
-      const options2 = tipos.map(t => {
-        const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
-        const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
-        return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
-      }).join('');
-      selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + options2;
+      // No mostrar tipos por defecto: permanecerá deshabilitado hasta que se seleccione una materia
+      selectTipo.innerHTML = '<option value="" disabled selected>Selecciona una materia primero</option>';
+      selectTipo.disabled = true;
+
+      // cuando cambie la materia, cargar tipos específicos para esa materia (ponderaciones)
+      selectMateria.addEventListener('change', async () => {
+        const val = selectMateria.value;
+        if (!val) {
+          selectTipo.innerHTML = '<option value="" disabled selected>Selecciona una materia primero</option>';
+          selectTipo.disabled = true;
+          return;
+        }
+        try {
+          const r = await fetch(base + 'api/materias/tipos?id=' + encodeURIComponent(val), { credentials: 'same-origin' });
+          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch(e){ json = null; }
+          const tiposMat = (json && Array.isArray(json.data)) ? json.data : [];
+
+          if (!tiposMat.length) {
+            // No hay tipos asignados para la materia: dejar select vacío y deshabilitado
+            selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
+            selectTipo.disabled = true;
+            return;
+          }
+
+          const opts = tiposMat.map(t => {
+            const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+            const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+            return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+          }).join('');
+
+          selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+          selectTipo.disabled = false;
+        } catch (e) {
+          console.warn('No se pudieron cargar tipos de materia:', e);
+          selectTipo.innerHTML = '<option value="" disabled selected>Error cargando tipos</option>';
+          selectTipo.disabled = true;
+        }
+      });
     }
   } catch (e) {
     console.warn('No se pudieron poblar selects del modal:', e);

@@ -25,6 +25,8 @@ class Calculadora
      * @var array<int,array<string,mixed>>
      */
     private array $resultadosPorTipo = [];
+    /** Depuración opcional del último recálculo */
+    private ?array $debugInfo = null;
 
     /** Constantes para evitar números mágicos */
     private const ESCALA_PORCENTAJE = 100.0;
@@ -64,6 +66,7 @@ class Calculadora
     public function recalcularMateria(int $id_materia, int $id_usuario): bool
     {
         $this->resultadosPorTipo = [];
+        $this->debugInfo = null;
 
         try {
             // ------------------------------------------------------
@@ -76,7 +79,7 @@ class Calculadora
             );
             $stmtPond->execute([$id_materia]);
 
-            // Mapa: id_tipo_actividad => puntos_tipo
+            // Mapa: id_tipo_actividad => puntos_tipo (desde PONDERACION)
             $ponderaciones = $stmtPond->fetchAll(PDO::FETCH_KEY_PAIR);
             if (!$ponderaciones) {
                 $ponderaciones = [];
@@ -133,6 +136,33 @@ class Calculadora
                 } else {
                     $datosTipo[$tipoId]['sum_pend_pos'] += $puntosPosibles;
                 }
+            }
+
+            // Si no existen ponderaciones definidas, construir un fallback
+            // usando la suma de puntos_posibles por tipo (mejor experiencia UX)
+            if (empty($ponderaciones)) {
+                $fallback = [];
+                foreach ($datosTipo as $tid => $info) {
+                    // usar la suma de puntos_posibles como peso temporal
+                    $sumPos = (float) ($info['sum_pos'] ?? 0.0);
+                    if ($sumPos > 0.0) {
+                        $fallback[$tid] = $sumPos;
+                    }
+                }
+                if (!empty($fallback)) {
+                    $ponderaciones = $fallback;
+                    $puntosEscalaTotal = 0.0;
+                    foreach ($ponderaciones as $v) $puntosEscalaTotal += (float) $v;
+                }
+            }
+
+            // Guardar datos de depuración en memoria si se solicita
+            if (isset($_GET['__dbg']) && $_GET['__dbg']) {
+                $this->debugInfo = [
+                    'ponderaciones' => $ponderaciones,
+                    'puntosEscalaTotal' => $puntosEscalaTotal,
+                    'datosTipo' => $datosTipo,
+                ];
             }
 
             // ------------------------------------------------------
@@ -254,6 +284,17 @@ class Calculadora
                 $id_materia,
                 $id_usuario,
             ]);
+
+            // anexar resultados al debugInfo si está activo
+            if (isset($_GET['__dbg']) && $_GET['__dbg']) {
+                $this->debugInfo = array_merge($this->debugInfo ?? [], [
+                    'calificacionActual' => $calificacionActual,
+                    'puntosGanados' => $puntosGanados,
+                    'puntosPerdidos' => $puntosPerdidos,
+                    'puntosPendientes' => $puntosPendientes,
+                    'sumaCalificacionPorTipo' => $sumaCalificacionPorTipo,
+                ]);
+            }
 
             // rowCount() puede ser 0 si los valores no cambiaron, así que no lo tomamos como error
             return true;
@@ -381,9 +422,15 @@ class Calculadora
             ],
         ];
 
-        return [
+        $out = [
             'materia' => $fila,
             'progreso' => $progreso,
         ];
+
+        if (isset($_GET['__dbg']) && $_GET['__dbg']) {
+            $out['debug'] = $this->debugInfo;
+        }
+
+        return $out;
     }
 }

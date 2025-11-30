@@ -111,3 +111,48 @@ input[type="number"]::-webkit-outer-spin-button {
 .modal-filtro-body label {
     margin-top: 1rem;             
 }
+
+/* Styles for tipos list in "nueva materia" modal */
+.tipos-list {
+    padding: 8px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #eee;
+}
+.tipos-list .tipo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background 0.12s;
+}
+.tipos-list .tipo-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+.tipos-list .tipo-item .tipo-nombre {
+    color: #333;
+    font-size: 0.95rem;
+}
+.tipos-list .tipo-item:hover {
+    background: #f6f6fb;
+}
+.tipos-list .tipo-item input[type="checkbox"]:checked + .tipo-nombre {
+    font-weight: 600;
+    color: var(--color-primario);
+}
+
+.label-tipos {
+    font-size: 16px;
+    font-weight: 400;
+    color: #777;
+    margin-bottom: 6px;
+    display: block;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+#cerrar-modal-materia {
+    cursor: pointer;
+}
