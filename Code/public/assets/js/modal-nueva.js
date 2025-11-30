@@ -13,6 +13,17 @@ function abrirModalNueva() {
         inicializarModalNueva();
         poblarSelectsModal();
 
+        // asegurar estado limpio para crear: resetear form e id oculto
+        try {
+          const f = document.getElementById('form-actividad');
+          if (f) {
+            f.reset();
+            delete f.dataset.editIndex;
+          }
+          const hid = document.getElementById('id_actividad');
+          if (hid) hid.value = '';
+        } catch (e) { /* ignore */ }
+
         // renderizar iconos dentro del modal
         if (window.feather) feather.replace();
 
@@ -22,6 +33,17 @@ function abrirModalNueva() {
       .catch(err => console.error('Error cargando modal:', err));
     return;
   }
+
+  // al abrir (cuando ya existe), limpiar estado por defecto (crear)
+  try {
+    const f = document.getElementById('form-actividad');
+    if (f) {
+      f.reset();
+      delete f.dataset.editIndex;
+    }
+    const hid = document.getElementById('id_actividad');
+    if (hid) hid.value = '';
+  } catch (e) { /* ignore */ }
 
   modal.showModal();
 }
@@ -47,6 +69,8 @@ function inicializarModalNueva() {
     const f = new FormData(form);
 
     const payload = {
+      // include id_actividad when editing (modal sets hidden input)
+      ...(f.get('id_actividad') ? { id_actividad: Number(f.get('id_actividad')) } : {}),
       id_materia: f.get('materia') ? Number(f.get('materia')) : null,
       id_tipo_actividad: f.get('tipo') ? Number(f.get('tipo')) : null,
       nombre_actividad: f.get('actividad') || '',

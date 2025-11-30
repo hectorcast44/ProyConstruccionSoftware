@@ -12,6 +12,17 @@ function normalizeEstado(raw) {
     return 'pendiente';
 }
 
+// Mapear nombre de tipo a clase CSS (slug-like)
+function tipoClase(raw) {
+    if (!raw && raw !== 0) return 'tag-agua';
+    const s = String(raw).toLowerCase().trim();
+    if (s.includes('ejerc')) return 'tag-rojo';
+    if (s.includes('examen')) return 'tag-azul';
+    if (s.includes('proyecto')) return 'tag-verde';
+    if (s.includes('tarea') || s.includes('trabajo')) return 'tag-naranja';
+    return 'tag-agua';
+}
+
 document.addEventListener('DOMContentLoaded', verificarTablaVacia);
 
 // Al cargar la página, obtener actividades desde la API y renderizarlas
@@ -56,7 +67,7 @@ function verificarTablaVacia() {
         if (tabla) tabla.classList.add('oculto');
         if (btnEditar) btnEditar.classList.add('oculto');
         if (btnEliminar) btnEliminar.classList.add('oculto');
-        if (btnFiltro) btnFiltro.classList.add('oculto');
+        if (btnFiltro) btnFiltro.classList.remove('oculto');
         if (searchbar) searchbar.classList.remove('oculto');
     } else {
         // Hay filas visibles
@@ -118,7 +129,7 @@ function cargarActividadesDesdeAPI(){
                 secciones.forEach(sec => {
                     const tipoNombre = sec.nombre_tipo || sec.nombre || '';
                     (sec.actividades || []).forEach(act => {
-                        filas.push({
+                                filas.push({
                                     id: act.id_actividad || act.id || '',
                                     fecha: act.fecha_entrega || act.fecha || '',
                                     nombre: act.nombre || act.nombre_actividad || '',
@@ -126,7 +137,9 @@ function cargarActividadesDesdeAPI(){
                                     tipo: tipoNombre,
                                     estado: normalizeEstado((act.estado || (act.obtenido !== null ? 'pendiente' : 'en curso'))),
                                     obtenido: act.obtenido ?? null,
-                                    maximo: act.maximo ?? null
+                                    maximo: act.maximo ?? null,
+                                    id_materia: materia.id || materia.id_materia || materia.idMateria || null,
+                                    id_tipo_actividad: sec.id_tipo || sec.id_tipo || sec.idTipo || null
                                 });
                     });
                 });
@@ -143,12 +156,15 @@ function cargarActividadesDesdeAPI(){
                 const tr = document.createElement('tr');
                 const progreso = generarBadgeProgreso(f.estado, f.obtenido, f.maximo);
                 tr.dataset.idActividad = f.id;
+                if (f.id_materia) tr.dataset.idMateria = f.id_materia;
+                if (f.id_tipo_actividad) tr.dataset.idTipo = f.id_tipo_actividad;
+                const tipoCls = tipoClase(f.tipo);
                 // (no almacenar maximo; ahora el backend permite eliminar cualquiera)
                 tr.innerHTML = `
                     <td>${escapeHtml(f.fecha)}</td>
                     <td>${escapeHtml(f.nombre)}</td>
                     <td>${escapeHtml(f.materia)}</td>
-                    <td>${escapeHtml(f.tipo)}</td>
+                    <td><span class="tag ${tipoCls}">${escapeHtml(f.tipo)}</span></td>
                     <td>${progreso}</td>
                 `;
                 tbody.appendChild(tr);
@@ -442,20 +458,63 @@ function editarFila(index) {
     const filas = document.querySelectorAll('#tabla-body tr');
     const tr = filas[index];
     const tds = tr.querySelectorAll('td');
-
     abrirModalNueva();
 
-    // rellenas (le das un mini tiempo para que cargue si el modal es insertado dinámicamente)
-    setTimeout(() => {
-        document.querySelector('#form-actividad [name="fecha"]').value        = tds[0].textContent;
-        document.querySelector('#form-actividad [name="actividad"]').value    = tds[1].textContent;
-        document.querySelector('#form-actividad [name="materia"]').value      = tds[2].textContent;
-        document.querySelector('#form-actividad [name="tipo"]').value         = tds[3].textContent;
-        // el progreso se maneja al guardar
+    // esperar a que los selects del modal estén poblados (si se insertó dinámicamente)
+    (async () => {
+        const form = document.getElementById('form-actividad');
+        const hiddenId = document.getElementById('id_actividad');
+
+        // helper que espera hasta que el select tenga una opción con el value esperado
+        async function waitForOption(selectEl, value, timeout = 1200) {
+            if (!selectEl) return true;
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+                try {
+                    if (Array.from(selectEl.options).some(o => String(o.value) === String(value))) return true;
+                } catch (e) {}
+                await new Promise(r => setTimeout(r, 50));
+            }
+            return false;
+        }
+
+        const idActividad = tr.dataset.idActividad || tr.getAttribute('data-id-actividad') || '';
+        const idMateria = tr.dataset.idMateria || tr.getAttribute('data-id-materia') || '';
+        const idTipo = tr.dataset.idTipo || tr.getAttribute('data-id-tipo') || '';
+
+        // rellenar campos básicos (texto/fecha)
+        try { if (document.querySelector('#form-actividad [name="fecha"]')) document.querySelector('#form-actividad [name="fecha"]').value = tds[0].textContent.trim(); } catch(e){}
+        try { if (document.querySelector('#form-actividad [name="actividad"]')) document.querySelector('#form-actividad [name="actividad"]').value = tds[1].textContent.trim(); } catch(e){}
+
+        // esperar y asignar selects por id si es posible, o fallback a texto si no se encuentra la opción
+        const selectMateria = document.querySelector('#form-actividad select[name="materia"]');
+        const selectTipo = document.querySelector('#form-actividad select[name="tipo"]');
+
+        if (selectMateria && idMateria) {
+            const ok = await waitForOption(selectMateria, idMateria);
+            if (ok) selectMateria.value = String(idMateria);
+        } else if (selectMateria) {
+            // fallback: intentar por texto
+            try {
+                Array.from(selectMateria.options).forEach(o => { if (o.textContent.trim() === tds[2].textContent.trim()) selectMateria.value = o.value; });
+            } catch(e){}
+        }
+
+        if (selectTipo && idTipo) {
+            const ok2 = await waitForOption(selectTipo, idTipo);
+            if (ok2) selectTipo.value = String(idTipo);
+        } else if (selectTipo) {
+            try {
+                Array.from(selectTipo.options).forEach(o => { if (o.textContent.trim() === tds[3].textContent.trim()) selectTipo.value = o.value; });
+            } catch(e){}
+        }
+
+        // set hidden id for submit handler
+        try { if (hiddenId && idActividad) hiddenId.value = String(idActividad); } catch(e){}
 
         // marcar el índice que se está editando
-        document.getElementById('form-actividad').dataset.editIndex = index;
-    }, 50);
+        try { if (form) form.dataset.editIndex = index; } catch(e){}
+    })();
 }
 
 // Exponer helper para desactivar el modo edición desde otros módulos
@@ -542,27 +601,91 @@ document.addEventListener('click', (e) => {
 
 function cambiarProgreso(el) {
     const estados = ["pendiente", "en curso", "listo"];
+    const base = globalThis.BASE_URL || '';
 
     let actual = normalizeEstado(el.dataset.progreso || el.textContent || '');
     let idx = estados.indexOf(actual);
     if (idx === -1) idx = 0;
 
     // pasar al siguiente estado
-    let siguiente = estados[(idx + 1) % estados.length];
+    const siguiente = estados[(idx + 1) % estados.length];
 
-    // actualizar dataset
+    // guardamos estado anterior para poder revertir si falla
+    const anterior = actual;
+
+    // actualizar UI inmediatamente
     el.dataset.progreso = siguiente;
-
-    // actualizar texto visible (capitalizar primera letra)
     el.textContent = capitalizar(siguiente);
-
-    // resetear clases
     el.classList.remove("progress-sininiciar", "progress-encurso", "progress-completado");
-
-    // aplicar estilo nuevo
     if (siguiente === "pendiente") el.classList.add("progress-sininiciar");
     else if (siguiente === "en curso") el.classList.add("progress-encurso");
     else el.classList.add("progress-completado");
+
+    // Persistir cambio en el servidor
+    (async () => {
+        try {
+            const tr = el.closest('tr');
+            if (!tr) throw new Error('Fila de actividad no encontrada');
+            const idActividad = tr.dataset.idActividad || tr.getAttribute('data-id-actividad') || '';
+            const idMateria = tr.dataset.idMateria || tr.getAttribute('data-id-materia') || '';
+            const idTipo = tr.dataset.idTipo || tr.getAttribute('data-id-tipo') || '';
+            const tds = tr.querySelectorAll('td');
+            const fecha = tds[0] ? tds[0].textContent.trim() : '';
+            const nombre = tds[1] ? tds[1].textContent.trim() : '';
+
+            if (!idActividad || !idMateria || !idTipo || !nombre) {
+                // no tenemos los datos necesarios para actualizar en backend
+                if (typeof showToast === 'function') showToast('No se pueden persistir los cambios: faltan datos de la actividad', { type: 'error' });
+                // revertir UI
+                el.dataset.progreso = anterior;
+                el.textContent = capitalizar(anterior);
+                el.classList.remove("progress-sininiciar", "progress-encurso", "progress-completado");
+                if (anterior === "pendiente") el.classList.add("progress-sininiciar");
+                else if (anterior === "en curso") el.classList.add("progress-encurso");
+                else el.classList.add("progress-completado");
+                return;
+            }
+
+            const payload = {
+                id_actividad: Number(idActividad),
+                id_materia: Number(idMateria),
+                id_tipo_actividad: Number(idTipo),
+                nombre_actividad: nombre,
+                fecha_entrega: fecha || undefined,
+                estado: siguiente
+            };
+
+            const res = await fetch(base + 'api/actividades', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const txt = await res.text();
+            let json = null;
+            try { json = JSON.parse(txt); } catch(e) { /* keep raw */ }
+
+            if (!res.ok) {
+                const msg = json?.message || txt || ('HTTP ' + res.status);
+                throw new Error(msg);
+            }
+
+            // opcional: refrescar datos más adelante para asegurar consistencia
+            // setTimeout(() => { if (typeof cargarActividadesDesdeAPI === 'function') cargarActividadesDesdeAPI(); }, 300);
+
+        } catch (err) {
+            console.error('Error persisting progreso:', err);
+            if (typeof showToast === 'function') showToast('No se pudo guardar el progreso: ' + (err.message || err), { type: 'error' });
+            // revertir UI
+            el.dataset.progreso = anterior;
+            el.textContent = capitalizar(anterior);
+            el.classList.remove("progress-sininiciar", "progress-encurso", "progress-completado");
+            if (anterior === "pendiente") el.classList.add("progress-sininiciar");
+            else if (anterior === "en curso") el.classList.add("progress-encurso");
+            else el.classList.add("progress-completado");
+        }
+    })();
 }
 
 function capitalizar(txt) {
