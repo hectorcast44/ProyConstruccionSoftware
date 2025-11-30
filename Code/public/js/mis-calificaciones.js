@@ -7,26 +7,10 @@
  *  - Permitir filtrar materias por nombre.
  *  - Redirigir al detalle de una materia al pulsar "Detalles".
  */
-document.addEventListener('DOMContentLoaded', () => {
+
 
   // =====================================================
-  // Estado y referencias al DOM
-  // =====================================================
-
-  /** @type {Array<Object>} Lista de materias cargadas desde la API. */
-  let materias = [];
-
-  /** @type {HTMLElement|null} Contenedor principal de las cards de materias. */
-  const listaCalificaciones = document.getElementById('lista-calificaciones');
-  /** @type {HTMLInputElement|null} Input del buscador flotante. */
-  const buscadorInput = /** @type {HTMLInputElement|null} */ (document.getElementById('buscador-menu'));
-  /** @type {HTMLElement|null} Wrapper del buscador flotante. */
-  const buscadorWrapper = document.querySelector('.search-wrapper');
-  /** @type {HTMLButtonElement|null} Botón para abrir/cerrar el buscador. */
-  const buscadorBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('search-toggle'));
-
-  // =====================================================
-  // Helpers de estilo / tags
+  // Helpers
   // =====================================================
 
   /**
@@ -41,6 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function obtenerTagClassPorTipo(tipo) {
     const key = tipo.id_tipo ?? tipo.id_tipo_actividad ?? tipo.nombre;
     return UIHelpers.TagStyleManager.getClassFor(key);
+  }
+
+  function normalizar(str) {
+  return (str || '')
+    .normalize("NFD")                 
+    .replaceAll(/[\u0300-\u036f]/g, "")  
+    .toLowerCase()                    
+    .trim();                          
   }
 
   // =====================================================
@@ -75,6 +67,26 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
   }
+
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  // =====================================================
+  // Estado y referencias al DOM
+  // =====================================================
+
+  /** @type {Array<Object>} Lista de materias cargadas desde la API. */
+  let materias = [];
+
+  /** @type {HTMLElement|null} Contenedor principal de las cards de materias. */
+  const listaCalificaciones = document.getElementById('lista-calificaciones');
+  /** @type {HTMLInputElement|null} Input del buscador flotante. */
+  const buscadorInput = /** @type {HTMLInputElement|null} */ (document.getElementById('buscador-menu'));
+  /** @type {HTMLElement|null} Wrapper del buscador flotante. */
+  const buscadorWrapper = document.querySelector('.search-wrapper');
+  /** @type {HTMLButtonElement|null} Botón para abrir/cerrar el buscador. */
+  const buscadorBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('search-toggle'));
+
 
   /**
    * Crea el nodo DOM de una card de acordeón para una materia.
@@ -180,22 +192,23 @@ document.addEventListener('DOMContentLoaded', () => {
    * @returns {void}
    */
   function filtrarYRenderizar(valorDesdeSearch) {
-    let fuente = '';
+    let fuente = "";
 
-    if (typeof valorDesdeSearch === 'string') {
+    if (typeof valorDesdeSearch === "string") {
       fuente = valorDesdeSearch;
     } else if (buscadorInput) {
-      fuente = buscadorInput.value || '';
+      fuente = buscadorInput.value || "";
     }
+    const termino = normalizar(fuente);
 
-    const termino = fuente.toLowerCase().trim();
-
-    const filtradas = materias.filter(m =>
-      (m.nombre || '').toLowerCase().includes(termino)
-    );
+    const filtradas = materias.filter(m => {
+      const nombreMateria = normalizar(m.nombre || "");
+      return nombreMateria.includes(termino);
+    });
 
     renderizarMaterias(filtradas);
   }
+
 
   // =====================================================
   // Carga de datos desde la API
