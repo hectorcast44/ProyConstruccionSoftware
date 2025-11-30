@@ -1,21 +1,20 @@
+    <?php
+    // Mismo cálculo de BASE_URL que en mis-calificaciones.php
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+    $dirName = dirname($scriptName);
+    if ($dirName === '.' || $dirName === '/') {
+        $dirName = '';
+    }
+    $baseUrl = rtrim($dirName, '/') . '/';
+    ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mis calificaciones - detalle</title>
+  <base href="<?php echo htmlspecialchars($baseUrl, ENT_QUOTES); ?>">
   <script>
-    <?php
-    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
-    $dirName = dirname($scriptName);
-    // Ensure leading slash
-    if (substr($dirName, 0, 1) !== '/') {
-        $dirName = '/' . $dirName;
-    }
-    if ($dirName === '.' || $dirName === '/') $dirName = '';
-    $baseUrl = rtrim($dirName, '/') . '/';
-    ?>
     const BASE_URL = "<?php echo $baseUrl; ?>";
   </script>
 

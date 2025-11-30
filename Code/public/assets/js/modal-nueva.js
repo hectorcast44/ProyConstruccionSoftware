@@ -75,7 +75,7 @@ function inicializarModalNueva() {
     form.reset();
     modal.close();
 
-    // volver a inicializar iconos (si necesitas)
+    // volver a inicializar iconos 
     if (window.feather) feather.replace();
   });
 }

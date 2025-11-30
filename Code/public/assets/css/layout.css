@@ -76,6 +76,7 @@ body.has-sidebar.sidebar-collapsed main {
   display: flex;
   justify-content: space-between;
   align-content: center;
+  margin-bottom: 2.5rem;
 }
 
 .contenedor-botones {
