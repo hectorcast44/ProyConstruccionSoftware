@@ -7,8 +7,7 @@ use App\Models\Actividad;
 use App\Models\Calculadora;
 use App\Controllers\AuthController;
 
-class ActividadController extends Controller
-{
+class ActividadController extends Controller {
     private $actividadModel;
     private $calculadoraModel;
 
