@@ -211,12 +211,12 @@ async function botonEliminarMasivo() {
                                 const dlg = document.createElement('dialog');
                                 dlg.className = 'confirm-dialog';
                                 dlg.innerHTML = `
-                                    <div style="padding:16px;border-radius:8px;max-width:480px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,0.12);">
+                                    <div class="modal-eliminar-masivo">
                                         <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
                                         <p style="margin:0 0 12px 0">¿Estás seguro de que deseas eliminar todas las actividades listadas? Esta acción eliminará las actividades del servidor y no se podrá deshacer.</p>
                                         <div style="display:flex;gap:8px;justify-content:flex-end;">
-                                            <button id="__temp_confirm_cancel" style="background:#eee;border:0;padding:8px 12px;border-radius:6px;">Cancelar</button>
-                                            <button id="__temp_confirm_ok" style="background:#0d6efd;color:#fff;border:0;padding:8px 12px;border-radius:6px;">Eliminar</button>
+                                            <button id="__temp_confirm_cancel" class="btn-secondary">Cancelar</button>
+                                            <button id="__temp_confirm_ok" class="btn-secondary">Eliminar</button>
                                         </div>
                                     </div>
                                 `;

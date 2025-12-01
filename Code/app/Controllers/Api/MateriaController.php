@@ -104,17 +104,21 @@ class MateriaController extends Controller
 
         try {
             if (isset($data['id_materia']) && $data['id_materia'] > 0) {
-                // Update
-                $this->materiaModel->actualizar(
-                    $data['id_materia'],
-                    $idUsuario,
-                    $data['nombre_materia'],
-                    $data['calif_minima'] ?? 70
-                );
-                // si vienen tipos, actualizar ponderaciones
+                // Update: solo actualizar campos de materia si vienen explícitamente en el payload.
+                if (isset($data['nombre_materia']) || isset($data['calif_minima'])) {
+                    $this->materiaModel->actualizar(
+                        $data['id_materia'],
+                        $idUsuario,
+                        $data['nombre_materia'] ?? null,
+                        $data['calif_minima'] ?? 70
+                    );
+                }
+
+                // si vienen tipos, actualizar ponderaciones (no tocar otros campos)
                 if (isset($data['tipos']) && is_array($data['tipos'])) {
                     $this->materiaModel->setPonderaciones($data['id_materia'], $data['tipos']);
                 }
+
                 $this->json(['status' => 'success', 'message' => 'Materia actualizada']);
             } else {
                 // Create
