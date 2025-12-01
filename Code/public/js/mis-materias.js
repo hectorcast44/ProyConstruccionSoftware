@@ -223,14 +223,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const idTipo = t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? '';
       const nombre = t.nombre_tipo ?? t.nombre ?? '';
       const porcentaje = t.porcentaje ?? t.porcentaje ?? '';
-        return `
-          <div class="ponder-row modal-title" data-id="${escapeHtml(String(idTipo))}" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <div style="flex:1"><strong>${escapeHtml(String(nombre))}</strong></div>
-            <div style="width:120px">
-              <input type="number" min="0" max="100" step="0.1" class="input-porcentaje" value="${escapeHtml(String(porcentaje))}" placeholder="%">
-              <span>%</span>          
-            </div>
-          </div>`;
+      return `
+        <div class="ponder-row modal-title" data-id="${escapeHtml(String(idTipo))}" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="flex:1"><strong>${escapeHtml(String(nombre))}</strong></div>
+          <div class="form-ponderacion">
+            <input type="number" min="0" max="100" step="0.1" class="modal-form-input" value="${escapeHtml(String(porcentaje))}" placeholder="%">
+            <span>%</span>
+          </div>
+        </div>`;
     }).join('');
 
     dlg.innerHTML = `
@@ -306,10 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (typeof window.abrirModalCrearMateria === 'function') {
             window.abrirModalCrearMateria(json.data);
           }
-          } catch (err) {
-            console.error('Error cargando materia para editar:', err);
-            ensureToast('Acción rechazada', 'error');
-          }
+        } catch (err) {
+          console.error('Error cargando materia para editar:', err);
+          ensureToast('Acción rechazada', 'error');
+        }
 
         return;
       }
@@ -335,34 +335,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const idMateria = card?.dataset.idMateria;
         if (!idMateria) return;
 
-        // Reemplazar confirm() nativo por un modal programático
+        // Reemplazar confirm() nativo por un modal programático con z-index alto
         const confirmar = typeof showConfirm === 'function'
           ? await showConfirm('Confirmar eliminación', '¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.')
           : await (async () => {
                 return new Promise(resolve => {
-                const dlg = document.createElement('dialog');
-                dlg.className = 'confirm-dialog';
-                dlg.innerHTML = `
-                  <div style="padding:16px;border-radius:8px;max-width:480px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,0.12);">
-                    <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
-                    <p style="margin:0 0 12px 0">¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.</p>
-                    <div style="display:flex;gap:8px;justify-content:flex-end;">
-                      <button id="__temp_cancel_mat" style="background:#eee;border:0;padding:8px 12px;border-radius:6px;">Cancelar</button>
-                      <button id="__temp_ok_mat" style="background:#d9534f;color:#fff;border:0;padding:8px 12px;border-radius:6px;">Eliminar</button>
+                  const dlg = document.createElement('dialog');
+                  dlg.className = 'confirm-dialog';
+                  // Forzar posicionamiento y z-index para que quede siempre encima de otros modales
+                  dlg.style.position = 'fixed';
+                  dlg.style.zIndex = '2147483647';
+                  // Intentar neutralizar cualquier backdrop-filter aplicado globalmente
+                  dlg.style.backdropFilter = 'none';
+                  dlg.style.webkitBackdropFilter = 'none';
+                  dlg.innerHTML = `
+                    <div class="contenedor-modal_eliminar-materia">
+                      <div class="modal-eliminar-materia">
+                        <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
+                        <p style="margin:0 0 12px 0">¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.</p>
+                        <div style="display:flex;gap:8px;justify-content:flex-end;">
+                          <button id="__temp_cancel_mat" style="background:#eee;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;">Cancelar</button>
+                          <button id="__temp_ok_mat" style="background:#ff716c;color:#fff;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;">Eliminar</button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                `;
-                document.body.appendChild(dlg);
-                try { dlg.showModal(); } catch(e) {}
-                const ok = dlg.querySelector('#__temp_ok_mat');
-                const cancel = dlg.querySelector('#__temp_cancel_mat');
-                ok && ok.focus();
-                const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
-                ok && ok.addEventListener('click', () => cleanup(true));
-                cancel && cancel.addEventListener('click', () => cleanup(false));
-                dlg.addEventListener('cancel', () => cleanup(false));
-              });
-            })();
+                  `;
+                  // Append at the end of body to increase stacking context priority
+                  document.body.appendChild(dlg);
+                  try { dlg.showModal(); } catch(e) {
+                    // fallback: focus to ensure visibility
+                    try { dlg.style.display = 'block'; dlg.focus(); } catch(_) {}
+                  }
+                  const ok = dlg.querySelector('#__temp_ok_mat');
+                  const cancel = dlg.querySelector('#__temp_cancel_mat');
+                  ok && ok.focus();
+                  const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
+                  ok && ok.addEventListener('click', () => cleanup(true));
+                  cancel && cancel.addEventListener('click', () => cleanup(false));
+                  dlg.addEventListener('cancel', () => cleanup(false));
+                });
+              })();
         if (!confirmar) return;
 
         try {
