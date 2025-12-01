@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Core\Database;
 use PDO;
-use Exception;
 
 class Materia
 {
@@ -15,16 +14,14 @@ class Materia
         $this->pdo = $pdo ?? Database::getInstance()->getConnection();
     }
 
-    public function crear($id_usuario, $nombre_materia, $calif_minima = 70)
-    {
+    public function crear($id_usuario, $nombre_materia, $calif_minima = 70){
         if ($this->existeMateria($id_usuario, $nombre_materia)) {
-            throw new Exception('Ya existe una materia con ese nombre.');
+            throw new MateriaException('Ya existe una materia con ese nombre.');
         }
 
         if ($calif_minima < 0 || $calif_minima > 100) {
-            throw new Exception('La calificación mínima debe estar entre 0 y 100.');
+            throw new MateriaException('La calificación mínima debe estar entre 0 y 100.');
         }
-
         $sql = "INSERT INTO MATERIA (
                     id_usuario,
                     nombre_materia,
@@ -41,20 +38,18 @@ class Materia
         return $this->pdo->lastInsertId();
     }
 
-    public function actualizar($id_materia, $id_usuario, $nombre_materia, $calif_minima)
-    {
+    public function actualizar($id_materia, $id_usuario, $nombre_materia, $calif_minima) {
         if (!$this->verificarPropiedad($id_materia, $id_usuario)) {
-            throw new Exception('No tiene permisos para modificar esta materia.');
+            throw new MateriaException('No tiene permisos para modificar esta materia.');
         }
 
         if ($calif_minima < 0 || $calif_minima > 100) {
-            throw new Exception('La calificación mínima debe estar entre 0 y 100.');
+            throw new MateriaException('La calificación mínima debe estar entre 0 y 100.');
         }
 
         if ($this->existeMateriaExcepto($id_usuario, $nombre_materia, $id_materia)) {
-            throw new Exception('Ya existe otra materia con ese nombre.');
+            throw new MateriaException('Ya existe otra materia con ese nombre.');
         }
-
         $sql = "UPDATE MATERIA
                 SET nombre_materia = ?, calif_minima = ?
                 WHERE id_materia = ? AND id_usuario = ?";
@@ -65,16 +60,14 @@ class Materia
         return $stmt->rowCount() > 0;
     }
 
-    public function eliminar($id_materia, $id_usuario)
-    {
+    public function eliminar($id_materia, $id_usuario){
         if (!$this->verificarPropiedad($id_materia, $id_usuario)) {
-            throw new Exception('No tiene permisos para eliminar esta materia.');
+            throw new MateriaException('No tiene permisos para eliminar esta materia.');
         }
 
         if ($this->tieneActividades($id_materia)) {
-            throw new Exception('No se puede eliminar una materia que tiene actividades asociadas.');
+            throw new MateriaException('No se puede eliminar una materia que tiene actividades asociadas.');
         }
-
         $sql = "DELETE FROM MATERIA WHERE id_materia = ? AND id_usuario = ?";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$id_materia, $id_usuario]);
