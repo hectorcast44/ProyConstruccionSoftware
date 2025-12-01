@@ -238,9 +238,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <h3 style="margin-top:0">Ponderaciones - Materia</h3>
         <div id="ponder-list" style="margin:8px 0 14px;">${rows || '<p>No hay tipos asignados a esta materia.</p>'}</div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
-          <button type="button" id="cancel-ponder" class="btn-secondary">Cancelar</button>
-          <button type="submit" id="save-ponder" class="btn-primary">Guardar</button>
-        </div>
+            <button type="button" id="cancel-ponder" class="btn-secondary">Cancelar</button>
+            <button type="button" id="save-ponder" class="btn-primary">Guardar</button>
+          </div>
       </form>
     `;
 
@@ -253,24 +253,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnCancel?.addEventListener('click', () => { try { dlg.close(); } catch(e){} });
 
-    form.addEventListener('submit', async (ev) => {
-      ev.preventDefault();
+    // handler compartido para guardar ponderaciones (evita recarga si algo falla)
+    async function handleGuardarPonderaciones(ev) {
+      try { ev && ev.preventDefault(); } catch(e){}
       // construir payload
       const inputs = Array.from(dlg.querySelectorAll('.ponder-row'));
       const tiposPayload = inputs.map(row => {
         const id = row.dataset.id;
-        const inp = row.querySelector('.input-porcentaje');
+        // usar la clase actual del input dentro de las filas
+        const inp = row.querySelector('.modal-form-input');
         const val = inp ? inp.value : '';
         return { id: Number(id) || 0, porcentaje: val === '' ? 0 : Number(val) };
       }).filter(t => t.id > 0);
 
       try {
         const payload = { id_materia: Number(idMateria), tipos: tiposPayload };
+        try { console.debug && console.debug('Ponderacion - payload', payload); } catch(e){}
         const res = await fetch(base + 'api/materias', {
           method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const t = await res.text(); let jj = null; try { jj = JSON.parse(t); } catch(e){ jj = null; }
+        try { console.debug && console.debug('Ponderacion - response', { ok: res.ok, status: res.status, body: jj || t }); } catch(e){}
         if (!res.ok) throw new Error(jj?.message || ('HTTP ' + res.status));
 
         try { dlg.close(); } catch(e){}
@@ -280,7 +284,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Error guardando ponderaciones:', err);
         ensureToast('Error guardando ponderaciones: ' + (err.message || err), 'error');
       }
-    }, { once: true });
+    }
+
+    // Adjuntar tanto al submit del form (compatibilidad) como al click del botón guardar
+    form.addEventListener('submit', handleGuardarPonderaciones);
+    btnSave?.addEventListener('click', handleGuardarPonderaciones);
 
     return;
   }

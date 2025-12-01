@@ -175,11 +175,13 @@ class Materia
      */
     public function setPonderaciones($id_materia, array $tipos)
     {
-        // eliminar existentes
+        // Si no vienen tipos en el payload, no eliminamos las ponderaciones existentes
+        // para evitar borrados accidentales cuando el cliente envía un array vacío.
+        if (empty($tipos)) return true;
+
+        // eliminar existentes (sólo cuando vamos a insertar nuevas ponderaciones)
         $del = $this->pdo->prepare("DELETE FROM PONDERACION WHERE id_materia = ?");
         $del->execute([$id_materia]);
-
-        if (empty($tipos)) return true;
 
         $ins = $this->pdo->prepare("INSERT INTO PONDERACION (id_materia, id_tipo_actividad, porcentaje) VALUES (?, ?, ?)");
         foreach ($tipos as $t) {
