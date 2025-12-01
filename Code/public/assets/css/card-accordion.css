@@ -178,11 +178,12 @@
   min-width: 120px;
   box-shadow: var(--accordion-menu-shadow);
   display: none;
-  z-index: 10;
+  z-index: 1;
 }
 
 .accordion-card__menu--visible {
   display: block;
+  z-index: 1;
 }
 
 /* Botones internos del menú */
@@ -203,7 +204,8 @@
 }
 
 .js-card-edit,
-.js-card-delete {
+.js-card-delete,
+.js-card-ponderacion {
   display: flex;
   align-items: center;
   gap: .7rem;

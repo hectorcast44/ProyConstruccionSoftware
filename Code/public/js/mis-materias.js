@@ -29,11 +29,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const tagClass = obtenerTagClassPorTipo(tipo);
       const obtenido = Number(tipo.obtenido ?? 0);
       const maximo = Number(tipo.maximo ?? 0);
+      const porcentaje = (tipo.porcentaje !== undefined && tipo.porcentaje !== null)
+        ? `${Number(tipo.porcentaje).toFixed(0)}%`
+        : '';
 
       return `
         <tr>
-          <td><span class="tag ${tagClass}">${escapeHtml(tipo.nombre)}</span></td>
-          <td class="right">${obtenido} / ${maximo}</td>
+          <td>
+            <span class="tag ${tagClass}">${escapeHtml(tipo.nombre)}</span>
+          </td>
+          <td class="right">
+            ${porcentaje ? `<small class="tipo-porcentaje"> ${escapeHtml(porcentaje)}</small>` : ''}
+          </td>
         </tr>
       `;
     }).join('');
@@ -64,6 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="accordion-card__menu-item js-card-edit" type="button">
             <i data-feather="edit-3"></i>
             <span>Editar</span>
+          </button>
+          <button class="accordion-card__menu-item js-card-ponderacion" type="button">
+            <i data-feather="percent"></i>
+            <span>Ponderación</span>
           </button>
           <button class="accordion-card__menu-item js-card-delete" type="button">
             <i data-feather="trash-2"></i>
@@ -149,6 +160,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
       }
 
+      // Después de obtener el listado, pedir detalles por materia (que incluyen tipos con porcentaje)
+      try {
+        const base = globalThis.BASE_URL || '';
+        await Promise.all(materias.map(async (mat) => {
+          try {
+            const r = await fetch(base + 'api/materias?id=' + encodeURIComponent(mat.id), { credentials: 'same-origin' });
+            const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch(e){ j = null; }
+            if (r.ok && j && j.data && Array.isArray(j.data.tipos)) {
+              mat.tipos = j.data.tipos.map(t => ({
+                id_tipo: t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? 0,
+                nombre: t.nombre_tipo ?? t.nombre ?? 'Tipo',
+                obtenido: Number(t.puntos_obtenidos ?? t.obtenido ?? 0),
+                maximo: Number(t.puntos_posibles ?? t.maximo ?? 0),
+                porcentaje: t.porcentaje ?? null
+              }));
+            }
+          } catch (e) {
+            // ignore per-materia fetch errors and leave existing tipos
+          }
+        }));
+      } catch (e) {
+        // ignore
+      }
+
       filtrarYRenderizar('');
     } catch (e) {
       console.error('Error al cargar materias:', e);
@@ -159,6 +194,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Exponer para que otros módulos (modal) puedan refrescar la lista sin recargar
   window.cargarMateriasDesdeAPI = cargarMateriasDesdeAPI;
+  // Exponer función de ponderación para que otros módulos (p. ej. modal de crear materia) la usen
+  window.abrirModalPonderacion = abrirModalPonderacion;
+
+  // Abrir modal para asignar ponderaciones por tipo en una materia
+  async function abrirModalPonderacion(idMateria) {
+    const base = globalThis.BASE_URL || '';
+    // intentar obtener los tipos de la materia
+    const r = await fetch(base + 'api/materias?id=' + encodeURIComponent(idMateria), { credentials: 'same-origin' });
+    const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch(e){ j = null; }
+    if (!r.ok || !j || !j.data) {
+      throw new Error(j?.message || 'No se pudo obtener la materia');
+    }
+
+    const tipos = Array.isArray(j.data.tipos) ? j.data.tipos : [];
+
+    // Crear dialog si no existe
+    let dlg = document.getElementById('modal-ponderacion');
+    if (!dlg) {
+      dlg = document.createElement('dialog');
+      dlg.id = 'modal-ponderacion';
+      dlg.className = 'contenedor-modal';
+      document.body.appendChild(dlg);
+    }
+
+    // Construir contenido del modal
+    const rows = tipos.map(t => {
+      const idTipo = t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? '';
+      const nombre = t.nombre_tipo ?? t.nombre ?? '';
+      const porcentaje = t.porcentaje ?? t.porcentaje ?? '';
+      return `
+        <div class="ponder-row modal-title" data-id="${escapeHtml(String(idTipo))}" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="flex:1"><strong>${escapeHtml(String(nombre))}</strong></div>
+          <div class="form-ponderacion">
+            <input type="number" min="0" max="100" step="0.1" class="modal-form-input" value="${escapeHtml(String(porcentaje))}" placeholder="%">
+            <span>%</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    dlg.innerHTML = `
+      <form method="dialog" id="form-ponderaciones" style="padding:18px;max-width:640px;width:94%;">
+        <h3 style="margin-top:0">Ponderaciones - Materia</h3>
+        <div id="ponder-list" style="margin:8px 0 14px;">${rows || '<p>No hay tipos asignados a esta materia.</p>'}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+          <button type="button" id="cancel-ponder" class="btn-secondary">Cancelar</button>
+          <button type="submit" id="save-ponder" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    `;
+
+    // show modal
+    try { dlg.showModal(); } catch(e) { /* es ignorado */ }
+
+    const form = dlg.querySelector('#form-ponderaciones');
+    const btnCancel = dlg.querySelector('#cancel-ponder');
+    const btnSave = dlg.querySelector('#save-ponder');
+
+    btnCancel?.addEventListener('click', () => { try { dlg.close(); } catch(e){} });
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      // construir payload
+      const inputs = Array.from(dlg.querySelectorAll('.ponder-row'));
+      const tiposPayload = inputs.map(row => {
+        const id = row.dataset.id;
+        const inp = row.querySelector('.input-porcentaje');
+        const val = inp ? inp.value : '';
+        return { id: Number(id) || 0, porcentaje: val === '' ? 0 : Number(val) };
+      }).filter(t => t.id > 0);
+
+      try {
+        const payload = { id_materia: Number(idMateria), tipos: tiposPayload };
+        const res = await fetch(base + 'api/materias', {
+          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const t = await res.text(); let jj = null; try { jj = JSON.parse(t); } catch(e){ jj = null; }
+        if (!res.ok) throw new Error(jj?.message || ('HTTP ' + res.status));
+
+        try { dlg.close(); } catch(e){}
+        ensureToast(jj?.message || 'Ponderaciones guardadas', 'success');
+        if (typeof window.cargarMateriasDesdeAPI === 'function') window.cargarMateriasDesdeAPI();
+      } catch (err) {
+        console.error('Error guardando ponderaciones:', err);
+        ensureToast('Error guardando ponderaciones: ' + (err.message || err), 'error');
+      }
+    }, { once: true });
+
+    return;
+  }
 
   if (lista) {
     lista.addEventListener('click', async e => {
@@ -181,11 +306,26 @@ document.addEventListener('DOMContentLoaded', () => {
           if (typeof window.abrirModalCrearMateria === 'function') {
             window.abrirModalCrearMateria(json.data);
           }
-          } catch (err) {
-            console.error('Error cargando materia para editar:', err);
-            ensureToast('Acción rechazada', 'error');
-          }
+        } catch (err) {
+          console.error('Error cargando materia para editar:', err);
+          ensureToast('Acción rechazada', 'error');
+        }
 
+        return;
+      }
+
+      const btnPonder = e.target.closest('.js-card-ponderacion');
+      if (btnPonder) {
+        const card = btnPonder.closest('.accordion-card');
+        const idMateria = card?.dataset.idMateria;
+        if (!idMateria) return;
+        // abrir modal de ponderaciones
+        try {
+          await abrirModalPonderacion(idMateria);
+        } catch (err) {
+          console.error('Error abriendo modal de ponderación:', err);
+          ensureToast('No se pudo abrir la ventana de ponderaciones', 'error');
+        }
         return;
       }
 
@@ -195,34 +335,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const idMateria = card?.dataset.idMateria;
         if (!idMateria) return;
 
-        // Reemplazar confirm() nativo por un modal programático
+        // Reemplazar confirm() nativo por un modal programático con z-index alto
         const confirmar = typeof showConfirm === 'function'
           ? await showConfirm('Confirmar eliminación', '¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.')
           : await (async () => {
                 return new Promise(resolve => {
-                const dlg = document.createElement('dialog');
-                dlg.className = 'confirm-dialog';
-                dlg.innerHTML = `
-                  <div style="padding:16px;border-radius:8px;max-width:480px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,0.12);">
-                    <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
-                    <p style="margin:0 0 12px 0">¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.</p>
-                    <div style="display:flex;gap:8px;justify-content:flex-end;">
-                      <button id="__temp_cancel_mat" style="background:#eee;border:0;padding:8px 12px;border-radius:6px;">Cancelar</button>
-                      <button id="__temp_ok_mat" style="background:#d9534f;color:#fff;border:0;padding:8px 12px;border-radius:6px;">Eliminar</button>
+                  const dlg = document.createElement('dialog');
+                  dlg.className = 'confirm-dialog';
+                  // Forzar posicionamiento y z-index para que quede siempre encima de otros modales
+                  dlg.style.position = 'fixed';
+                  dlg.style.zIndex = '2147483647';
+                  // Intentar neutralizar cualquier backdrop-filter aplicado globalmente
+                  dlg.style.backdropFilter = 'none';
+                  dlg.style.webkitBackdropFilter = 'none';
+                  dlg.innerHTML = `
+                    <div class="contenedor-modal_eliminar-materia">
+                      <div class="modal-eliminar-materia">
+                        <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
+                        <p style="margin:0 0 12px 0">¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.</p>
+                        <div style="display:flex;gap:8px;justify-content:flex-end;">
+                          <button id="__temp_cancel_mat" style="background:#eee;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;">Cancelar</button>
+                          <button id="__temp_ok_mat" style="background:#ff716c;color:#fff;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;">Eliminar</button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                `;
-                document.body.appendChild(dlg);
-                try { dlg.showModal(); } catch(e) {}
-                const ok = dlg.querySelector('#__temp_ok_mat');
-                const cancel = dlg.querySelector('#__temp_cancel_mat');
-                ok && ok.focus();
-                const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
-                ok && ok.addEventListener('click', () => cleanup(true));
-                cancel && cancel.addEventListener('click', () => cleanup(false));
-                dlg.addEventListener('cancel', () => cleanup(false));
-              });
-            })();
+                  `;
+                  // Append at the end of body to increase stacking context priority
+                  document.body.appendChild(dlg);
+                  try { dlg.showModal(); } catch(e) {
+                    // fallback: focus to ensure visibility
+                    try { dlg.style.display = 'block'; dlg.focus(); } catch(_) {}
+                  }
+                  const ok = dlg.querySelector('#__temp_ok_mat');
+                  const cancel = dlg.querySelector('#__temp_cancel_mat');
+                  ok && ok.focus();
+                  const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
+                  ok && ok.addEventListener('click', () => cleanup(true));
+                  cancel && cancel.addEventListener('click', () => cleanup(false));
+                  dlg.addEventListener('cancel', () => cleanup(false));
+                });
+              })();
         if (!confirmar) return;
 
         try {
