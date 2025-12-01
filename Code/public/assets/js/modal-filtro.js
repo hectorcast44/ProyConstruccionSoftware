@@ -138,6 +138,7 @@ function inicializarModalFiltro() {
         const filas = document.querySelectorAll('#tabla-body tr');
         if (!filas) return;
 
+        let hayCoincidencias = false;
         filas.forEach(fila => {
             const children = fila.children;
             const fecha = children[0] ? children[0].innerText.trim() : '';
@@ -159,7 +160,24 @@ function inicializarModalFiltro() {
             if (fechaMax && fecha > fechaMax) mostrar = false;
 
             fila.style.display = mostrar ? '' : 'none';
+            if (mostrar) hayCoincidencias = true;
         });
+
+        // Delegar la lógica de mostrar/ocultar la tabla al verificador global si existe
+        if (typeof verificarTablaVacia === 'function') {
+            try { verificarTablaVacia(); } catch(e) { console.error('verificarTablaVacia error:', e); }
+        } else {
+            // Fallback: mostrar/ocultar tabla y mensaje de coincidencias
+            const tabla = document.getElementById('tabla');
+            const tablaVacia = document.getElementById('tabla-vacia');
+            if (hayCoincidencias) {
+                if (tabla) tabla.classList.remove('oculto');
+                if (tablaVacia) tablaVacia.classList.add('oculto');
+            } else {
+                if (tabla) tabla.classList.add('oculto');
+                if (tablaVacia) tablaVacia.classList.remove('oculto');
+            }
+        }
 
         modal.classList.add('oculto');
     });

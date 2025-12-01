@@ -199,12 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmar = typeof showConfirm === 'function'
           ? await showConfirm('Confirmar eliminación', '¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.')
           : await (async () => {
-              return new Promise(resolve => {
-                const id = '__temp_confirm_modal_materia';
-                const overlay = document.createElement('div');
-                Object.assign(overlay.style, { position: 'fixed', inset: '0', background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999 });
-                overlay.innerHTML = `
-                  <div role="dialog" aria-modal="true" style="background:#fff;padding:16px;border-radius:8px;max-width:480px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,0.12);">
+                return new Promise(resolve => {
+                const dlg = document.createElement('dialog');
+                dlg.className = 'confirm-dialog';
+                dlg.innerHTML = `
+                  <div style="padding:16px;border-radius:8px;max-width:480px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,0.12);">
                     <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
                     <p style="margin:0 0 12px 0">¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.</p>
                     <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -213,14 +212,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                   </div>
                 `;
-                document.body.appendChild(overlay);
-                const ok = overlay.querySelector('#__temp_ok_mat');
-                const cancel = overlay.querySelector('#__temp_cancel_mat');
-                ok.focus();
-                const cleanup = (res) => { try { overlay.remove(); } catch(e){}; resolve(res); };
-                ok.addEventListener('click', () => cleanup(true));
-                cancel.addEventListener('click', () => cleanup(false));
-                overlay.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') cleanup(false); });
+                document.body.appendChild(dlg);
+                try { dlg.showModal(); } catch(e) {}
+                const ok = dlg.querySelector('#__temp_ok_mat');
+                const cancel = dlg.querySelector('#__temp_cancel_mat');
+                ok && ok.focus();
+                const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
+                ok && ok.addEventListener('click', () => cleanup(true));
+                cancel && cancel.addEventListener('click', () => cleanup(false));
+                dlg.addEventListener('cancel', () => cleanup(false));
               });
             })();
         if (!confirmar) return;

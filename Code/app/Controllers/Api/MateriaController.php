@@ -22,6 +22,11 @@ class MateriaController extends Controller
         if (isset($_GET['id'])) {
             $materia = $this->materiaModel->obtenerPorId($_GET['id'], $idUsuario);
             if ($materia) {
+                // adjuntar tipos/ponderaciones si existen
+                try {
+                    $tipos = $this->materiaModel->obtenerTipos($materia['id_materia']);
+                } catch (\Exception $e) { $tipos = []; }
+                $materia['tipos'] = $tipos;
                 $this->json(['status' => 'success', 'data' => $materia]);
             } else {
                 $this->json(['status' => 'error', 'message' => 'Materia no encontrada'], 404);
@@ -71,6 +76,27 @@ class MateriaController extends Controller
         }
     }
 
+    /**
+     * Obtener tipos (ponderaciones) asociados a una materia
+     * GET /api/materias/tipos?id=123
+     */
+    public function tipos()
+    {
+        $idUsuario = AuthController::getUserId();
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $this->json(['status' => 'error', 'message' => 'Se requiere id de materia'], 400);
+            return;
+        }
+
+        try {
+            $tipos = $this->materiaModel->obtenerTipos($id);
+            $this->json(['status' => 'success', 'data' => $tipos]);
+        } catch (\Exception $e) {
+            $this->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function store()
     {
         $idUsuario = AuthController::getUserId();
@@ -85,6 +111,10 @@ class MateriaController extends Controller
                     $data['nombre_materia'],
                     $data['calif_minima'] ?? 70
                 );
+                // si vienen tipos, actualizar ponderaciones
+                if (isset($data['tipos']) && is_array($data['tipos'])) {
+                    $this->materiaModel->setPonderaciones($data['id_materia'], $data['tipos']);
+                }
                 $this->json(['status' => 'success', 'message' => 'Materia actualizada']);
             } else {
                 // Create
@@ -93,6 +123,10 @@ class MateriaController extends Controller
                     $data['nombre_materia'],
                     $data['calif_minima'] ?? 70
                 );
+                // si vienen tipos, insertarlas como ponderaciones
+                if (isset($data['tipos']) && is_array($data['tipos'])) {
+                    $this->materiaModel->setPonderaciones($id, $data['tipos']);
+                }
                 $this->json(['status' => 'success', 'message' => 'Materia creada', 'id_materia' => $id], 201);
             }
         } catch (\Exception $e) {

@@ -1,0 +1,268 @@
+﻿diff --git a/Code/public/js/mis-calificaciones-detalle.js b/Code/public/js/mis-calificaciones-detalle.js
+index a019119..02afd6f 100644
+--- a/Code/public/js/mis-calificaciones-detalle.js
++++ b/Code/public/js/mis-calificaciones-detalle.js
+@@ -109,6 +109,13 @@ function aplicarClasesDiagnostico(diagCircle, diagStatus, nivel) {
+   }
+ }
+ 
++function normalizar(str) {
++  return str
++    .normalize("NFD")
++    .replaceAll(/[\u0300-\u036f]/g, "")
++    .toLowerCase();
++}
++
+ /**
+  * Script principal para la p├ígina mis-calificaciones-detalle
+  */
+@@ -272,21 +279,36 @@ document.addEventListener('DOMContentLoaded', () => {
+   }
+ 
+   // ------------------------------------------------------
+-  // Filtro de actividades por texto
++  // Filtro actividades por tipo 
+   // ------------------------------------------------------
++ function filtrarActividades() {
++  const term = normalizar(buscadorInput?.value || '');
+ 
+-  function filtrarActividades() {
+-    const term = (buscadorInput?.value || '').toLowerCase().trim();
++  const filtradas = seccionesOriginal
++    .map(sec => {
++      const nombreTipo = normalizar(sec.nombre);
+ 
+-    const filtradas = seccionesOriginal.map(sec => ({
+-      ...sec,
+-      actividades: sec.actividades.filter(actividad =>
+-        actividad.nombre.toLowerCase().includes(term)
+-      )
+-    }));
++      // Coincide por tipo de actividad
++      const coincideTipo = nombreTipo.includes(term);
++
++      // Coincide por actividades
++      const actividadesFiltradas = sec.actividades.filter(a =>
++        normalizar(a.nombre).includes(term)
++      );
++      
++      if (coincideTipo) {
++        return { ...sec };
++      }
++      if (actividadesFiltradas.length > 0) {
++        return { ...sec, actividades: actividadesFiltradas };
++      }
++      return null;
++    })
++    .filter(sec => sec !== null);
++
++  renderSecciones(filtradas);
++}
+ 
+-    renderSecciones(filtradas);
+-  }
+ 
+   buscadorInput?.addEventListener('input', filtrarActividades);
+ 
+@@ -337,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
+         return;
+       }
+ 
+-      if (!json || json.status !== 'success' || !json.data) {
++      if (!json || json?.status !== 'success' || !json?.data) {
+         console.error('Error API detalle:', json?.message);
+         return;
+       }
+@@ -352,42 +374,45 @@ document.addEventListener('DOMContentLoaded', () => {
+       const seccionesAPI = Array.isArray(data.secciones) ? data.secciones : [];
+ 
+       const resumenPorTipo = {};
+-      const listaResumenTipo = Array.isArray(data.progreso?.por_tipo)
+-        ? data.progreso.por_tipo
+-        : [];
++      const listaResumenTipo = Array.isArray(data.progreso?.por_tipo) ? data.progreso.por_tipo: [];
+       for (const t of listaResumenTipo) {
+         if (t && typeof t.id_tipo === 'number') {
+           resumenPorTipo[t.id_tipo] = t;
+         }
+       }
+ 
+-      seccionesOriginal = seccionesAPI.map(sec => {
+-        const resumenTipo = resumenPorTipo[sec.id_tipo] || null;
+-
+-        return {
+-          id: sec.id_tipo,
+-          nombre: sec.nombre_tipo,
+-          resumenTipo,
+-          actividades: (sec.actividades || []).map(a => ({
+-            id_actividad: a.id_actividad,
+-            nombre: a.nombre,
+-            fecha_entrega: a.fecha_entrega,
+-            // Accept only 'listo', 'en curso' or 'pendiente' (case-insensitive). Default to 'pendiente'.
+-            estado: (function(raw){
+-              try {
+-                if (!raw && raw !== 0) return 'pendiente';
+-                const s = String(raw).toLowerCase().trim();
+-                if (s === 'listo') return 'listo';
+-                if (s === 'en curso' || s === 'encurso' || s === 'en_curso') return 'en curso';
+-                if (s === 'pendiente') return 'pendiente';
+-                return 'pendiente';
+-              } catch (e) { return 'pendiente'; }
+-            })(a.estado),
+-            obtenido: a.obtenido === null ? null : Number(a.obtenido),
+-            maximo: a.maximo === null ? null : Number(a.maximo)
+-          }))
+-        };
+-      });
++      function normalizarEstado(raw) {
++        try {
++          if (!raw && raw !== 0) return 'pendiente';
++          const s = String(raw).toLowerCase().trim();
++          if (s === 'listo') return 'listo';
++          if (s === 'en curso' || s === 'encurso' || s === 'en_curso') return 'en curso';
++          if (s === 'pendiente') return 'pendiente';
++          return 'pendiente';
++        } catch (e) { 
++          console.error('Error normalizando estado:', e);
++          return 'pendiente'; 
++        }
++      }
++      
++            seccionesOriginal = seccionesAPI.map(sec => {
++              const resumenTipo = resumenPorTipo[sec.id_tipo] || null;
++      
++              return {
++                id: sec.id_tipo,
++                nombre: sec.nombre_tipo,
++                resumenTipo,
++                actividades: (sec.actividades || []).map(a => ({
++                  id_actividad: a.id_actividad,
++                  nombre: a.nombre,
++                  fecha_entrega: a.fecha_entrega,
++      
++                  estado: normalizarEstado(a.estado),
++                  obtenido: a.obtenido === null ? null : Number(a.obtenido),
++                  maximo: a.maximo === null ? null : Number(a.maximo)
++                }))
++              };
++            });
+ 
+       renderSecciones(seccionesOriginal);
+       actualizarInformeYDiagnostico(data.progreso);
+@@ -397,8 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
+     }
+   }
+ 
+-  // Exponer funci├│n para que otros m├│dulos (ejemplo: modal de creaci├│n) puedan refrescar este detalle
+-  window.cargarDetalleMateria = cargarDetalleMateria;
++  globalThis.cargarDetalleMateria = cargarDetalleMateria;
+ 
+   // ------------------------------------------------------
+   // Inicializaci├│n
+diff --git a/Code/public/js/mis-calificaciones.js b/Code/public/js/mis-calificaciones.js
+index 888ce37..2fd50d5 100644
+--- a/Code/public/js/mis-calificaciones.js
++++ b/Code/public/js/mis-calificaciones.js
+@@ -7,26 +7,10 @@
+  *  - Permitir filtrar materias por nombre.
+  *  - Redirigir al detalle de una materia al pulsar "Detalles".
+  */
+-document.addEventListener('DOMContentLoaded', () => {
+ 
+-  // =====================================================
+-  // Estado y referencias al DOM
+-  // =====================================================
+-
+-  /** @type {Array<Object>} Lista de materias cargadas desde la API. */
+-  let materias = [];
+-
+-  /** @type {HTMLElement|null} Contenedor principal de las cards de materias. */
+-  const listaCalificaciones = document.getElementById('lista-calificaciones');
+-  /** @type {HTMLInputElement|null} Input del buscador flotante. */
+-  const buscadorInput = /** @type {HTMLInputElement|null} */ (document.getElementById('buscador-menu'));
+-  /** @type {HTMLElement|null} Wrapper del buscador flotante. */
+-  const buscadorWrapper = document.querySelector('.search-wrapper');
+-  /** @type {HTMLButtonElement|null} Bot├│n para abrir/cerrar el buscador. */
+-  const buscadorBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('search-toggle'));
+ 
+   // =====================================================
+-  // Helpers de estilo / tags
++  // Helpers
+   // =====================================================
+ 
+   /**
+@@ -43,6 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
+     return UIHelpers.TagStyleManager.getClassFor(key);
+   }
+ 
++  function normalizar(str) {
++  return (str || '')
++    .normalize("NFD")                 
++    .replaceAll(/[\u0300-\u036f]/g, "")  
++    .toLowerCase()                    
++    .trim();                          
++  }
++
+   // =====================================================
+   // Render de filas y cards
+   // =====================================================
+@@ -76,6 +68,26 @@ document.addEventListener('DOMContentLoaded', () => {
+     }).join('');
+   }
+ 
++
++document.addEventListener('DOMContentLoaded', () => {
++
++  // =====================================================
++  // Estado y referencias al DOM
++  // =====================================================
++
++  /** @type {Array<Object>} Lista de materias cargadas desde la API. */
++  let materias = [];
++
++  /** @type {HTMLElement|null} Contenedor principal de las cards de materias. */
++  const listaCalificaciones = document.getElementById('lista-calificaciones');
++  /** @type {HTMLInputElement|null} Input del buscador flotante. */
++  const buscadorInput = /** @type {HTMLInputElement|null} */ (document.getElementById('buscador-menu'));
++  /** @type {HTMLElement|null} Wrapper del buscador flotante. */
++  const buscadorWrapper = document.querySelector('.search-wrapper');
++  /** @type {HTMLButtonElement|null} Bot├│n para abrir/cerrar el buscador. */
++  const buscadorBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('search-toggle'));
++
++
+   /**
+    * Crea el nodo DOM de una card de acorde├│n para una materia.
+    *
+@@ -180,23 +192,24 @@ document.addEventListener('DOMContentLoaded', () => {
+    * @returns {void}
+    */
+   function filtrarYRenderizar(valorDesdeSearch) {
+-    let fuente = '';
++    let fuente = "";
+ 
+-    if (typeof valorDesdeSearch === 'string') {
++    if (typeof valorDesdeSearch === "string") {
+       fuente = valorDesdeSearch;
+     } else if (buscadorInput) {
+-      fuente = buscadorInput.value || '';
++      fuente = buscadorInput.value || "";
+     }
++    const termino = normalizar(fuente);
+ 
+-    const termino = fuente.toLowerCase().trim();
+-
+-    const filtradas = materias.filter(m =>
+-      (m.nombre || '').toLowerCase().includes(termino)
+-    );
++    const filtradas = materias.filter(m => {
++      const nombreMateria = normalizar(m.nombre || "");
++      return nombreMateria.includes(termino);
++    });
+ 
+     renderizarMaterias(filtradas);
+   }
+ 
++
+   // =====================================================
+   // Carga de datos desde la API
+   // =====================================================

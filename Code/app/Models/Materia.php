@@ -145,4 +145,51 @@ class Materia
         $stmt->execute([$id_usuario]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Obtener los tipos (ponderaciones) asignados a una materia
+     * Retorna array de ['id_tipo_actividad'=>int, 'nombre_tipo'=>string, 'porcentaje'=>float]
+     */
+    public function obtenerTipos($id_materia)
+    {
+        $sql = "SELECT p.id_tipo_actividad, ta.nombre_tipo, p.porcentaje
+                FROM PONDERACION p
+                INNER JOIN TIPO_ACTIVIDAD ta ON ta.id_tipo_actividad = p.id_tipo_actividad
+                WHERE p.id_materia = ?";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$id_materia]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Asigna los tipos a una materia (reemplaza las ponderaciones existentes)
+     * $tipos es un array de ids de tipo (enteros) o array de ['id'=>..., 'porcentaje'=>...]
+     */
+    public function setPonderaciones($id_materia, array $tipos)
+    {
+        // eliminar existentes
+        $del = $this->pdo->prepare("DELETE FROM PONDERACION WHERE id_materia = ?");
+        $del->execute([$id_materia]);
+
+        if (empty($tipos)) return true;
+
+        $ins = $this->pdo->prepare("INSERT INTO PONDERACION (id_materia, id_tipo_actividad, porcentaje) VALUES (?, ?, ?)");
+        foreach ($tipos as $t) {
+            if (is_array($t)) {
+                $idTipo = $t['id'] ?? $t['id_tipo'] ?? $t['id_tipo_actividad'] ?? null;
+                $porc = isset($t['porcentaje']) ? $t['porcentaje'] : 0.00;
+            } else {
+                $idTipo = $t;
+                $porc = 0.00;
+            }
+
+            $idTipo = intval($idTipo);
+            if ($idTipo <= 0) continue;
+
+            $ins->execute([$id_materia, $idTipo, $porc]);
+        }
+
+        return true;
+    }
 }

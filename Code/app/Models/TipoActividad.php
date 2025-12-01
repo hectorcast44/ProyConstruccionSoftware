@@ -73,36 +73,77 @@ class TipoActividad
 
     public function eliminar($id_tipo, $id_usuario)
     {
-        // RF-016: Eliminar tipos sin referencias
-        // RF-017: Mensaje al eliminar tipo con referencias
+        // Ahora soportamos eliminación forzada de tipo junto con actividades y ponderaciones relacionadas
+        // $id_tipo: id del tipo
+        // $id_usuario: usuario que solicita la eliminación (se verifica propiedad)
+        // $force: si true, eliminar actividades y ponderaciones relacionadas antes de borrar el tipo
+        $force = false;
+        if (func_num_args() >= 3) {
+            $force = (bool) func_get_arg(2);
+        }
 
         // 1. Verificar propiedad
         if (!$this->esPropietario($id_tipo, $id_usuario)) {
             throw new Exception("No tienes permiso para eliminar este tipo de actividad o es un tipo predeterminado.");
         }
 
-        // 2. Verificar referencias en ACTIVIDAD
-        $sqlRefActividad = "SELECT COUNT(*) FROM ACTIVIDAD WHERE id_tipo_actividad = ?";
+        // 2. Contar referencias (solo del usuario actual)
+        $sqlRefActividad = "SELECT COUNT(*) FROM ACTIVIDAD WHERE id_tipo_actividad = ? AND id_usuario = ?";
         $stmt = $this->pdo->prepare($sqlRefActividad);
-        $stmt->execute([$id_tipo]);
-        if ($stmt->fetchColumn() > 0) {
-            throw new Exception("No se puede eliminar el tipo porque hay actividades asociadas a él.");
-        }
+        $stmt->execute([$id_tipo, $id_usuario]);
+        $countAct = (int) $stmt->fetchColumn();
 
-        // 3. Verificar referencias en PONDERACION
-        $sqlRefPonderacion = "SELECT COUNT(*) FROM PONDERACION WHERE id_tipo_actividad = ?";
+        $sqlRefPonderacion = "SELECT COUNT(*) FROM PONDERACION p INNER JOIN MATERIA m ON p.id_materia = m.id_materia WHERE p.id_tipo_actividad = ? AND m.id_usuario = ?";
         $stmt = $this->pdo->prepare($sqlRefPonderacion);
-        $stmt->execute([$id_tipo]);
-        if ($stmt->fetchColumn() > 0) {
-            throw new Exception("No se puede eliminar el tipo porque está siendo utilizado en ponderaciones de materias.");
+        $stmt->execute([$id_tipo, $id_usuario]);
+        $countPond = (int) $stmt->fetchColumn();
+
+        if (($countAct > 0 || $countPond > 0) && !$force) {
+            throw new Exception("El tipo tiene referencias: actividades={$countAct}, ponderaciones={$countPond}");
         }
 
-        // 4. Eliminar
-        $sql = "DELETE FROM TIPO_ACTIVIDAD WHERE id_tipo_actividad = ?";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id_tipo]);
+        // 3. Si force=true, eliminar dependencias (en transacción)
+        try {
+            $this->pdo->beginTransaction();
 
-        return true;
+            if ($countAct > 0) {
+                $delAct = $this->pdo->prepare("DELETE FROM ACTIVIDAD WHERE id_tipo_actividad = ? AND id_usuario = ?");
+                $delAct->execute([$id_tipo, $id_usuario]);
+            }
+
+            if ($countPond > 0) {
+                $delP = $this->pdo->prepare("DELETE p FROM PONDERACION p INNER JOIN MATERIA m ON p.id_materia = m.id_materia WHERE p.id_tipo_actividad = ? AND m.id_usuario = ?");
+                $delP->execute([$id_tipo, $id_usuario]);
+            }
+
+            $sql = "DELETE FROM TIPO_ACTIVIDAD WHERE id_tipo_actividad = ?";
+            $stmtDel = $this->pdo->prepare($sql);
+            $stmtDel->execute([$id_tipo]);
+
+            $this->pdo->commit();
+            return ['deleted_activities' => $countAct, 'deleted_ponderaciones' => $countPond];
+        } catch (\Exception $e) {
+            try { $this->pdo->rollBack(); } catch (\Exception $__) {}
+            throw $e;
+        }
+    }
+
+    /**
+     * Devuelve conteos de referencias a un tipo (actividades y ponderaciones)
+     */
+    public function contarReferencias($id_tipo, $id_usuario)
+    {
+        $sqlRefActividad = "SELECT COUNT(*) FROM ACTIVIDAD WHERE id_tipo_actividad = ? AND id_usuario = ?";
+        $stmt = $this->pdo->prepare($sqlRefActividad);
+        $stmt->execute([$id_tipo, $id_usuario]);
+        $countAct = (int) $stmt->fetchColumn();
+
+        $sqlRefPonderacion = "SELECT COUNT(*) FROM PONDERACION p INNER JOIN MATERIA m ON p.id_materia = m.id_materia WHERE p.id_tipo_actividad = ? AND m.id_usuario = ?";
+        $stmt = $this->pdo->prepare($sqlRefPonderacion);
+        $stmt->execute([$id_tipo, $id_usuario]);
+        $countPond = (int) $stmt->fetchColumn();
+
+        return ['actividades' => $countAct, 'ponderaciones' => $countPond];
     }
 
     private function esPropietario($id_tipo, $id_usuario)
