@@ -65,13 +65,25 @@ function inicializarModalNuevaMateria() {
       form.reset();
       // limpiar estado de edición
       delete form.dataset.editId;
+      // cerrar modal de creación
       modal.close();
-      // si existe función para recargar materias, llamarla
-      if (typeof window.cargarMateriasDesdeAPI === 'function') {
-        window.cargarMateriasDesdeAPI();
+
+      // Si es creación nueva (no edición), intentar abrir el modal de ponderación
+      const newId = json?.id_materia ?? json?.id ?? null;
+      if (!payload.id_materia && newId) {
+        // si la función global existe, abrirla
+        if (typeof window.abrirModalPonderacion === 'function') {
+          // Abrir el modal de ponderación para que el usuario asigne porcentajes
+          try { window.abrirModalPonderacion(newId); }
+          catch (e) { console.warn('No se pudo abrir modal de ponderación:', e); }
+        } else if (typeof window.cargarMateriasDesdeAPI === 'function') {
+          window.cargarMateriasDesdeAPI();
+        } else {
+          location.reload();
+        }
       } else {
-        // recarga la página como fallback
-        location.reload();
+        // edición o no se obtuvo id: refrescar lista o recargar
+        if (typeof window.cargarMateriasDesdeAPI === 'function') window.cargarMateriasDesdeAPI(); else location.reload();
       }
 
       if (typeof showToast === 'function') showToast(json.message || 'Materia creada', { type: 'success' });

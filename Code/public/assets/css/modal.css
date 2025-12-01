@@ -156,3 +156,67 @@ input[type="number"]::-webkit-outer-spin-button {
 #cerrar-modal-materia {
     cursor: pointer;
 }
+
+/* Modal ponderacion */
+.btn-primary{ 
+    background: linear-gradient(135deg, #5a6ad4, #7a4ea8);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.btn-secondary{ 
+    background: #e0e0e0;
+    border: none;
+    color: #333;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.btn-primary:hover {
+    opacity: .8;
+}
+
+.modal-eliminar-masivo {
+    padding:16px;
+    border-radius:8px;
+    max-width:480px;
+    width:92%;
+    box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    /* aparece centrado en la pantalla */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+}
+
+.btn-eliminar-todo {
+    background-color: #d9534f;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
