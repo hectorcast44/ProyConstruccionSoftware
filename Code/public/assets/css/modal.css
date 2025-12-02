@@ -111,3 +111,137 @@ input[type="number"]::-webkit-outer-spin-button {
 .modal-filtro-body label {
     margin-top: 1rem;             
 }
+
+/* Styles for tipos list in "nueva materia" modal */
+.tipos-list {
+    padding: 8px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #eee;
+}
+.tipos-list .tipo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background 0.12s;
+}
+.tipos-list .tipo-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+.tipos-list .tipo-item .tipo-nombre {
+    color: #333;
+    font-size: 0.95rem;
+}
+.tipos-list .tipo-item:hover {
+    background: #f6f6fb;
+}
+.tipos-list .tipo-item input[type="checkbox"]:checked + .tipo-nombre {
+    font-weight: 600;
+    color: var(--color-primario);
+}
+
+.label-tipos {
+    font-size: 16px;
+    font-weight: 400;
+    color: #777;
+    margin-bottom: 6px;
+    display: block;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+#cerrar-modal-materia {
+    cursor: pointer;
+}
+
+/* Modal ponderacion */
+.btn-primary{ 
+    background: linear-gradient(135deg, #5a6ad4, #7a4ea8);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.btn-secondary{ 
+    background: #e0e0e0;
+    border: none;
+    color: #333;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.btn-primary:hover {
+    opacity: .8;
+}
+
+.modal-eliminar-masivo {
+    padding:16px;
+    border-radius:8px;
+    max-width:480px;
+    width:92%;
+    box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+}
+
+.btn-eliminar-todo {
+    background-color: #d9534f;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.contenedor-modal_eliminar-materia {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-eliminar-materia {
+    padding:16px;
+    border-radius:8px;
+    max-width:480px;
+    width:92%;
+    background:#fff;
+    box-shadow:0 10px 30px rgba(0,0,0,0.12);
+}
+
+.form-ponderacion {
+    width:120px; 
+    display:flex;
+    align-items:center;
+    gap:4px;
+}

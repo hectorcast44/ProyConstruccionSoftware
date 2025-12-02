@@ -65,6 +65,7 @@ $router->get('/mis-materias', [App\Controllers\MisMateriasController::class, 'in
 $router->get('/api/materias', [App\Controllers\Api\MateriaController::class, 'index']);
 $router->post('/api/materias', [App\Controllers\Api\MateriaController::class, 'store']);
 $router->delete('/api/materias', [App\Controllers\Api\MateriaController::class, 'delete']);
+$router->get('/api/materias/tipos', [App\Controllers\Api\MateriaController::class, 'tipos']);
 $router->get('/api/actividades', [App\Controllers\Api\ActividadController::class, 'index']);
 $router->post('/api/actividades', [App\Controllers\Api\ActividadController::class, 'store']);
 $router->delete('/api/actividades', [App\Controllers\Api\ActividadController::class, 'delete']);

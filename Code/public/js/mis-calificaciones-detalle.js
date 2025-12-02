@@ -109,6 +109,13 @@ function aplicarClasesDiagnostico(diagCircle, diagStatus, nivel) {
   }
 }
 
+function normalizar(str) {
+  return str
+    .normalize("NFD")
+    .replaceAll(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 /**
  * Script principal para la página mis-calificaciones-detalle
  */
@@ -272,21 +279,36 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ------------------------------------------------------
-  // Filtro de actividades por texto
+  // Filtro actividades por tipo 
   // ------------------------------------------------------
+ function filtrarActividades() {
+  const term = normalizar(buscadorInput?.value || '');
 
-  function filtrarActividades() {
-    const term = (buscadorInput?.value || '').toLowerCase().trim();
+  const filtradas = seccionesOriginal
+    .map(sec => {
+      const nombreTipo = normalizar(sec.nombre);
 
-    const filtradas = seccionesOriginal.map(sec => ({
-      ...sec,
-      actividades: sec.actividades.filter(actividad =>
-        actividad.nombre.toLowerCase().includes(term)
-      )
-    }));
+      // Coincide por tipo de actividad
+      const coincideTipo = nombreTipo.includes(term);
 
-    renderSecciones(filtradas);
-  }
+      // Coincide por actividades
+      const actividadesFiltradas = sec.actividades.filter(a =>
+        normalizar(a.nombre).includes(term)
+      );
+      
+      if (coincideTipo) {
+        return { ...sec };
+      }
+      if (actividadesFiltradas.length > 0) {
+        return { ...sec, actividades: actividadesFiltradas };
+      }
+      return null;
+    })
+    .filter(sec => sec !== null);
+
+  renderSecciones(filtradas);
+}
+
 
   buscadorInput?.addEventListener('input', filtrarActividades);
 
@@ -337,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      if (!json || json.status !== 'success' || !json.data) {
+      if (!json || json?.status !== 'success' || !json?.data) {
         console.error('Error API detalle:', json?.message);
         return;
       }
@@ -352,42 +374,45 @@ document.addEventListener('DOMContentLoaded', () => {
       const seccionesAPI = Array.isArray(data.secciones) ? data.secciones : [];
 
       const resumenPorTipo = {};
-      const listaResumenTipo = Array.isArray(data.progreso?.por_tipo)
-        ? data.progreso.por_tipo
-        : [];
+      const listaResumenTipo = Array.isArray(data.progreso?.por_tipo) ? data.progreso.por_tipo: [];
       for (const t of listaResumenTipo) {
         if (t && typeof t.id_tipo === 'number') {
           resumenPorTipo[t.id_tipo] = t;
         }
       }
 
-      seccionesOriginal = seccionesAPI.map(sec => {
-        const resumenTipo = resumenPorTipo[sec.id_tipo] || null;
-
-        return {
-          id: sec.id_tipo,
-          nombre: sec.nombre_tipo,
-          resumenTipo,
-          actividades: (sec.actividades || []).map(a => ({
-            id_actividad: a.id_actividad,
-            nombre: a.nombre,
-            fecha_entrega: a.fecha_entrega,
-            // Accept only 'listo', 'en curso' or 'pendiente' (case-insensitive). Default to 'pendiente'.
-            estado: (function(raw){
-              try {
-                if (!raw && raw !== 0) return 'pendiente';
-                const s = String(raw).toLowerCase().trim();
-                if (s === 'listo') return 'listo';
-                if (s === 'en curso' || s === 'encurso' || s === 'en_curso') return 'en curso';
-                if (s === 'pendiente') return 'pendiente';
-                return 'pendiente';
-              } catch (e) { return 'pendiente'; }
-            })(a.estado),
-            obtenido: a.obtenido === null ? null : Number(a.obtenido),
-            maximo: a.maximo === null ? null : Number(a.maximo)
-          }))
-        };
-      });
+      function normalizarEstado(raw) {
+        try {
+          if (!raw && raw !== 0) return 'pendiente';
+          const s = String(raw).toLowerCase().trim();
+          if (s === 'listo') return 'listo';
+          if (s === 'en curso' || s === 'encurso' || s === 'en_curso') return 'en curso';
+          if (s === 'pendiente') return 'pendiente';
+          return 'pendiente';
+        } catch (e) { 
+          console.error('Error normalizando estado:', e);
+          return 'pendiente'; 
+        }
+      }
+      
+            seccionesOriginal = seccionesAPI.map(sec => {
+              const resumenTipo = resumenPorTipo[sec.id_tipo] || null;
+      
+              return {
+                id: sec.id_tipo,
+                nombre: sec.nombre_tipo,
+                resumenTipo,
+                actividades: (sec.actividades || []).map(a => ({
+                  id_actividad: a.id_actividad,
+                  nombre: a.nombre,
+                  fecha_entrega: a.fecha_entrega,
+      
+                  estado: normalizarEstado(a.estado),
+                  obtenido: a.obtenido === null ? null : Number(a.obtenido),
+                  maximo: a.maximo === null ? null : Number(a.maximo)
+                }))
+              };
+            });
 
       renderSecciones(seccionesOriginal);
       actualizarInformeYDiagnostico(data.progreso);
@@ -397,8 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Exponer función para que otros módulos (ejemplo: modal de creación) puedan refrescar este detalle
-  window.cargarDetalleMateria = cargarDetalleMateria;
+  globalThis.cargarDetalleMateria = cargarDetalleMateria;
 
   // ------------------------------------------------------
   // Inicialización

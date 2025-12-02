@@ -7,8 +7,7 @@ use App\Models\Actividad;
 use App\Models\Calculadora;
 use App\Controllers\AuthController;
 
-class ActividadController extends Controller
-{
+class ActividadController extends Controller {
     private $actividadModel;
     private $calculadoraModel;
 
@@ -56,14 +55,30 @@ class ActividadController extends Controller
                 ];
             }
 
-            $this->json([
+            $response = [
                 'status' => 'success',
                 'data' => [
                     'materia' => $resultadoMateria['materia'],
                     'progreso' => $resultadoMateria['progreso'],
                     'secciones' => array_values($secciones)
                 ]
-            ]);
+            ];
+
+            // si la calculadora devolvió debug, exponerlo dentro de data.debug
+            if (isset($resultadoMateria['debug'])) {
+                $response['data']['debug'] = $resultadoMateria['debug'];
+            }
+
+            // Modo debug: si se pide explícitamente, agregar información útil para depuración
+            if (isset($_GET['__dbg']) && $_GET['__dbg']) {
+                $response['debug'] = [
+                    'id_usuario' => $idUsuario,
+                    'id_materia' => $idMateria,
+                    'actividades_encontradas' => count($actividades)
+                ];
+            }
+
+            $this->json($response);
 
         } catch (\Exception $e) {
             $this->json(['status' => 'error', 'message' => $e->getMessage()], 500);
@@ -107,7 +122,14 @@ class ActividadController extends Controller
             // Recalcular materia
             $this->calculadoraModel->recalcularMateria($data['id_materia'], $idUsuario);
 
-            $this->json(['status' => 'success', 'message' => $message]);
+            $resp = ['status' => 'success', 'message' => $message];
+            if (isset($_GET['__dbg']) && $_GET['__dbg']) {
+                $resp['debug'] = [
+                    'id_usuario' => $idUsuario,
+                    'payload' => $actividadData
+                ];
+            }
+            $this->json($resp);
 
         } catch (\Exception $e) {
             $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
