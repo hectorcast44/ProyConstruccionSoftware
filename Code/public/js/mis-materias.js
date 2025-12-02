@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function cargarMateriasDesdeAPI() {
-    const url = (globalThis.BASE_URL || '') + 'api/materias';
+    const url = (globalThis.BASE_URL || '') + 'api/materias?t=' + Date.now();
 
     try {
       const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' });
@@ -417,9 +417,22 @@ document.addEventListener('DOMContentLoaded', () => {
           try { json = JSON.parse(txt); } catch { json = null; }
           if (!r.ok) throw new Error(json?.message || ('HTTP ' + r.status));
 
-          // refrescar lista
-          if (typeof window.cargarMateriasDesdeAPI === 'function') window.cargarMateriasDesdeAPI();
-          else location.reload();
+          // Eliminar visualmente el wrapper (contenedor real)
+          const wrapper = card.closest('.accordion-card-wrapper');
+          if (wrapper) {
+            wrapper.style.transition = 'opacity 0.3s, transform 0.3s';
+            wrapper.style.opacity = '0';
+            wrapper.style.transform = 'scale(0.95)';
+            setTimeout(() => wrapper.remove(), 300);
+          }
+
+          // Actualizar estado local para que no reaparezca al filtrar
+          materias = materias.filter(m => String(m.id) !== String(idMateria));
+
+          // Verificar si quedó vacío
+          if (materias.length === 0) {
+            setTimeout(() => renderizarMaterias([]), 350);
+          }
 
           ensureToast(json?.message || 'Materia eliminada', 'success');
         } catch (err) {
