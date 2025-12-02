@@ -1,692 +1,1135 @@
+/* ==========================================================
+   HELPERS GENERALES
+   ========================================================== */
+
+/**
+ * Obtener la URL base configurada globalmente.
+ *
+ * @returns {string} URL base de la aplicación.
+ */
+function obtenerBaseUrl() {
+  return globalThis.BASE_URL || '';
+}
+
+/**
+ * Mostrar un mensaje emergente si showToast está disponible.
+ *
+ * @param {string} mensaje Mensaje a mostrar.
+ * @param {{type?: string}} [opciones] Opciones de visualización.
+ * @returns {void}
+ */
+function mostrarToastSeguro(mensaje, opciones = {}) {
+  if (typeof showToast === 'function') {
+    showToast(mensaje, opciones);
+  } else {
+    const tipo = opciones.type === 'error' ? 'Error' : 'Info';
+    console[opciones.type === 'error' ? 'error' : 'log'](`${tipo}: ${mensaje}`);
+  }
+}
+
+/**
+ * Analizar una cadena como JSON de forma segura.
+ *
+ * @param {string} texto Cadena a convertir.
+ * @returns {any|null} Objeto JSON o null si falla.
+ */
+function parsearJsonSeguro(texto) {
+  try {
+    return JSON.parse(texto);
+  } catch (error) {
+    console.warn('No se pudo parsear JSON de forma segura:', error);
+    return null;
+  }
+}
+
+/**
+ * Escapar caracteres especiales HTML en una cadena.
+ *
+ * @param {string} texto Texto a escapar.
+ * @returns {string} Texto seguro para insertar en HTML.
+ */
+function escapeHtml(texto) {
+  return String(texto || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+/* ==========================================================
+   ESTADO Y NORMALIZADORES
+   ========================================================== */
+
 let modoEdicionActivo = false;
 
-// Normaliza distintos valores de estado desde la API/BD a los tres estados usados en UI
+/**
+ * Normaliza distintos valores de estado desde la API/BD
+ * a los tres estados usados en la UI.
+ *
+ * @param {any} raw Valor crudo del estado.
+ * @returns {'listo'|'en curso'|'pendiente'} Estado normalizado.
+ */
 function normalizeEstado(raw) {
-    // Only accept the three canonical states: 'listo', 'en curso', 'pendiente'
-    if (!raw && raw !== 0) return 'pendiente';
-    const s = String(raw).toLowerCase().trim();
-    if (s === 'listo') return 'listo';
-    if (s === 'en curso' || s === 'encurso' || s === 'en_curso') return 'en curso';
-    if (s === 'pendiente') return 'pendiente';
-    // Any unknown value: default to 'pendiente'
+  if (!raw && raw !== 0) {
     return 'pendiente';
+  }
+
+  const s = String(raw).toLowerCase().trim();
+
+  if (s === 'listo') {
+    return 'listo';
+  }
+
+  if (s === 'en curso' || s === 'encurso' || s === 'en_curso') {
+    return 'en curso';
+  }
+
+  if (s === 'pendiente') {
+    return 'pendiente';
+  }
+
+  return 'pendiente';
 }
 
-// Mapear nombre de tipo a clase CSS (slug-like)
+/**
+ * Mapear nombre de tipo de actividad a clase CSS.
+ *
+ * @param {any} raw Texto crudo del tipo.
+ * @returns {string} Clase CSS asociada.
+ */
 function tipoClase(raw) {
-    if (!raw && raw !== 0) return 'tag-agua';
-    const s = String(raw).toLowerCase().trim();
-    if (s.includes('ejerc')) return 'tag-rojo';
-    if (s.includes('examen')) return 'tag-azul';
-    if (s.includes('proyecto')) return 'tag-verde';
-    if (s.includes('tarea') || s.includes('trabajo')) return 'tag-naranja';
+  if (!raw && raw !== 0) {
     return 'tag-agua';
+  }
+
+  const s = String(raw).toLowerCase().trim();
+
+  if (s.includes('ejerc')) return 'tag-rojo';
+  if (s.includes('examen')) return 'tag-azul';
+  if (s.includes('proyecto')) return 'tag-verde';
+  if (s.includes('tarea') || s.includes('trabajo')) return 'tag-naranja';
+
+  return 'tag-agua';
 }
+
+/* ==========================================================
+   INICIALIZACIÓN AL CARGAR EL DOCUMENTO
+   ========================================================== */
 
 document.addEventListener('DOMContentLoaded', verificarTablaVacia);
-
-// Al cargar la página, obtener actividades desde la API y renderizarlas
 document.addEventListener('DOMContentLoaded', () => {
-    cargarActividadesDesdeAPI();
+  cargarActividadesDesdeAPI();
 });
 
-// Si la tabla está vacía, oculta elementos y muestra mensaje
+/* ==========================================================
+   VERIFICAR TABLA VACÍA
+   ========================================================== */
+
+/**
+ * Si la tabla está vacía, oculta/ muestra los elementos correctos.
+ *
+ * @returns {void}
+ */
 function verificarTablaVacia() {
-    const tabla = document.getElementById('tabla');
-    const btnEditar = document.getElementById('contenedor-boton-editar');
-    const btnEliminar = document.getElementById('contenedor-boton-eliminar');
-    const btnFiltro = document.getElementById('contenedor-boton-filtro');
-    const filas = document.querySelectorAll('#tabla-body tr');
-    const msg = document.getElementById('mensaje-vacio');
-    const tablaVacia = document.getElementById('tabla-vacia');
-    const searchbar = document.getElementById('search-box');
+  const tabla = document.getElementById('tabla');
+  const btnEditar = document.getElementById('contenedor-boton-editar');
+  const btnEliminar = document.getElementById('contenedor-boton-eliminar');
+  const btnFiltro = document.getElementById('contenedor-boton-filtro');
+  const filas = document.querySelectorAll('#tabla-body tr');
+  const msg = document.getElementById('mensaje-vacio');
+  const tablaVacia = document.getElementById('tabla-vacia');
+  const searchbar = document.getElementById('search-box');
 
-    // Si la página no contiene elementos del dashboard (tabla y mensaje), salir temprano.
-    if (!tabla && !document.getElementById('tabla-body') && !msg && !tablaVacia) return;
+  if (!tabla && !document.getElementById('tabla-body') && !msg && !tablaVacia) {
+    return;
+  }
 
-    // Contar sólo las filas visibles (las que no tienen display: none)
-    const visibleFilas = Array.from(filas).filter(f => (f.style.display || '') !== 'none').length;
-    const totalFilas = filas.length;
+  let visibleFilas = 0;
+  for (const fila of filas) {
+    if ((fila.style.display || '') !== 'none') {
+      visibleFilas += 1;
+    }
+  }
+  const totalFilas = filas.length;
 
-    // Casos:
-    // - totalFilas === 0: no hay actividades registradas -> mostrar `mensaje-vacio` (global)
-    // - totalFilas > 0 && visibleFilas === 0: hay actividades pero ninguna coincide con el filtro/búsqueda -> mostrar `tabla-vacia`
-    // - visibleFilas > 0: mostrar tabla normalmente
-    if (totalFilas === 0) {
-        if (msg) msg.classList.remove('oculto');
-        if (tablaVacia) tablaVacia.classList.add('oculto');
-        if (tabla) tabla.classList.add('oculto');
-        if (btnEditar) btnEditar.classList.add('oculto');
-        if (btnEliminar) btnEliminar.classList.add('oculto');
-        if (btnFiltro) btnFiltro.classList.add('oculto');
-        if (searchbar) searchbar.classList.add('oculto');
-    } else if (visibleFilas === 0) {
-        // hay filas, pero no hay coincidencias visibles (búsqueda/filtrado)
-        if (msg) msg.classList.add('oculto');
-        if (tablaVacia) tablaVacia.classList.remove('oculto');
-        if (tabla) tabla.classList.add('oculto');
-        if (btnEditar) btnEditar.classList.add('oculto');
-        if (btnEliminar) btnEliminar.classList.add('oculto');
-        if (btnFiltro) btnFiltro.classList.remove('oculto');
-        if (searchbar) searchbar.classList.remove('oculto');
+  if (totalFilas === 0) {
+    msg?.classList.remove('oculto');
+    tablaVacia?.classList.add('oculto');
+    tabla?.classList.add('oculto');
+    btnEditar?.classList.add('oculto');
+    btnEliminar?.classList.add('oculto');
+    btnFiltro?.classList.add('oculto');
+    searchbar?.classList.add('oculto');
+    return;
+  }
+
+  if (visibleFilas === 0) {
+    msg?.classList.add('oculto');
+    tablaVacia?.classList.remove('oculto');
+    tabla?.classList.add('oculto');
+    btnEditar?.classList.add('oculto');
+    btnEliminar?.classList.add('oculto');
+    btnFiltro?.classList.remove('oculto');
+    searchbar?.classList.remove('oculto');
+    return;
+  }
+
+  msg?.classList.add('oculto');
+  tablaVacia?.classList.add('oculto');
+  tabla?.classList.remove('oculto');
+  btnEditar?.classList.remove('oculto');
+  btnEliminar?.classList.remove('oculto');
+  btnFiltro?.classList.remove('oculto');
+  searchbar?.classList.remove('oculto');
+}
+
+/* ==========================================================
+   CARGA DE ACTIVIDADES DESDE API
+   ========================================================== */
+
+async function obtenerMateriasDesdeApi(baseUrl) {
+  const respuesta = await fetch(baseUrl + 'api/materias', {
+    credentials: 'same-origin'
+  });
+
+  const texto = await respuesta.text();
+  const json = parsearJsonSeguro(texto);
+
+  if (!json) {
+    throw new Error('Respuesta inválida de /api/materias');
+  }
+
+  if (!respuesta.ok) {
+    const mensaje = json.message || `HTTP ${respuesta.status}`;
+    throw new Error(mensaje);
+  }
+
+  return json.data || [];
+}
+
+async function obtenerActividadesPorMateria(baseUrl, materias) {
+  const resultados = [];
+
+  for (const materia of materias) {
+    const url = `${baseUrl}api/actividades?id_materia=${encodeURIComponent(materia.id)}`;
+    const respuesta = await fetch(url, { credentials: 'same-origin' });
+    const texto = await respuesta.text();
+    const json = parsearJsonSeguro(texto);
+
+    if (!json) {
+      throw new Error('Respuesta inválida de /api/actividades');
+    }
+
+    if (!respuesta.ok) {
+      const mensaje = json.message || `HTTP ${respuesta.status}`;
+      throw new Error(mensaje);
+    }
+
+    resultados.push({
+      materia,
+      data: json.data
+    });
+  }
+
+  return resultados;
+}
+
+function construirFilasActividades(resultados) {
+  const filas = [];
+
+  for (const resultado of resultados) {
+    const materia = resultado.materia;
+    const data = resultado.data || {};
+    const secciones = data.secciones || [];
+
+    for (const seccion of secciones) {
+      const tipoNombre = seccion.nombre_tipo || seccion.nombre || '';
+      const actividades = seccion.actividades || [];
+
+      for (const actividad of actividades) {
+        filas.push({
+          id: actividad.id_actividad || actividad.id || '',
+          fecha: actividad.fecha_entrega || actividad.fecha || '',
+          nombre: actividad.nombre || actividad.nombre_actividad || '',
+          materia: materia.nombre || '',
+          tipo: tipoNombre,
+          estado: normalizeEstado(
+            actividad.estado || (actividad.obtenido !== null ? 'pendiente' : 'en curso')
+          ),
+          obtenido: actividad.obtenido ?? null,
+          maximo: actividad.maximo ?? null,
+          id_materia: materia.id || materia.id_materia || materia.idMateria || null,
+          id_tipo_actividad:
+            seccion.id_tipo_actividad || seccion.id_tipo || seccion.idTipo || null
+        });
+      }
+    }
+  }
+
+  return filas;
+}
+
+function generarBadgeProgreso(estado) {
+  const est = normalizeEstado(estado);
+  let clase = 'progress-encurso';
+  let etiqueta = 'En curso';
+
+  if (est === 'pendiente') {
+    clase = 'progress-sininiciar';
+    etiqueta = 'Pendiente';
+  } else if (est === 'listo') {
+    clase = 'progress-completado';
+    etiqueta = 'Listo';
+  }
+
+  return `<span class="progress-badge ${clase}" data-progreso="${escapeHtml(est)}">${escapeHtml(etiqueta)}</span>`;
+}
+
+function pintarFilasActividades(cuerpoTabla, filas) {
+  cuerpoTabla.innerHTML = '';
+
+  if (filas.length === 0) {
+    verificarTablaVacia();
+    return;
+  }
+
+  for (const fila of filas) {
+    const tr = document.createElement('tr');
+    const progreso = generarBadgeProgreso(fila.estado);
+    tr.dataset.idActividad = fila.id;
+
+    if (fila.id_materia) {
+      tr.dataset.idMateria = fila.id_materia;
+    }
+
+    if (fila.id_tipo_actividad) {
+      tr.dataset.idTipo = fila.id_tipo_actividad;
+    }
+
+    const claseTipo = tipoClase(fila.tipo);
+
+    tr.innerHTML = `
+      <td>${escapeHtml(fila.fecha)}</td>
+      <td>${escapeHtml(fila.nombre)}</td>
+      <td>${escapeHtml(fila.materia)}</td>
+      <td><span class="tag ${claseTipo}">${escapeHtml(fila.tipo)}</span></td>
+      <td>${progreso}</td>
+    `;
+
+    cuerpoTabla.appendChild(tr);
+  }
+
+  globalThis.feather?.replace();
+  verificarTablaVacia();
+}
+
+function manejarErrorCargaActividades(error, cuerpoTabla) {
+  console.error('Error cargando actividades:', error);
+
+  if (cuerpoTabla) {
+    const mensaje = error?.message ?? String(error);
+    cuerpoTabla.innerHTML = `<tr><td colspan="5">Error: ${escapeHtml(mensaje)}</td></tr>`;
+  }
+
+  verificarTablaVacia();
+}
+
+async function cargarActividadesDesdeAPI() {
+  const base = obtenerBaseUrl();
+  const cuerpoTabla = document.getElementById('tabla-body');
+
+  if (!cuerpoTabla) {
+    return;
+  }
+
+  cuerpoTabla.innerHTML = '<tr><td colspan="5">Cargando actividades...</td></tr>';
+
+  try {
+    const materias = await obtenerMateriasDesdeApi(base);
+    const resultados = await obtenerActividadesPorMateria(base, materias);
+    const filas = construirFilasActividades(resultados);
+    pintarFilasActividades(cuerpoTabla, filas);
+  } catch (error) {
+    manejarErrorCargaActividades(error, cuerpoTabla);
+  }
+}
+
+/* ==========================================================
+   ELIMINACIÓN MASIVA DE FILAS
+   ========================================================== */
+
+async function confirmarEliminacionMasiva() {
+  if (typeof showConfirm === 'function') {
+    return showConfirm(
+      'Confirmar eliminación',
+      '¿Estás seguro de que deseas eliminar todas las actividades listadas? ' +
+        'Esta acción eliminará las actividades del servidor y no se podrá deshacer.'
+    );
+  }
+
+  return new Promise((resolver) => {
+    const dialogo = document.createElement('dialog');
+    dialogo.className = 'confirm-dialog';
+    dialogo.innerHTML = `
+      <div class="modal-eliminar-masivo">
+        <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
+        <p style="margin:0 0 12px 0">
+          ¿Estás seguro de que deseas eliminar todas las actividades listadas?
+          Esta acción eliminará las actividades del servidor y no se podrá deshacer.
+        </p>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="__temp_confirm_cancel" class="btn-secondary">Cancelar</button>
+          <button id="__temp_confirm_ok" class="btn-secondary">Eliminar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(dialogo);
+
+    try {
+      dialogo.showModal();
+    } catch (error_) {
+      console.warn('El navegador no soporta <dialog>:', error_);
+    }
+
+    const botonAceptar = dialogo.querySelector('#__temp_confirm_ok');
+    const botonCancelar = dialogo.querySelector('#__temp_confirm_cancel');
+
+    const finalizar = (resultado) => {
+      try {
+        dialogo.close();
+        dialogo.remove();
+      } catch (error_) {
+        console.warn('Error cerrando diálogo de confirmación:', error_);
+      }
+      resolver(resultado);
+    };
+
+    botonAceptar?.addEventListener('click', () => finalizar(true));
+    botonCancelar?.addEventListener('click', () => finalizar(false));
+    dialogo.addEventListener('cancel', () => finalizar(false));
+
+    botonAceptar?.focus();
+  });
+}
+
+/* helpers para reducir complejidad de borrado masivo */
+
+function obtenerFilasTabla() {
+  return Array.from(document.querySelectorAll('#tabla-body tr'));
+}
+
+function separarFilasPorId(filas) {
+  const filasConId = [];
+  const filasSinId = [];
+
+  for (const fila of filas) {
+    const id = fila.dataset.idActividad || '';
+    const idNum = Number(String(id).trim());
+
+    if (Number.isFinite(idNum) && idNum > 0) {
+      filasConId.push({ el: fila, idNum });
     } else {
-        // Hay filas visibles
-        if (msg) msg.classList.add('oculto');
-        if (tablaVacia) tablaVacia.classList.add('oculto');
-        if (tabla) tabla.classList.remove('oculto');
-        if (btnEditar) btnEditar.classList.remove('oculto');
-        if (btnEliminar) btnEliminar.classList.remove('oculto');
-        if (btnFiltro) btnFiltro.classList.remove('oculto');
-        if (searchbar) searchbar.classList.remove('oculto');
+      filasSinId.push(fila);
     }
+  }
+
+  return { filasConId, filasSinId };
 }
 
-
-// Cargar actividades desde la API: primero obtenemos las materias, luego por cada materia sus actividades
-function cargarActividadesDesdeAPI(){
-    const base = globalThis.BASE_URL || '';
-    const urlMaterias = base + 'api/materias';
-    const tbody = document.getElementById('tabla-body');
-    if (!tbody) return;
-
-    // mostrar carga temporal
-    tbody.innerHTML = '<tr><td colspan="5">Cargando actividades...</td></tr>';
-
-    fetch(urlMaterias, { credentials: 'same-origin' })
-        .then(async r => {
-            const txt = await r.text();
-            let json = null;
-            try { json = JSON.parse(txt); } catch(e){ throw new Error('Respuesta inválida de /api/materias'); }
-            if (!r.ok) throw new Error(json.message || ('HTTP ' + r.status));
-            return json.data || [];
-        })
-        .then(async materias => {
-            // Para cada materia hacemos una petición de actividades
-            const promesas = materias.map(m => {
-                const urlActs = base + 'api/actividades?id_materia=' + encodeURIComponent(m.id);
-                return fetch(urlActs, { credentials: 'same-origin' })
-                    .then(async r => {
-                        const txt = await r.text();
-                        let json = null;
-                        try { json = JSON.parse(txt); } catch(e){ throw new Error('Respuesta inválida de /api/actividades'); }
-                        if (!r.ok) throw new Error(json.message || ('HTTP ' + r.status));
-                        return { materia: m, data: json.data };
-                    });
-            });
-
-            return Promise.all(promesas);
-        })
-        .then(resultados => {
-            // Vaciar tabla
-            const filas = [];
-
-            resultados.forEach(res => {
-                const materia = res.materia;
-                const data = res.data || {};
-
-                // data.secciones -> cada sección contiene actividades
-                const secciones = data.secciones || [];
-                secciones.forEach(sec => {
-                    const tipoNombre = sec.nombre_tipo || sec.nombre || '';
-                    (sec.actividades || []).forEach(act => {
-                                filas.push({
-                                    id: act.id_actividad || act.id || '',
-                                    fecha: act.fecha_entrega || act.fecha || '',
-                                    nombre: act.nombre || act.nombre_actividad || '',
-                                    materia: materia.nombre || '',
-                                    tipo: tipoNombre,
-                                    estado: normalizeEstado((act.estado || (act.obtenido !== null ? 'pendiente' : 'en curso'))),
-                                    obtenido: act.obtenido ?? null,
-                                    maximo: act.maximo ?? null,
-                                    id_materia: materia.id || materia.id_materia || materia.idMateria || null,
-                                    id_tipo_actividad: sec.id_tipo || sec.id_tipo || sec.idTipo || null
-                                });
-                    });
-                });
-            });
-
-            // Renderizar filas
-            tbody.innerHTML = '';
-            if (filas.length === 0) {
-                verificarTablaVacia();
-                return;
-            }
-
-            filas.forEach(f => {
-                const tr = document.createElement('tr');
-                const progreso = generarBadgeProgreso(f.estado, f.obtenido, f.maximo);
-                tr.dataset.idActividad = f.id;
-                if (f.id_materia) tr.dataset.idMateria = f.id_materia;
-                if (f.id_tipo_actividad) tr.dataset.idTipo = f.id_tipo_actividad;
-                const tipoCls = tipoClase(f.tipo);
-                // (no almacenar maximo; ahora el backend permite eliminar cualquiera)
-                tr.innerHTML = `
-                    <td>${escapeHtml(f.fecha)}</td>
-                    <td>${escapeHtml(f.nombre)}</td>
-                    <td>${escapeHtml(f.materia)}</td>
-                    <td><span class="tag ${tipoCls}">${escapeHtml(f.tipo)}</span></td>
-                    <td>${progreso}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // inicializar iconos si los hay
-            if (window.feather) feather.replace();
-
-            verificarTablaVacia();
-        })
-        .catch(err => {
-            console.error('Error cargando actividades:', err);
-            const tbody = document.getElementById('tabla-body');
-            if (tbody) tbody.innerHTML = `<tr><td colspan="5">Error: ${escapeHtml(err.message)}</td></tr>`;
-            verificarTablaVacia();
-        });
-
-    function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
-
-    function generarBadgeProgreso(estado, obtenido, maximo){
-        const est = normalizeEstado(estado);
-        let clase = 'progress-encurso';
-        let label = 'En curso';
-        if (est === 'pendiente') { clase = 'progress-sininiciar'; label = 'Pendiente'; }
-        else if (est === 'listo') { clase = 'progress-completado'; label = 'Listo'; }
-
-        return `<span class="progress-badge ${clase}" data-progreso="${escapeHtml(est)}">${escapeHtml(label)}</span>`;
-    }
-
-    // removed inner normalizeEstado to use the global one
+function eliminarFilasSinId(filasSinId) {
+  for (const fila of filasSinId) {
+    fila.remove();
+  }
 }
 
-// Borrar todas las filas de la tabla
+async function borrarActividadesConId(base, filasConId) {
+  const promesas = filasConId.map((item) => {
+    const url = `${base}api/actividades?id=${encodeURIComponent(item.idNum)}`;
+
+    return fetch(url, {
+      method: 'DELETE',
+      credentials: 'same-origin'
+    })
+      .then(async (respuesta) => {
+        const texto = await respuesta.text();
+        let cuerpo = texto;
+        let json = parsearJsonSeguro(texto);
+
+        if (!respuesta.ok) {
+          let mensaje;
+
+          if (json?.message) {
+            mensaje = json.message;
+          } else if (typeof cuerpo === 'string') {
+            mensaje = cuerpo;
+          } else {
+            mensaje = `HTTP ${respuesta.status}`;
+          }
+
+          throw new Error(`HTTP ${respuesta.status}: ${mensaje}`);
+        }
+
+        if (!json) {
+          json = { message: cuerpo };
+        }
+
+        return {
+          id: item.idNum,
+          ok: true,
+          message: json.message ?? cuerpo
+        };
+      })
+      .catch((error) => ({
+        id: item.idNum,
+        ok: false,
+        error
+      }));
+  });
+
+  return Promise.all(promesas);
+}
+
+function construirMensajeErroresBorrado(errores) {
+  const partes = [];
+  for (const errorItem of errores) {
+    const detalle = errorItem.error?.message
+      ? errorItem.error.message
+      : errorItem.error;
+    partes.push(`id=${errorItem.id} -> ${detalle}`);
+  }
+  return partes.join('\n');
+}
+
+function recargarDespuesDeBorrado() {
+  try {
+    if (typeof cargarActividadesDesdeAPI === 'function') {
+      cargarActividadesDesdeAPI();
+    } else {
+      globalThis.location.reload();
+    }
+  } catch (error_) {
+    console.error('Error recargando actividades después de borrado masivo:', error_);
+    globalThis.location.reload();
+  }
+}
+
 async function botonEliminarMasivo() {
-    const filas = Array.from(document.querySelectorAll('#tabla-body tr'));
-    if (!filas.length) return;
+  const filas = obtenerFilasTabla();
 
-        // Usar modal en lugar de confirm() nativo
-        const confirmar = await (typeof showConfirm === 'function'
-                ? showConfirm('Confirmar eliminación', '¿Estás seguro de que deseas eliminar todas las actividades listadas? Esta acción eliminará las actividades del servidor y no se podrá deshacer.')
-                : (await (async () => {
-                        // fallback: crear modal mínimo si no existe showConfirm
-                        return new Promise(resolve => {
-                                const dlg = document.createElement('dialog');
-                                dlg.className = 'confirm-dialog';
-                                dlg.innerHTML = `
-                                    <div class="modal-eliminar-masivo">
-                                        <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
-                                        <p style="margin:0 0 12px 0">¿Estás seguro de que deseas eliminar todas las actividades listadas? Esta acción eliminará las actividades del servidor y no se podrá deshacer.</p>
-                                        <div style="display:flex;gap:8px;justify-content:flex-end;">
-                                            <button id="__temp_confirm_cancel" class="btn-secondary">Cancelar</button>
-                                            <button id="__temp_confirm_ok" class="btn-secondary">Eliminar</button>
-                                        </div>
-                                    </div>
-                                `;
-                                document.body.appendChild(dlg);
-                                try { dlg.showModal(); } catch(e) {}
-                                const ok = dlg.querySelector('#__temp_confirm_ok');
-                                const cancel = dlg.querySelector('#__temp_confirm_cancel');
-                                ok && ok.focus();
-                                const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
-                                ok && ok.addEventListener('click', () => cleanup(true));
-                                cancel && cancel.addEventListener('click', () => cleanup(false));
-                                dlg.addEventListener('cancel', () => cleanup(false));
-                        });
-                })()) );
-        if (!confirmar) return;
+  if (!filas.length) {
+    return;
+  }
 
-    const base = globalThis.BASE_URL || '';
+  const confirmar = await confirmarEliminacionMasiva();
 
-    // Separar filas con id (persistentes) y sin id (solo cliente)
-    const filasConId = filas.map(f => ({ el: f, id: f.dataset.idActividad || f.getAttribute('data-id-actividad') || '' }))
-                          .map(x => ({ el: x.el, id: String(x.id).trim(), idNum: Number(String(x.id).trim()) }))
-                          .filter(x => Number.isFinite(x.idNum) && x.idNum > 0);
-    const filasSinId = filas.filter(f => !(f.dataset.idActividad || f.getAttribute('data-id-actividad')));
+  if (!confirmar) {
+    return;
+  }
 
-    // Eliminar primero las filas que no tienen id (solo en el cliente)
-    filasSinId.forEach(f => f.remove());
+  const base = obtenerBaseUrl();
+  const { filasConId, filasSinId } = separarFilasPorId(filas);
 
-    if (filasConId.length === 0) {
-        verificarTablaVacia();
-        return;
-    }
+  eliminarFilasSinId(filasSinId);
 
-    // Enviar DELETE para todas las filas con id (backend ahora acepta borrar calificables)
-    const borrados = filasConId.map(item => {
-        const url = base + 'api/actividades?id=' + encodeURIComponent(item.idNum);
-        return fetch(url, {
-            method: 'DELETE',
-            credentials: 'same-origin'
-        }).then(async r => {
-            const txt = await r.text();
-            let body = txt;
-            let json = null;
-            try { json = JSON.parse(txt); body = json; } catch { /* keep raw text */ }
-            if (!r.ok) {
-                const msg = (json && json.message) ? json.message : (typeof body === 'string' ? body : JSON.stringify(body));
-                throw new Error(`HTTP ${r.status}: ${msg}`);
-            }
-            return { id: item.idNum, ok: true, message: json?.message ?? body };
-        }).catch(err => ({ id: item.idNum, ok: false, error: err }));
-    });
+  if (filasConId.length === 0) {
+    verificarTablaVacia();
+    return;
+  }
 
-    Promise.all(borrados).then(results => {
-        const errores = results.filter(r => !r.ok);
-        if (errores.length) {
-            console.error('Errores al eliminar actividades:', errores);
-            // Construir mensaje legible
-            const detalles = errores.map(e => `id=${e.id} -> ${e.error?.message || e.error}`).join('\n');
-            if (typeof showToast === 'function') {
-                showToast('Ocurrieron errores al eliminar algunas actividades:\n' + detalles, { type: 'error' });
-            } else {
-                console.error('Ocurrieron errores al eliminar algunas actividades:\n' + detalles);
-            }
-        }
+  const resultados = await borrarActividadesConId(base, filasConId);
+  const errores = resultados.filter((r) => !r.ok);
 
-        // Refrescar tabla desde la API para reflejar el estado real
-        try {
-            if (typeof cargarActividadesDesdeAPI === 'function') cargarActividadesDesdeAPI();
-            else location.reload();
-        } catch (e) {
-            location.reload();
-        }
-    });
+  if (errores.length) {
+    const detalles = construirMensajeErroresBorrado(errores);
+    mostrarToastSeguro(
+      `Ocurrieron errores al eliminar algunas actividades:\n${detalles}`,
+      { type: 'error' }
+    );
+  }
+
+  recargarDespuesDeBorrado();
 }
 
-// Barra de busqueda funcional (compatible con diferentes templates)
+/* ==========================================================
+   BUSCADOR
+   ========================================================== */
+
+function normalizarTextoBusqueda(texto) {
+  if (!texto) {
+    return '';
+  }
+
+  try {
+    return String(texto)
+      .normalize('NFD')
+      .replaceAll(/\p{Diacritic}/gu, '')
+      .replaceAll(/\s+/g, ' ')
+      .toLowerCase()
+      .trim();
+  } catch (error) {
+    console.warn('Unicode normalization not supported, using fallback:', error);
+    return String(texto)
+      .replaceAll(/[ÁÀÂÄáàâä]/g, 'a')
+      .replaceAll(/[ÉÈÊËéèêë]/g, 'e')
+      .replaceAll(/[ÍÌÎÏíìîï]/g, 'i')
+      .replaceAll(/[ÓÒÔÖóòôö]/g, 'o')
+      .replaceAll(/[ÚÙÛÜúùûü]/g, 'u')
+      .replaceAll(/\s+/g, ' ')
+      .toLowerCase()
+      .trim();
+  }
+}
+
+function aplicarFiltroBusqueda(textoFiltro) {
+  const filtro = normalizarTextoBusqueda(textoFiltro);
+  const filas = document.querySelectorAll('#tabla-body tr');
+  const tabla = document.getElementById('tabla');
+  const tablaVacia = document.getElementById('tabla-vacia');
+
+  if (filtro === '') {
+    for (const fila of filas) {
+      fila.style.display = '';
+    }
+    verificarTablaVacia();
+    return;
+  }
+
+  let hayCoincidencias = false;
+
+  for (const fila of filas) {
+    const textoFila = normalizarTextoBusqueda(fila.innerText || '');
+    const coincide = textoFila.includes(filtro);
+
+    fila.style.display = coincide ? '' : 'none';
+
+    if (coincide) {
+      hayCoincidencias = true;
+    }
+  }
+
+  if (hayCoincidencias) {
+    tabla?.classList.remove('oculto');
+    tablaVacia?.classList.add('oculto');
+  } else {
+    tabla?.classList.add('oculto');
+    tablaVacia?.classList.remove('oculto');
+  }
+}
+
 function inicializarBuscador() {
-    const searchInput = document.getElementById('d-search-input') || document.getElementById('search-input') || document.querySelector('.search-input');
-    const searchToggle = document.getElementById('search-toggle');
-    const searchWrapper = document.getElementById('dashboard-search-input-wrapper');
-    if (!searchInput && !searchToggle) return;
-    // Normaliza texto: quita acentos, colapsa espacios y pasa a minúsculas
-    function normalizeText(s) {
-        if (!s) return '';
-        try {
-            // Normalización Unicode para quitar diacríticos
-            return String(s)
-                .normalize('NFD')
-                .replace(/\p{Diacritic}/gu, '')
-                .replace(/\s+/g, ' ')
-                .toLowerCase()
-                .trim();
-        } catch (e) {
-            // Fallback cuando el ambiente no soporta \p{Diacritic}
-            return String(s)
-                .replace(/[ÁÀÂÄáàâä]/g, 'a')
-                .replace(/[ÉÈÊËéèêë]/g, 'e')
-                .replace(/[ÍÌÎÏíìîï]/g, 'i')
-                .replace(/[ÓÒÔÖóòôö]/g, 'o')
-                .replace(/[ÚÙÛÜúùûü]/g, 'u')
-                .replace(/\s+/g, ' ')
-                .toLowerCase()
-                .trim();
+  const searchInput =
+    document.getElementById('d-search-input')
+    || document.getElementById('search-input')
+    || document.querySelector('.search-input');
+
+  const searchToggle = document.getElementById('search-toggle');
+  const searchWrapper = document.getElementById('dashboard-search-input-wrapper');
+
+  if (!searchInput && !searchToggle) {
+    return;
+  }
+
+  if (searchToggle) {
+    searchToggle.addEventListener('click', () => {
+      if (searchWrapper?.classList.contains('oculto')) {
+        searchWrapper.classList.remove('oculto');
+
+        setTimeout(() => {
+          try {
+            searchInput?.focus();
+          } catch (error) {
+            console.warn('No se pudo enfocar el buscador:', error);
+          }
+        }, 10);
+      } else {
+        if (searchInput) {
+          searchInput.value = '';
         }
-    }
-
-    // Toggle button opens/collapses the search input. When collapsed, clear input.
-    if (searchToggle) {
-        searchToggle.addEventListener('click', function () {
-            if (searchWrapper && searchWrapper.classList.contains('oculto')) {
-                // expand
-                searchWrapper.classList.remove('oculto');
-                // focus input after a tick
-                setTimeout(() => { try { (searchInput).focus(); } catch(e){} }, 10);
-            } else {
-                // collapse and clear
-                if (searchInput) searchInput.value = '';
-                if (searchWrapper) searchWrapper.classList.add('oculto');
-                // restore table state
-                verificarTablaVacia();
-            }
-        });
-    }
-
-    if (searchInput) searchInput.addEventListener('input', function () {
-        const filtro = normalizeText(this.value || '');
-        const filas = document.querySelectorAll('#tabla-body tr');
-        const tabla = document.getElementById('tabla');
-        // Para búsquedas, preferimos mostrar `#tabla-vacia`. Si no existe, caemos a `#mensaje-vacio`.
-        const tablaVacia = document.getElementById('tabla-vacia');
-
-        // Si el campo de búsqueda está vacío, restaurar estado normal (tabla completa / mensaje vacío global)
-        if (filtro === '') {
-            // mostrar todas las filas
-            filas.forEach(fila => fila.style.display = '');
-            // delegar al verificador global
-            verificarTablaVacia();
-            return;
-        }
-
-        let hayCoincidencias = false;
-
-        filas.forEach(fila => {
-            const textoFila = normalizeText(fila.innerText || '');
-            const coincide = textoFila.includes(filtro);
-
-            fila.style.display = coincide ? '' : 'none';
-            if (coincide) hayCoincidencias = true;
-
-            if (hayCoincidencias) {
-                if (tabla) tabla.classList.remove('oculto');
-                if (tablaVacia) tablaVacia.classList.add('oculto');
-            } else {
-                if (tabla) tabla.classList.add('oculto');
-                if (tablaVacia) tablaVacia.classList.remove('oculto');
-        }
-        });
+        searchWrapper?.classList.add('oculto');
+        verificarTablaVacia();
+      }
     });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      aplicarFiltroBusqueda(searchInput.value || '');
+    });
+  }
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', inicializarBuscador);
+  document.addEventListener('DOMContentLoaded', inicializarBuscador);
 } else {
-    inicializarBuscador();
+  inicializarBuscador();
 }
 
+/* ==========================================================
+   COLUMNA DE ACCIONES EDITAR / ELIMINAR
+   ========================================================== */
 
-// Actualizar la columna de acciones (editar/eliminar) en la tabla
 function actualizarColumnaAcciones() {
-    modoEdicionActivo = !modoEdicionActivo;
+  modoEdicionActivo = !modoEdicionActivo;
 
-    const theadRow = document.querySelector('#tabla thead tr');
-    const filas = document.querySelectorAll('#tabla-body tr');
-    // const tr = filas[index];
-    // const selectProgreso = tr.querySelector('.select-progreso');
+  const theadRow = document.querySelector('#tabla thead tr');
+  const filas = document.querySelectorAll('#tabla-body tr');
 
-    // document.querySelector('#form-actividad').dataset.progreso = selectProgreso.value;
-
-    if (modoEdicionActivo) {
-        // Agregamos la columna "Acciones" al header
-        if (!document.getElementById('th-acciones')) {
-            const th = document.createElement('th');
-            th.id = 'th-acciones';
-            // th.textContent = 'Acciones';
-            theadRow.appendChild(th);
-        }
-
-        // Agregar botones a cada fila
-        filas.forEach((tr, index) => {
-            // evitar duplicar
-            if (tr.querySelector('.col-acciones')) return;
-
-            const td = document.createElement('td');
-            td.classList.add('col-acciones');
-            td.innerHTML = `
-                <div class="filter-btns">
-                    <button class="btn-edit-fila" data-index="${index}">
-                        <i data-feather="edit-3"></i>
-                    </button>
-                    <button class="btn-delete-fila" data-index="${index}">
-                        <i data-feather="trash-2"></i>
-                    </button>
-                </div>
-            `;
-            tr.appendChild(td);
-            // inicializar iconos
-            if (window.feather) feather.replace();
-        });
-        } else {
-            // Quitar header
-            const th = document.getElementById('th-acciones');
-            if (th) th.remove();
-
-            // Quitar columna de cada fila
-            filas.forEach(tr => {
-            const td = tr.querySelector('.col-acciones');
-            if (td) td.remove();
-            });
-        }
-    }
-
-document.addEventListener('click', (e) => {
-    const btnEdit = e.target.closest('.btn-edit-fila');
-    if (btnEdit) {
-        const index = Number(btnEdit.dataset.index);
-        editarFila(index);
-        return;
-    }
-
-    const btnDelete = e.target.closest('.btn-delete-fila');
-    if (btnDelete) {
-        const index = Number(btnDelete.dataset.index);
-        eliminarFila(index);
-        return;
-    }
-});
-
-function editarFila(index) {
-    const filas = document.querySelectorAll('#tabla-body tr');
-    const tr = filas[index];
-    const tds = tr.querySelectorAll('td');
-    abrirModalNueva();
-
-    // esperar a que los selects del modal estén poblados (si se insertó dinámicamente)
-    (async () => {
-        const form = document.getElementById('form-actividad');
-        const hiddenId = document.getElementById('id_actividad');
-
-        // helper que espera hasta que el select tenga una opción con el value esperado
-        async function waitForOption(selectEl, value, timeout = 1200) {
-            if (!selectEl) return true;
-            const start = Date.now();
-            while (Date.now() - start < timeout) {
-                try {
-                    if (Array.from(selectEl.options).some(o => String(o.value) === String(value))) return true;
-                } catch (e) {}
-                await new Promise(r => setTimeout(r, 50));
-            }
-            return false;
-        }
-
-        const idActividad = tr.dataset.idActividad || tr.getAttribute('data-id-actividad') || '';
-        const idMateria = tr.dataset.idMateria || tr.getAttribute('data-id-materia') || '';
-        const idTipo = tr.dataset.idTipo || tr.getAttribute('data-id-tipo') || '';
-
-        // rellenar campos básicos (texto/fecha)
-        try { if (document.querySelector('#form-actividad [name="fecha"]')) document.querySelector('#form-actividad [name="fecha"]').value = tds[0].textContent.trim(); } catch(e){}
-        try { if (document.querySelector('#form-actividad [name="actividad"]')) document.querySelector('#form-actividad [name="actividad"]').value = tds[1].textContent.trim(); } catch(e){}
-
-        // esperar y asignar selects por id si es posible, o fallback a texto si no se encuentra la opción
-        const selectMateria = document.querySelector('#form-actividad select[name="materia"]');
-        const selectTipo = document.querySelector('#form-actividad select[name="tipo"]');
-
-        if (selectMateria && idMateria) {
-            const ok = await waitForOption(selectMateria, idMateria);
-            if (ok) selectMateria.value = String(idMateria);
-        } else if (selectMateria) {
-            // fallback: intentar por texto
-            try {
-                Array.from(selectMateria.options).forEach(o => { if (o.textContent.trim() === tds[2].textContent.trim()) selectMateria.value = o.value; });
-            } catch(e){}
-        }
-
-        if (selectTipo && idTipo) {
-            const ok2 = await waitForOption(selectTipo, idTipo);
-            if (ok2) selectTipo.value = String(idTipo);
-        } else if (selectTipo) {
-            try {
-                Array.from(selectTipo.options).forEach(o => { if (o.textContent.trim() === tds[3].textContent.trim()) selectTipo.value = o.value; });
-            } catch(e){}
-        }
-
-        // set hidden id for submit handler
-        try { if (hiddenId && idActividad) hiddenId.value = String(idActividad); } catch(e){}
-
-        // marcar el índice que se está editando
-        try { if (form) form.dataset.editIndex = index; } catch(e){}
-    })();
+  if (modoEdicionActivo) {
+    activarColumnaAcciones(theadRow, filas);
+  } else {
+    desactivarColumnaAcciones(theadRow, filas);
+  }
 }
 
-// Exponer helper para desactivar el modo edición desde otros módulos
-function desactivarModoEdicion() {
-    try {
-        if (typeof modoEdicionActivo !== 'undefined' && modoEdicionActivo) {
-            // llamar a la función que quita la columna y limpia botones
-            if (typeof actualizarColumnaAcciones === 'function') {
-                actualizarColumnaAcciones();
-            } else {
-                modoEdicionActivo = false;
-            }
-        }
-    } catch (e) {
-        console.error('desactivarModoEdicion error', e);
-        try { modoEdicionActivo = false; } catch(e){}
+/* ============================
+   Helpers columna de acciones
+   ============================ */
+
+function asegurarHeaderAcciones(theadRow) {
+  if (!theadRow) {
+    return;
+  }
+
+  if (!document.getElementById('th-acciones')) {
+    const th = document.createElement('th');
+    th.id = 'th-acciones';
+    theadRow.appendChild(th);
+  }
+}
+
+function quitarHeaderAcciones() {
+  const th = document.getElementById('th-acciones');
+  if (th) {
+    th.remove();
+  }
+}
+
+function crearCeldaAcciones(index) {
+  const td = document.createElement('td');
+  td.classList.add('col-acciones');
+  td.innerHTML = `
+    <div class="filter-btns">
+      <button class="btn-edit-fila" data-index="${index}">
+        <i data-feather="edit-3"></i>
+      </button>
+      <button class="btn-delete-fila" data-index="${index}">
+        <i data-feather="trash-2"></i>
+      </button>
+    </div>
+  `;
+  return td;
+}
+
+function agregarAccionesAFilas(filas) {
+  let index = 0;
+
+  for (const tr of filas) {
+    if (!tr.querySelector('.col-acciones')) {
+      const td = crearCeldaAcciones(index);
+      tr.appendChild(td);
     }
-}
-window.desactivarModoEdicion = desactivarModoEdicion;
+    index += 1;
+  }
 
-function eliminarFila(index) {
-    (async function(){
-        const filas = document.querySelectorAll('#tabla-body tr');
-        const tr = filas[index];
-        if (!tr) return;
-
-        const idRaw = tr.dataset.idActividad || tr.getAttribute('data-id-actividad') || '';
-        const idNum = Number(String(idRaw).trim());
-
-        // Si no tiene id numérico, sólo eliminar del DOM
-        if (!Number.isFinite(idNum) || idNum <= 0) {
-            tr.remove();
-            verificarTablaVacia();
-            return;
-        }
-
-        const base = globalThis.BASE_URL || '';
-
-        try {
-            const res = await fetch(base + 'api/actividades?id=' + encodeURIComponent(idNum), {
-                method: 'DELETE',
-                credentials: 'same-origin'
-            });
-
-            const txt = await res.text();
-            let json = null;
-            try { json = JSON.parse(txt); } catch(e) { /* keep raw text */ }
-
-            if (!res.ok) {
-                const msg = (json && json.message) ? json.message : (typeof txt === 'string' ? txt : ('HTTP ' + res.status));
-                if (typeof showToast === 'function') showToast('No se pudo eliminar: ' + msg, { type: 'error' });
-                else console.error('No se pudo eliminar: ' + msg);
-                return;
-            }
-
-            // Eliminado correctamente — refrescar lista o eliminar la fila localmente
-            if (typeof showToast === 'function') showToast(json?.message || 'Actividad eliminada', { type: 'success' });
-
-            try {
-                if (typeof cargarActividadesDesdeAPI === 'function') {
-                    cargarActividadesDesdeAPI();
-                } else {
-                    tr.remove();
-                    verificarTablaVacia();
-                }
-            } catch (e) {
-                tr.remove();
-                verificarTablaVacia();
-            }
-
-        } catch (err) {
-            console.error('Error eliminando actividad:', err);
-            if (typeof showToast === 'function') showToast('Error eliminando actividad: ' + (err.message || err), { type: 'error' });
-            else console.error(err);
-        }
-    })();
+  globalThis.feather?.replace();
 }
 
-document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('progress-badge')) {
-    cambiarProgreso(e.target);
+function quitarAccionesDeFilas(filas) {
+  for (const tr of filas) {
+    const td = tr.querySelector('.col-acciones');
+    if (td) {
+      td.remove();
+    }
+  }
+}
+
+function activarColumnaAcciones(theadRow, filas) {
+  asegurarHeaderAcciones(theadRow);
+  agregarAccionesAFilas(filas);
+}
+
+function desactivarColumnaAcciones(theadRow, filas) {
+  quitarHeaderAcciones();
+  quitarAccionesDeFilas(filas);
+}
+
+document.addEventListener('click', (evento) => {
+  const botonEditar = evento.target.closest('.btn-edit-fila');
+  if (botonEditar) {
+    const indice = Number(botonEditar.dataset.index);
+    editarFila(indice);
+    return;
+  }
+
+  const botonEliminar = evento.target.closest('.btn-delete-fila');
+  if (botonEliminar) {
+    const indice = Number(botonEliminar.dataset.index);
+    eliminarFila(indice);
   }
 });
 
-function cambiarProgreso(el) {
-    const estados = ["pendiente", "en curso", "listo"];
-    const base = globalThis.BASE_URL || '';
+/* ==========================================================
+   EDICIÓN INDIVIDUAL DE FILAS
+   ========================================================== */
 
-    let actual = normalizeEstado(el.dataset.progreso || el.textContent || '');
-    let idx = estados.indexOf(actual);
-    if (idx === -1) idx = 0;
+async function esperarOpcionSelect(selectEl, value, timeout = 1200) {
+  if (!selectEl) {
+    return true;
+  }
 
-    // pasar al siguiente estado
-    const siguiente = estados[(idx + 1) % estados.length];
+  const inicio = Date.now();
+  const valorTexto = String(value);
 
-    // guardamos estado anterior para poder revertir si falla
-    const anterior = actual;
+  while (Date.now() - inicio < timeout) {
+    try {
+      const existe = Array.from(selectEl.options).some(
+        (opcion) => String(opcion.value) === valorTexto
+      );
 
-    // actualizar UI inmediatamente
-    el.dataset.progreso = siguiente;
-    el.textContent = capitalizar(siguiente);
-    el.classList.remove("progress-sininiciar", "progress-encurso", "progress-completado");
-    if (siguiente === "pendiente") el.classList.add("progress-sininiciar");
-    else if (siguiente === "en curso") el.classList.add("progress-encurso");
-    else el.classList.add("progress-completado");
+      if (existe) {
+        return true;
+      }
+    } catch (error) {
+      console.warn('Error comprobando opción en select:', error);
+      return false;
+    }
 
-    // Persistir cambio en el servidor
-    (async () => {
-        try {
-            const tr = el.closest('tr');
-            if (!tr) throw new Error('Fila de actividad no encontrada');
-            const idActividad = tr.dataset.idActividad || tr.getAttribute('data-id-actividad') || '';
-            const idMateria = tr.dataset.idMateria || tr.getAttribute('data-id-materia') || '';
-            const idTipo = tr.dataset.idTipo || tr.getAttribute('data-id-tipo') || '';
-            const tds = tr.querySelectorAll('td');
-            const fecha = tds[0] ? tds[0].textContent.trim() : '';
-            const nombre = tds[1] ? tds[1].textContent.trim() : '';
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((resolver) => setTimeout(resolver, 50));
+  }
 
-            if (!idActividad || !idMateria || !idTipo || !nombre) {
-                // no tenemos los datos necesarios para actualizar en backend
-                if (typeof showToast === 'function') showToast('No se pueden persistir los cambios: faltan datos de la actividad', { type: 'error' });
-                // revertir UI
-                el.dataset.progreso = anterior;
-                el.textContent = capitalizar(anterior);
-                el.classList.remove("progress-sininiciar", "progress-encurso", "progress-completado");
-                if (anterior === "pendiente") el.classList.add("progress-sininiciar");
-                else if (anterior === "en curso") el.classList.add("progress-encurso");
-                else el.classList.add("progress-completado");
-                return;
-            }
-
-            const payload = {
-                id_actividad: Number(idActividad),
-                id_materia: Number(idMateria),
-                id_tipo_actividad: Number(idTipo),
-                nombre_actividad: nombre,
-                fecha_entrega: fecha || undefined,
-                estado: siguiente
-            };
-
-            const res = await fetch(base + 'api/actividades', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const txt = await res.text();
-            let json = null;
-            try { json = JSON.parse(txt); } catch(e) { /* keep raw */ }
-
-            if (!res.ok) {
-                const msg = json?.message || txt || ('HTTP ' + res.status);
-                throw new Error(msg);
-            }
-
-            // opcional: refrescar datos más adelante para asegurar consistencia
-            // setTimeout(() => { if (typeof cargarActividadesDesdeAPI === 'function') cargarActividadesDesdeAPI(); }, 300);
-
-        } catch (err) {
-            console.error('Error persisting progreso:', err);
-            if (typeof showToast === 'function') showToast('No se pudo guardar el progreso: ' + (err.message || err), { type: 'error' });
-            // revertir UI
-            el.dataset.progreso = anterior;
-            el.textContent = capitalizar(anterior);
-            el.classList.remove("progress-sininiciar", "progress-encurso", "progress-completado");
-            if (anterior === "pendiente") el.classList.add("progress-sininiciar");
-            else if (anterior === "en curso") el.classList.add("progress-encurso");
-            else el.classList.add("progress-completado");
-        }
-    })();
+  return false;
 }
 
-function capitalizar(txt) {
-  return txt.charAt(0).toUpperCase() + txt.slice(1);
-}  
+function editarFila(index) {
+  const filas = document.querySelectorAll('#tabla-body tr');
+  const tr = filas[index];
+
+  if (!tr) {
+    return;
+  }
+
+  const celdas = tr.querySelectorAll('td');
+  abrirModalNueva();
+
+  completarFormularioDesdeFila(tr, celdas, index);
+}
+
+/* =========================================
+   Helpers para edición de una fila
+   ========================================= */
+
+function obtenerIdsDesdeFila(tr) {
+  return {
+    idActividad: tr.dataset.idActividad || '',
+    idMateria: tr.dataset.idMateria || '',
+    idTipo: tr.dataset.idTipo || ''
+  };
+}
+
+function obtenerCamposFormularioActividad() {
+  return {
+    formulario: document.getElementById('form-actividad'),
+    campoIdOculto: document.getElementById('id_actividad'),
+    campoFecha: document.querySelector('#form-actividad [name="fecha"]'),
+    campoNombre: document.querySelector('#form-actividad [name="actividad"]'),
+    selectMateria: document.querySelector('#form-actividad select[name="materia"]'),
+    selectTipo: document.querySelector('#form-actividad select[name="tipo"]')
+  };
+}
+
+function rellenarCamposTextoBasicos(celdas, campoFecha, campoNombre) {
+  if (campoFecha && celdas[0]) {
+    campoFecha.value = celdas[0].textContent.trim();
+  }
+
+  if (campoNombre && celdas[1]) {
+    campoNombre.value = celdas[1].textContent.trim();
+  }
+}
+
+async function seleccionarOpcionEnSelect(selectEl, idValor, textoCelda) {
+  if (!selectEl) {
+    return;
+  }
+
+  if (idValor) {
+    const existe = await esperarOpcionSelect(selectEl, idValor);
+    if (existe) {
+      selectEl.value = String(idValor);
+      return;
+    }
+  }
+
+  if (!textoCelda) {
+    return;
+  }
+
+  const textoNormalizado = textoCelda.textContent.trim();
+
+  for (const opcion of selectEl.options) {
+    if (opcion.textContent.trim() === textoNormalizado) {
+      selectEl.value = opcion.value;
+      break;
+    }
+  }
+}
+
+async function completarFormularioDesdeFila(tr, celdas, index) {
+  const {
+    formulario,
+    campoIdOculto,
+    campoFecha,
+    campoNombre,
+    selectMateria,
+    selectTipo
+  } = obtenerCamposFormularioActividad();
+
+  const { idActividad, idMateria, idTipo } = obtenerIdsDesdeFila(tr);
+
+  rellenarCamposTextoBasicos(celdas, campoFecha, campoNombre);
+
+  await seleccionarOpcionEnSelect(selectMateria, idMateria, celdas[2]);
+  await seleccionarOpcionEnSelect(selectTipo, idTipo, celdas[3]);
+
+  if (campoIdOculto && idActividad) {
+    campoIdOculto.value = String(idActividad);
+  }
+
+  if (formulario) {
+    formulario.dataset.editIndex = String(index);
+  }
+}
+
+function desactivarModoEdicion() {
+  try {
+    if (modoEdicionActivo !== undefined && modoEdicionActivo) {
+      if (typeof actualizarColumnaAcciones === 'function') {
+        actualizarColumnaAcciones();
+      } else {
+        modoEdicionActivo = false;
+      }
+    }
+  } catch (error) {
+    console.error('desactivarModoEdicion error', error);
+    modoEdicionActivo = false;
+  }
+}
+globalThis.desactivarModoEdicion = desactivarModoEdicion;
+
+function eliminarFila(index) {
+  (async () => {
+    const filas = document.querySelectorAll('#tabla-body tr');
+    const tr = filas[index];
+
+    if (!tr) {
+      return;
+    }
+
+    const idRaw = tr.dataset.idActividad || '';
+    const idNum = Number(String(idRaw).trim());
+
+    if (!Number.isFinite(idNum) || idNum <= 0) {
+      tr.remove();
+      verificarTablaVacia();
+      return;
+    }
+
+    const base = obtenerBaseUrl();
+
+    try {
+      const respuesta = await fetch(
+        `${base}api/actividades?id=${encodeURIComponent(idNum)}`,
+        {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        }
+      );
+
+      const texto = await respuesta.text();
+      const json = parsearJsonSeguro(texto);
+
+      if (!respuesta.ok) {
+        let mensaje;
+
+        if (json?.message) {
+          mensaje = json.message;
+        } else if (typeof texto === 'string') {
+          mensaje = texto;
+        } else {
+          mensaje = `HTTP ${respuesta.status}`;
+        }
+
+        mostrarToastSeguro(`No se pudo eliminar: ${mensaje}`, { type: 'error' });
+        return;
+      }
+
+      mostrarToastSeguro(json?.message || 'Actividad eliminada', { type: 'success' });
+
+      try {
+        if (typeof cargarActividadesDesdeAPI === 'function') {
+          cargarActividadesDesdeAPI();
+        } else {
+          tr.remove();
+          verificarTablaVacia();
+        }
+      } catch (error_) {
+        console.error('Error recargando actividades tras eliminar:', error_);
+        tr.remove();
+        verificarTablaVacia();
+      }
+    } catch (error) {
+      console.error('Error eliminando actividad:', error);
+      mostrarToastSeguro(
+        `Error eliminando actividad: ${error?.message ? error.message : String(error)}`,
+        { type: 'error' }
+      );
+    }
+  })();
+}
+
+/* ==========================================================
+   CAMBIO DE PROGRESO (BADGE CLICABLE)
+   ========================================================== */
+
+document.addEventListener('click', (evento) => {
+  const badge = evento.target.classList.contains('progress-badge')
+    ? evento.target
+    : evento.target.closest('.progress-badge');
+
+  if (badge) {
+    cambiarProgreso(badge);
+  }
+});
+
+
+const ESTADOS_PROGRESO = ['pendiente', 'en curso', 'listo'];
+
+function obtenerSiguienteEstado(actual) {
+  const idx = ESTADOS_PROGRESO.indexOf(actual);
+  const indiceValido = idx === -1 ? 0 : idx;
+  return ESTADOS_PROGRESO[(indiceValido + 1) % ESTADOS_PROGRESO.length];
+}
+
+function aplicarEstadoEnUi(elemento, estado) {
+  elemento.dataset.progreso = estado;
+  elemento.textContent = capitalizar(estado);
+  elemento.classList.remove('progress-sininiciar', 'progress-encurso', 'progress-completado');
+
+  if (estado === 'pendiente') {
+    elemento.classList.add('progress-sininiciar');
+  } else if (estado === 'en curso') {
+    elemento.classList.add('progress-encurso');
+  } else {
+    elemento.classList.add('progress-completado');
+  }
+}
+
+function obtenerContextoActividadDesdeBadge(elemento) {
+  const fila = elemento.closest('tr');
+
+  if (!fila) {
+    throw new Error('Fila de actividad no encontrada');
+  }
+
+  const idActividad = fila.dataset.idActividad || '';
+  const idMateria = fila.dataset.idMateria || '';
+  const idTipo = fila.dataset.idTipo || '';
+
+  const celdas = fila.querySelectorAll('td');
+  const fecha = celdas[0] ? celdas[0].textContent.trim() : '';
+  const nombre = celdas[1] ? celdas[1].textContent.trim() : '';
+
+  return {
+    fila,
+    idActividad,
+    idMateria,
+    idTipo,
+    fecha,
+    nombre
+  };
+}
+
+function validarContextoActividad(ctx) {
+  return Boolean(ctx.idActividad && ctx.idMateria && ctx.idTipo && ctx.nombre);
+}
+
+function construirPayloadProgreso(ctx, estado) {
+  return {
+    id_actividad: Number(ctx.idActividad),
+    id_materia: Number(ctx.idMateria),
+    id_tipo_actividad: Number(ctx.idTipo),
+    nombre_actividad: ctx.nombre,
+    fecha_entrega: ctx.fecha || undefined,
+    estado
+  };
+}
+
+async function persistirProgresoEnServidor(base, payload) {
+  const respuesta = await fetch(`${base}api/actividades`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  const texto = await respuesta.text();
+  const json = parsearJsonSeguro(texto);
+
+  if (!respuesta.ok) {
+    const mensaje = json?.message || texto || `HTTP ${respuesta.status}`;
+    throw new Error(mensaje);
+  }
+}
+
+function cambiarProgreso(elemento) {
+  const base = obtenerBaseUrl();
+
+  const actual = normalizeEstado(elemento.dataset.progreso || elemento.textContent || '');
+  const siguiente = obtenerSiguienteEstado(actual);
+  const anterior = actual;
+
+  aplicarEstadoEnUi(elemento, siguiente);
+
+  (async () => {
+    try {
+      const contexto = obtenerContextoActividadDesdeBadge(elemento);
+
+      if (!validarContextoActividad(contexto)) {
+        mostrarToastSeguro(
+          'No se pueden persistir los cambios: faltan datos de la actividad',
+          { type: 'error' }
+        );
+        aplicarEstadoEnUi(elemento, anterior);
+        return;
+      }
+
+      const payload = construirPayloadProgreso(contexto, siguiente);
+      await persistirProgresoEnServidor(base, payload);
+    } catch (error) {
+      console.error('Error persistiendo progreso:', error);
+      mostrarToastSeguro(
+        `No se pudo guardar el progreso: ${
+          error?.message ? error.message : String(error)
+        }`,
+        { type: 'error' }
+      );
+      aplicarEstadoEnUi(elemento, anterior);
+    }
+  })();
+}
+
+/**
+ * Capitalizar la primera letra de un texto.
+ *
+ * @param {string} texto Texto original.
+ * @returns {string} Texto con primera letra mayúscula.
+ */
+function capitalizar(texto) {
+  if (!texto) {
+    return '';
+  }
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
