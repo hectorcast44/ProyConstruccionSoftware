@@ -403,6 +403,38 @@ class Materia
     }
 
     /**
+     * Validar si el nuevo porcentaje de un tipo es suficiente para cubrir los puntos de las actividades existentes.
+     *
+     * @param int $idMateria
+     * @param int $idTipo
+     * @param float $nuevoPorcentaje
+     * @return bool|string True si es válido, o mensaje de error si no lo es.
+     */
+    public function validarPonderacionActividades(int $idMateria, int $idTipo, float $nuevoPorcentaje)
+    {
+        // Obtener la actividad con mayor puntaje para este tipo
+        $sql = "SELECT MAX(puntos_posibles) as max_puntos 
+                FROM ACTIVIDAD 
+                WHERE id_materia = ? AND id_tipo_actividad = ?";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$idMateria, $idTipo]);
+        $maxPuntos = $stmt->fetchColumn();
+
+        if ($maxPuntos !== false && $maxPuntos > $nuevoPorcentaje) {
+            // Obtener nombre del tipo para el mensaje
+            $sqlTipo = "SELECT nombre_tipo FROM TIPO_ACTIVIDAD WHERE id_tipo_actividad = ?";
+            $stmtTipo = $this->pdo->prepare($sqlTipo);
+            $stmtTipo->execute([$idTipo]);
+            $nombreTipo = $stmtTipo->fetchColumn() ?: 'Tipo desconocido';
+
+            return "No se puede reducir la ponderación de '{$nombreTipo}' a {$nuevoPorcentaje}% porque existe una actividad con valor de {$maxPuntos}.";
+        }
+
+        return true;
+    }
+
+    /**
      * Validar que la calificación mínima esté dentro del rango permitido.
      *
      * @param float $calificacionMinima Calificación a validar.

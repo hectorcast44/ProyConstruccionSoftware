@@ -75,6 +75,8 @@ function inicializarModalNuevaMateria() {
 
     // Calcular suma de porcentajes para ver si es válida (100%)
     const suma = tiposPayload.reduce((acc, t) => acc + (t.porcentaje || 0), 0);
+    // Guardar copia para prefill
+    const tiposParaPrefill = tiposPayload.map(t => ({ ...t }));
 
     // Si la suma no es 100 (con margen), y estamos enviando porcentajes, 
     // significa que el usuario modificó la selección (borró uno o agregó uno que rompe la suma).
@@ -120,7 +122,7 @@ function inicializarModalNuevaMateria() {
       // Si es creación nueva O edición, abrir modal de ponderación si hay tipos seleccionados
       if (targetId && typeof window.abrirModalPonderacion === 'function') {
         try {
-          setTimeout(() => window.abrirModalPonderacion(targetId), 300);
+          setTimeout(() => window.abrirModalPonderacion(targetId, tiposParaPrefill), 300);
         } catch (e) { console.warn('No se pudo abrir modal de ponderación:', e); }
       }
 

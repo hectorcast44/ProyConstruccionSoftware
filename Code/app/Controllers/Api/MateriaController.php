@@ -181,6 +181,18 @@ class MateriaController extends Controller
                         }
                     }
 
+                    // Validar reducción de ponderación
+                    foreach ($data['tipos'] as $t) {
+                        if (is_array($t) && isset($t['porcentaje'])) {
+                            $tid = $t['id'] ?? $t['id_tipo'] ?? $t['id_tipo_actividad'] ?? 0;
+                            $res = $this->materiaModel->validarPonderacionActividades($data['id_materia'], $tid, (float) $t['porcentaje']);
+                            if ($res !== true) {
+                                $this->json(['status' => 'error', 'message' => $res], 400);
+                                return;
+                            }
+                        }
+                    }
+
                     $this->materiaModel->setPonderaciones($data['id_materia'], $data['tipos']);
                 }
 
