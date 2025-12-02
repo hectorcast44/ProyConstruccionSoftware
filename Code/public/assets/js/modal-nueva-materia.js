@@ -1,4 +1,6 @@
 function abrirModalCrearMateria(data = null) {
+  // Si se llama desde un evento (click), data es un Event. Lo tratamos como null.
+  if (data instanceof Event) data = null;
   let modal = document.getElementById('modal-nueva-materia');
   const basePath = globalThis.BASE_URL || '';
 
@@ -17,8 +19,14 @@ function abrirModalCrearMateria(data = null) {
     return;
   }
 
-  // si ya existe el modal, prefilar si se pasó data
-  if (data) prefilarModalMateria(data);
+  // si ya existe el modal, prefilar si se pasó data, sino resetear
+  if (data) {
+    prefilarModalMateria(data);
+  } else {
+    if (typeof window.resetModalMateria === 'function') {
+      window.resetModalMateria();
+    }
+  }
   modal.showModal();
 }
 
@@ -28,18 +36,59 @@ function inicializarModalNuevaMateria() {
   const form = document.getElementById('form-materia');
   if (!modal || !form) return;
 
-  if (cerrar) cerrar.addEventListener('click', () => modal.close());
+  // Resetear textos al abrir/cerrar por si acaso
+  const resetTexts = () => {
+    const modalTitle = document.querySelector('#modal-nueva-materia h2');
+    const submitBtn = document.getElementById('crear-materia');
+    if (modalTitle) modalTitle.textContent = 'Nueva Materia';
+    if (submitBtn) submitBtn.innerHTML = '<span>Crear</span><i data-feather="plus-circle"></i>';
+    delete form.dataset.editId;
+    form.reset();
+    // limpiar datasets de porcentajes
+    const checks = document.querySelectorAll('#tipos-checkboxes input[type="checkbox"]');
+    checks.forEach(c => delete c.dataset.porcentaje);
+    if (window.feather) feather.replace();
+  };
 
+  // Exponer reset para que pueda ser llamado desde fuera
+  window.resetModalMateria = resetTexts;
+
+  if (cerrar) cerrar.addEventListener('click', () => { modal.close(); resetTexts(); });
+
+  console.log('Inicializando modal materia: listener attached');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = new FormData(form);
+
+    // Construir tipos preservando porcentajes si existen
+    let tiposPayload = Array.from(document.querySelectorAll('#tipos-checkboxes input[type="checkbox"]'))
+      .filter(ch => ch.checked)
+      .map(ch => {
+        const id = Number(ch.value);
+        const obj = { id: id };
+        // Solo enviar porcentaje si existe en el dataset (preservar valor)
+        if (ch.dataset.porcentaje !== undefined) {
+          obj.porcentaje = Number(ch.dataset.porcentaje);
+        }
+        return obj;
+      });
+
+    // Calcular suma de porcentajes para ver si es válida (100%)
+    const suma = tiposPayload.reduce((acc, t) => acc + (t.porcentaje || 0), 0);
+
+    // Si la suma no es 100 (con margen), y estamos enviando porcentajes, 
+    // significa que el usuario modificó la selección (borró uno o agregó uno que rompe la suma).
+    // En ese caso, NO enviamos porcentajes para que el backend no valide y resetee a 0.
+    // El usuario los ajustará en el modal de ponderación.
+    if (Math.abs(suma - 100) > 0.1) {
+      tiposPayload = tiposPayload.map(t => ({ id: t.id })); // Quitar porcentaje
+    }
+
     const payload = {
       id_materia: form.dataset.editId ? Number(form.dataset.editId) : undefined,
       nombre_materia: f.get('nombre_materia') || '',
       calif_minima: f.get('calif_minima') ? Number(f.get('calif_minima')) : 70,
-      tipos: Array.from(document.querySelectorAll('#tipos-checkboxes input[type="checkbox"]'))
-        .filter(ch => ch.checked)
-        .map(ch => Number(ch.value)).filter(Number.isFinite)
+      tipos: tiposPayload
     };
 
     if (!payload.nombre_materia) {
@@ -62,36 +111,28 @@ function inicializarModalNuevaMateria() {
       if (!res.ok) throw new Error(json.message || ('HTTP ' + res.status));
 
       // éxito: cerrar y recargar la página para reflejar cambio
-      form.reset();
-      // limpiar estado de edición
-      delete form.dataset.editId;
-      // cerrar modal de creación
+      const isEdit = !!payload.id_materia;
+      const targetId = payload.id_materia || json?.id_materia || json?.id;
+
+      resetTexts();
       modal.close();
 
-      // Si es creación nueva (no edición), intentar abrir el modal de ponderación
-      const newId = json?.id_materia ?? json?.id ?? null;
-      if (!payload.id_materia && newId) {
-        // si la función global existe, abrirla
-        if (typeof window.abrirModalPonderacion === 'function') {
-          // Abrir el modal de ponderación para que el usuario asigne porcentajes
-          try { window.abrirModalPonderacion(newId); }
-          catch (e) { console.warn('No se pudo abrir modal de ponderación:', e); }
-        } else if (typeof window.cargarMateriasDesdeAPI === 'function') {
-          window.cargarMateriasDesdeAPI();
-        } else {
-          location.reload();
-        }
-      } else {
-        // edición o no se obtuvo id: refrescar lista o recargar
-        if (typeof window.cargarMateriasDesdeAPI === 'function') window.cargarMateriasDesdeAPI(); else location.reload();
+      // Si es creación nueva O edición, abrir modal de ponderación si hay tipos seleccionados
+      if (targetId && typeof window.abrirModalPonderacion === 'function') {
+        try {
+          setTimeout(() => window.abrirModalPonderacion(targetId), 300);
+        } catch (e) { console.warn('No se pudo abrir modal de ponderación:', e); }
       }
 
-      if (typeof showToast === 'function') showToast(json.message || 'Materia creada', { type: 'success' });
-      else console.log(json.message || 'Materia creada');
+      // Refrescar lista de fondo
+      if (typeof window.cargarMateriasDesdeAPI === 'function') window.cargarMateriasDesdeAPI();
+      else location.reload();
+
+      if (typeof showToast === 'function') showToast(json.message || (isEdit ? 'Materia actualizada' : 'Materia creada'), { type: 'success' });
+
     } catch (err) {
-      console.error('Error creando materia:', err);
-      if (typeof showToast === 'function') showToast('Error al crear materia: ' + (err.message || err), { type: 'error' });
-      else console.error('Error al crear materia: ' + (err.message || err));
+      console.error('Error guardando materia:', err);
+      if (typeof showToast === 'function') showToast('Error: ' + (err.message || err), { type: 'error' });
     }
   });
 }
@@ -100,6 +141,13 @@ function inicializarModalNuevaMateria() {
 function prefilarModalMateria(data) {
   const form = document.getElementById('form-materia');
   if (!form) return;
+
+  // Actualizar título y botón para modo edición
+  const modalTitle = document.querySelector('#modal-nueva-materia h2');
+  const submitBtn = document.getElementById('crear-materia');
+
+  if (modalTitle) modalTitle.textContent = `Editar ${data.nombre ?? data.nombre_materia ?? 'Materia'}`;
+  if (submitBtn) submitBtn.innerHTML = '<span>Actualizar</span><i data-feather="refresh-cw"></i>';
 
   // data puede venir con diferentes nombres según la API
   const id = data.id ?? data.id_materia ?? data.idMateria ?? null;
@@ -114,9 +162,24 @@ function prefilarModalMateria(data) {
     const checkContainer = document.getElementById('tipos-checkboxes');
     if (checkContainer && Array.isArray(data.tipos)) {
       // convertir a ids
-      const ids = data.tipos.map(t => Number(t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? t.id_tipo ?? 0)).filter(n => n > 0);
+      const tiposMap = {};
+      data.tipos.forEach(t => {
+        const tid = Number(t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? t.id_tipo ?? 0);
+        if (tid > 0) {
+          tiposMap[tid] = t.porcentaje ?? t.porcentaje ?? 0;
+        }
+      });
+
       Array.from(checkContainer.querySelectorAll('input[type="checkbox"]')).forEach(ch => {
-        ch.checked = ids.includes(Number(ch.value));
+        const val = Number(ch.value);
+        if (tiposMap.hasOwnProperty(val)) {
+          ch.checked = true;
+          // Guardar el porcentaje existente para no perderlo al actualizar
+          ch.dataset.porcentaje = tiposMap[val];
+        } else {
+          ch.checked = false;
+          delete ch.dataset.porcentaje;
+        }
       });
     }
   } catch (e) { }

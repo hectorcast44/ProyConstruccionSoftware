@@ -150,6 +150,37 @@ class MateriaController extends Controller
 
                 // si vienen tipos, actualizar ponderaciones (no tocar otros campos)
                 if (isset($data['tipos']) && is_array($data['tipos'])) {
+                    // Validar que no se estén eliminando tipos con actividades asociadas
+                    $currentTypes = $this->materiaModel->obtenerTipos($data['id_materia']);
+                    $currentIds = array_column($currentTypes, 'id_tipo_actividad');
+
+                    // Extraer IDs de los nuevos tipos
+                    $newIds = [];
+                    foreach ($data['tipos'] as $t) {
+                        if (is_array($t)) {
+                            $newIds[] = (int) ($t['id'] ?? $t['id_tipo'] ?? $t['id_tipo_actividad'] ?? 0);
+                        } else {
+                            $newIds[] = (int) $t;
+                        }
+                    }
+
+                    $removedIds = array_diff($currentIds, $newIds);
+
+                    foreach ($removedIds as $removedId) {
+                        if ($this->materiaModel->tieneActividadesDeTipo($data['id_materia'], $removedId)) {
+                            // Obtener nombre del tipo para el mensaje
+                            $nombreTipo = 'Desconocido';
+                            foreach ($currentTypes as $ct) {
+                                if ($ct['id_tipo_actividad'] == $removedId) {
+                                    $nombreTipo = $ct['nombre_tipo'];
+                                    break;
+                                }
+                            }
+                            $this->json(['status' => 'error', 'message' => "No se puede eliminar el tipo '$nombreTipo' porque tiene actividades asociadas."], 400);
+                            return;
+                        }
+                    }
+
                     $this->materiaModel->setPonderaciones($data['id_materia'], $data['tipos']);
                 }
 
