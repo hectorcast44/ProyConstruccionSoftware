@@ -10,17 +10,30 @@ function abrirModalCrearMateria(data = null) {
   const basePath = globalThis.BASE_URL || '';
 
   if (!modal) {
-    fetch(basePath + 'partials/modal-nueva-materia.html')
-      .then(r => r.text())
-      .then(html => {
+    fetch(obtenerBaseUrl() + 'partials/modal-nueva-materia.html')
+      .then((respuesta) => respuesta.text())
+      .then((html) => {
         document.body.insertAdjacentHTML('beforeend', html);
         inicializarModalNuevaMateria();
-        if (window.feather) feather.replace();
-        const m = document.getElementById('modal-nueva-materia');
-        if (data) prefilarModalMateria(data);
-        m.showModal();
+
+        globalThis.feather?.replace();
+
+        const modalCreado = document.getElementById('modal-nueva-materia');
+        if (!modalCreado) {
+          console.error('No se encontró el modal de nueva materia después de insertarlo.');
+          return;
+        }
+
+        if (datosMateria) {
+          prefilarModalMateria(datosMateria);
+        }
+
+        modalCreado.showModal();
       })
-      .catch(err => console.error('Error cargando modal materia:', err));
+      .catch((error) => {
+        console.error('Error cargando modal materia:', error);
+      });
+
     return;
   }
 
@@ -102,18 +115,55 @@ function inicializarModalNuevaMateria() {
       tipos: tiposPayload
     };
 
-    if (!payload.nombre_materia) {
-      if (typeof showToast === 'function') showToast('Ingrese el nombre de la materia', { type: 'error' });
-      else console.warn('Ingrese el nombre de la materia');
+/**
+ * Cargar tipos de actividad desde la API y pintarlos en el contenedor.
+ *
+ * @param {HTMLElement} contenedor Nodo contenedor de tipos.
+ * @returns {Promise<void>}
+ */
+async function cargarTiposDesdeApi(contenedor) {
+  try {
+    const respuesta = await fetch(obtenerBaseUrl() + 'api/tipos-actividad', {
+      credentials: 'same-origin'
+    });
+
+    const texto = await respuesta.text();
+    const json = parsearJsonSeguro(texto);
+    const tipos = Array.isArray(json?.data) ? json.data : [];
+
+    renderizarListaTipos(contenedor, tipos);
+  } catch (error) {
+    console.warn('No se pudieron cargar tipos:', error);
+  }
+}
+
+/**
+ * Configurar el botón de creación rápida de tipo dentro del modal.
+ *
+ * @param {HTMLElement} contenedor Nodo contenedor de tipos.
+ * @param {HTMLButtonElement|null} botonCrear Botón de crear tipo.
+ * @param {HTMLInputElement|null} inputNuevo Campo de texto para el nombre del tipo.
+ * @returns {void}
+ */
+function configurarCreacionTipoInline(contenedor, botonCrear, inputNuevo) {
+  if (!botonCrear || !inputNuevo) {
+    return;
+  }
+
+  botonCrear.addEventListener('click', async () => {
+    const nombre = String(inputNuevo.value || '').trim();
+
+    if (!nombre) {
+      mostrarToastSeguro('Ingrese nombre del tipo', { type: 'error' });
       return;
     }
 
     try {
-      const res = await fetch((globalThis.BASE_URL || '') + 'api/materias', {
+      const respuesta = await fetch(obtenerBaseUrl() + 'api/tipos-actividad', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ nombre_tipo: nombre })
       });
 
       const txt = await res.text();
@@ -200,21 +250,24 @@ function prefilarModalMateria(data) {
   } catch (e) { }
 }
 
-// Cargar tipos globales y renderizar checkboxes
-async function cargarTiposParaModal() {
-  const base = globalThis.BASE_URL || '';
-  const container = document.getElementById('tipos-checkboxes');
-  const btnCrear = document.getElementById('btn-crear-tipo-inline');
-  const inputNuevo = document.getElementById('nuevo-tipo-nombre');
-  if (!container) return;
+/**
+ * Obtener referencias de un tipo de actividad desde la API.
+ *
+ * @param {string} idTipo Identificador del tipo de actividad.
+ * @returns {Promise<{actividades?:number, ponderaciones?:number}|null>} Referencias o null.
+ */
+async function obtenerReferenciasTipo(idTipo) {
+  const respuesta = await fetch(
+    `${obtenerBaseUrl()}api/tipos-actividad?id=${encodeURIComponent(idTipo)}`,
+    { credentials: 'same-origin' }
+  );
 
-  // helper para renderizar
-  function renderLista(tipos) {
-    container.innerHTML = tipos.map(t => {
-      const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
-      const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? '';
-      return `<label class="tipo-item" data-id="${String(id)}"><input type="checkbox" value="${String(id)}"> <span class="tipo-nombre">${escapeHtml(nombre)}</span><button type="button" class="btn-eliminar-tipo" title="Eliminar tipo" style="margin-left:auto;background:transparent;border:0;color:#c0392b;cursor:pointer;">&times;</button></label>`;
-    }).join('');
+  const texto = await respuesta.text();
+  const json = parsearJsonSeguro(texto);
+
+  if (!respuesta.ok) {
+    const mensajeError = json?.message || `HTTP ${respuesta.status}`;
+    throw new Error(mensajeError);
   }
 
   try {
@@ -257,16 +310,72 @@ async function cargarTiposParaModal() {
     });
   }
 
-  // Delegated listener: eliminar tipo
-  container.addEventListener('click', async (ev) => {
-    const btn = ev.target.closest('.btn-eliminar-tipo');
-    if (!btn) return;
-    const label = btn.closest('.tipo-item');
-    if (!label) return;
-    const id = label.dataset.id;
-    if (!id) return;
+  if (ponderaciones > 0) {
+    return `Este tipo está presente en ${ponderaciones} ponderación(es). Al confirmar, las ponderaciones serán eliminadas.`;
+  }
 
-    // obtener referencias para mostrar confirmación clara
+  return '¿Eliminar este tipo de actividad?';
+}
+
+/**
+ * Enviar al servidor la petición de eliminación de un tipo.
+ *
+ * @param {string} idTipo Identificador del tipo.
+ * @param {boolean} forzar Indica si se debe forzar la eliminación.
+ * @returns {Promise<any>} Respuesta JSON del servidor.
+ */
+async function eliminarTipoEnServidor(idTipo, forzar) {
+  const sufijoForce = forzar ? '&force=1' : '';
+  const url = `${obtenerBaseUrl()}api/tipos-actividad?id=${encodeURIComponent(idTipo)}${sufijoForce}`;
+
+  const respuesta = await fetch(url, {
+    method: 'DELETE',
+    credentials: 'same-origin'
+  });
+
+  const texto = await respuesta.text();
+  const json = parsearJsonSeguro(texto);
+
+  if (!respuesta.ok) {
+    const mensajeError = json?.message || texto || `HTTP ${respuesta.status}`;
+    throw new Error(mensajeError);
+  }
+
+  return json;
+}
+
+/**
+ * Refrescar los selectores o listas globales de tipos si existen.
+ *
+ * @returns {void}
+ */
+function refrescarTiposGlobales() {
+  if (typeof globalThis.cargarTiposParaModal === 'function') {
+    globalThis.cargarTiposParaModal();
+  }
+
+  if (typeof globalThis.poblarSelectsModal === 'function') {
+    globalThis.poblarSelectsModal();
+  }
+}
+
+/**
+ * Gestionar el flujo completo de eliminación de un tipo de actividad.
+ *
+ * @param {HTMLElement} etiqueta Nodo de la etiqueta del tipo.
+ * @param {string} idTipo Identificador del tipo.
+ * @returns {Promise<void>}
+ */
+async function manejarEliminacionTipo(etiqueta, idTipo) {
+  try {
+    const referencias = await obtenerReferenciasTipo(idTipo);
+    const mensaje = construirMensajeEliminacion(referencias);
+    const confirmar = await solicitarConfirmacion('Confirmar eliminación', mensaje);
+
+    if (!confirmar) {
+      return;
+    }
+
     try {
       const r = await fetch((globalThis.BASE_URL || '') + 'api/tipos-actividad?id=' + encodeURIComponent(id), { credentials: 'same-origin' });
       const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch (e) { json = null; }
@@ -275,13 +384,9 @@ async function cargarTiposParaModal() {
         throw new Error(msg);
       }
 
-      const refs = json?.data?.referencias ?? null;
-      let mensaje = '¿Eliminar este tipo de actividad?';
-      if (refs) {
-        const a = refs.actividades || 0;
-        const p = refs.ponderaciones || 0;
-        if (a > 0) mensaje = `Este tipo tiene ${a} actividad(es) y ${p} ponderación(es). Al confirmar, las actividades serán ELIMINADAS.`;
-        else if (p > 0) mensaje = `Este tipo está presente en ${p} ponderación(es). Al confirmar, las ponderaciones serán eliminadas.`;
+      if (!mensajePrimario.toLowerCase().includes('referenc')) {
+        mostrarToastSeguro(`No se pudo eliminar: ${mensajePrimario}`, { type: 'error' });
+        return;
       }
 
       const confirmar = (typeof showConfirm === 'function') ? await showConfirm('Confirmar eliminación', mensaje) : await (async () => {
@@ -356,14 +461,42 @@ async function cargarTiposParaModal() {
       console.error('Error al eliminar tipo:', err);
       if (typeof showToast === 'function') showToast('Error al eliminar tipo: ' + (err.message || err), { type: 'error' });
     }
+
+    const idTipo = etiqueta.dataset.id;
+    if (!idTipo) {
+      return;
+    }
+
+    void manejarEliminacionTipo(etiqueta, idTipo);
   });
+}
+
+/**
+ * Cargar tipos globales y configurar los controles del modal de tipos.
+ *
+ * @returns {Promise<void>}
+ */
+async function cargarTiposParaModal() {
+  const contenedor = document.getElementById('tipos-checkboxes');
+  const botonCrear = document.getElementById('btn-crear-tipo-inline');
+  const inputNuevo = document.getElementById('nuevo-tipo-nombre');
 
   function escapeHtml(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", "&#39;"); }
 }
 
-// Al cargar el modal por primera vez, solicitar tipos
+/**
+ * Al cargar el documento, intentar inicializar el modal de tipos cuando exista.
+ *
+ * @returns {void}
+ */
 document.addEventListener('DOMContentLoaded', () => {
-  // Si el modal ya fue cargado dinámicamente, intentar cargar tipos cuando exista
-  const tryLoad = () => { if (document.getElementById('tipos-checkboxes')) cargarTiposParaModal(); else setTimeout(tryLoad, 300); };
-  tryLoad();
+  const intentarCargar = () => {
+    if (document.getElementById('tipos-checkboxes')) {
+      void cargarTiposParaModal();
+    } else {
+      setTimeout(intentarCargar, 300);
+    }
+  };
+
+  intentarCargar();
 });

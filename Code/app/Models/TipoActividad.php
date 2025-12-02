@@ -4,173 +4,356 @@ namespace App\Models;
 
 use App\Core\Database;
 use PDO;
-use Exception;
 
-class TipoActividad
-{
-    private $pdo;
+/**
+ * Excepción de dominio para errores relacionados con tipos de actividad.
+ */
+class TipoActividadException extends \Exception {
+    /**
+     * Construir una excepción de tipo de actividad.
+     *
+     * @param string $mensaje Mensaje descriptivo del error.
+     * @param int $codigo Código de error
+     * @param \Throwable|null $anterior Excepción previa encadenada.
+     */
+    public function __construct(string $mensaje = 'Error en tipo de actividad.', int $codigo = 0, ?\Throwable $anterior = null) {
+        parent::__construct($mensaje, $codigo, $anterior);
+    }
+}
 
-    public function __construct(?PDO $pdo = null)
-    {
+/**
+ * Modelo de dominio para la entidad TIPO_ACTIVIDAD.
+ *
+ * Responsabilidades:
+ *  - Gestionar tipos de actividad propios del usuario y predeterminados.
+ *  - Validar propiedad y evitar duplicados por nombre.
+ *  - Soportar eliminación opcional (forzada) con limpieza de dependencias.
+ */
+class TipoActividad {
+    /**
+     * Conexión PDO hacia la base de datos.
+     *
+     * @var PDO
+     */
+    private PDO $pdo;
+
+    /** Identificador del usuario “sistema” que define tipos predeterminados. */
+    private const USUARIO_SISTEMA_ID = 1;
+
+    /**
+     * Construir el modelo TipoActividad con una conexión PDO.
+     *
+     * @param PDO|null $pdo Conexión opcional. Si es null, obtener desde Database.
+     *
+     * @return void
+     */
+    public function __construct(?PDO $pdo = null) {
         $this->pdo = $pdo ?? Database::getInstance()->getConnection();
     }
 
-    public function obtenerTodos($id_usuario)
-    {
-        // Obtener tipos del usuario Y tipos predeterminados (usuario 1)
-        // Asumimos que el usuario 1 es el administrador/sistema
-        // Agregamos flag es_propio para saber si el usuario puede editar/eliminar
-        $sql = "SELECT *, (id_usuario = ?) as es_propio FROM TIPO_ACTIVIDAD 
-                WHERE id_usuario = ? OR id_usuario = 1 
+    /**
+     * Obtener todos los tipos visibles para un usuario.
+     *
+     * Incluye:
+     *  - Tipos propios del usuario.
+     *  - Tipos predeterminados (usuario sistema).
+     * Agrega un flag lógico es_propio para indicar editabilidad.
+     *
+     * @param int $idUsuario Identificador del usuario.
+     *
+     * @return array<int,array<string,mixed>> Lista de tipos de actividad.
+     */
+    public function obtenerTodos(int $idUsuario): array {
+        $sql = "SELECT
+                    *,
+                    (id_usuario = :id_usuario) AS es_propio
+                FROM TIPO_ACTIVIDAD
+                WHERE id_usuario = :id_usuario
+                   OR id_usuario = :id_sistema
                 ORDER BY nombre_tipo ASC";
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id_usuario, $id_usuario]);
+        $sentencia = $this->pdo->prepare($sql);
+        $sentencia->execute([
+            ':id_usuario' => $idUsuario,
+            ':id_sistema' => self::USUARIO_SISTEMA_ID,
+        ]);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function obtenerPorId($id_tipo, $id_usuario)
-    {
-        $sql = "SELECT * FROM TIPO_ACTIVIDAD WHERE id_tipo_actividad = ? AND (id_usuario = ? OR id_usuario = 1)";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id_tipo, $id_usuario]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+    /**
+     * Obtener un tipo de actividad por identificador, validando visibilidad.
+     *
+     * @param int $idTipo Identificador del tipo de actividad.
+     * @param int $idUsuario Identificador del usuario.
+     *
+     * @return array<string,mixed>|false Fila del tipo de actividad o false si no existe.
+     */
+    public function obtenerPorId(int $idTipo, int $idUsuario) {
+        $sql = "SELECT *
+                FROM TIPO_ACTIVIDAD
+                WHERE id_tipo_actividad = :id_tipo
+                  AND (id_usuario = :id_usuario OR id_usuario = :id_sistema)";
+
+        $sentencia = $this->pdo->prepare($sql);
+        $sentencia->execute([
+            ':id_tipo' => $idTipo,
+            ':id_usuario' => $idUsuario,
+            ':id_sistema' => self::USUARIO_SISTEMA_ID,
+        ]);
+
+        return $sentencia->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function crear($nombre, $id_usuario)
-    {
-        // Verificar si ya existe un tipo con ese nombre para el usuario o predeterminado
-        if ($this->existeNombre($nombre, $id_usuario)) {
-            throw new Exception("El tipo de actividad '$nombre' ya existe.");
+    /**
+     * Crear un nuevo tipo de actividad para un usuario.
+     *
+     * @param string $nombre Nombre del tipo de actividad.
+     * @param int $idUsuario Identificador del usuario propietario.
+     *
+     * @throws TipoActividadException Si el nombre ya existe.
+     *
+     * @return int Identificador del tipo de actividad creado.
+     */
+    public function crear(string $nombre, int $idUsuario): int {
+        if ($this->existeNombre($nombre, $idUsuario)) {
+            throw new TipoActividadException("El tipo de actividad '{$nombre}' ya existe.");
         }
 
-        $sql = "INSERT INTO TIPO_ACTIVIDAD (id_usuario, nombre_tipo) VALUES (?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id_usuario, $nombre]);
+        $sql = "INSERT INTO TIPO_ACTIVIDAD (id_usuario, nombre_tipo)
+                VALUES (:id_usuario, :nombre)";
 
-        return $this->pdo->lastInsertId();
+        $sentencia = $this->pdo->prepare($sql);
+        $sentencia->execute([
+            ':id_usuario' => $idUsuario,
+            ':nombre' => $nombre,
+        ]);
+
+        return (int) $this->pdo->lastInsertId();
     }
 
-    public function actualizar($id_tipo, $nombre, $id_usuario)
-    {
-        // Verificar que el tipo pertenezca al usuario (no sea predeterminado)
-        if (!$this->esPropietario($id_tipo, $id_usuario)) {
-            throw new Exception("No tienes permiso para editar este tipo de actividad o es un tipo predeterminado.");
+    /**
+     * Actualizar el nombre de un tipo de actividad propio del usuario.
+     *
+     * @param int $idTipo Identificador del tipo de actividad.
+     * @param string $nombre Nombre nuevo.
+     * @param int $idUsuario Identificador del usuario propietario.
+     *
+     * @throws TipoActividadException Si no es propietario o el nombre está duplicado.
+     *
+     * @return bool Verdadero si se modificó al menos un registro.
+     */
+    public function actualizar(int $idTipo, string $nombre, int $idUsuario): bool {
+        if (!$this->esPropietario($idTipo, $idUsuario)) {
+            throw new TipoActividadException(
+                'No tienes permiso para editar este tipo de actividad o es un tipo predeterminado.'
+            );
         }
 
-        // Verificar duplicados
-        if ($this->existeNombre($nombre, $id_usuario, $id_tipo)) {
-            throw new Exception("El tipo de actividad '$nombre' ya existe.");
+        if ($this->existeNombre($nombre, $idUsuario, $idTipo)) {
+            throw new TipoActividadException("El tipo de actividad '{$nombre}' ya existe.");
         }
 
-        $sql = "UPDATE TIPO_ACTIVIDAD SET nombre_tipo = ? WHERE id_tipo_actividad = ?";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$nombre, $id_tipo]);
+        $sql = "UPDATE TIPO_ACTIVIDAD
+                SET nombre_tipo = :nombre
+                WHERE id_tipo_actividad = :id_tipo";
 
-        return $stmt->rowCount() > 0;
+        $sentencia = $this->pdo->prepare($sql);
+        $sentencia->execute([
+            ':nombre' => $nombre,
+            ':id_tipo' => $idTipo,
+        ]);
+
+        return $sentencia->rowCount() > 0;
     }
 
-    public function eliminar($id_tipo, $id_usuario)
-    {
-        // Ahora soportamos eliminación forzada de tipo junto con actividades y ponderaciones relacionadas
-        // $id_tipo: id del tipo
-        // $id_usuario: usuario que solicita la eliminación (se verifica propiedad)
-        // $force: si true, eliminar actividades y ponderaciones relacionadas antes de borrar el tipo
-        $force = false;
-        if (func_num_args() >= 3) {
-            $force = (bool) func_get_arg(2);
+    /**
+     * Eliminar un tipo de actividad, con opción de eliminación forzada.
+     *
+     * Si $forzar es falso:
+     *  - Solo permite eliminar tipos sin referencias (actividades ni ponderaciones).
+     * Si $forzar es verdadero:
+     *  - Elimina actividades y ponderaciones relacionadas del usuario antes de borrar el tipo.
+     *
+     * @param int $idTipo Identificador del tipo de actividad.
+     * @param int $idUsuario Identificador del usuario propietario.
+     * @param bool $forzar Indica si se deben eliminar dependencias relacionadas.
+     *
+     * @throws TipoActividadException Si no es propietario o la operación falla.
+     *
+     * @return array<string,int> Resumen de eliminaciones: ['deleted_activities'=>..., 'deleted_ponderaciones'=>...].
+     */
+    public function eliminar(int $idTipo, int $idUsuario, bool $forzar = false): array {
+        if (!$this->esPropietario($idTipo, $idUsuario)) {
+            throw new TipoActividadException(
+                'No tienes permiso para eliminar este tipo de actividad o es un tipo predeterminado.'
+            );
         }
 
-        // 1. Verificar propiedad
-        if (!$this->esPropietario($id_tipo, $id_usuario)) {
-            throw new Exception("No tienes permiso para eliminar este tipo de actividad o es un tipo predeterminado.");
+        $referencias = $this->contarReferencias($idTipo, $idUsuario);
+        $cantidadActividades = $referencias['actividades'];
+        $cantidadPonderaciones = $referencias['ponderaciones'];
+
+        if (($cantidadActividades > 0 || $cantidadPonderaciones > 0) && !$forzar) {
+            $mensaje = "El tipo tiene referencias: actividades={$cantidadActividades}, ponderaciones={$cantidadPonderaciones}";
+            throw new TipoActividadException($mensaje);
         }
 
-        // 2. Contar referencias (solo del usuario actual)
-        $sqlRefActividad = "SELECT COUNT(*) FROM ACTIVIDAD WHERE id_tipo_actividad = ? AND id_usuario = ?";
-        $stmt = $this->pdo->prepare($sqlRefActividad);
-        $stmt->execute([$id_tipo, $id_usuario]);
-        $countAct = (int) $stmt->fetchColumn();
-
-        $sqlRefPonderacion = "SELECT COUNT(*) FROM PONDERACION p INNER JOIN MATERIA m ON p.id_materia = m.id_materia WHERE p.id_tipo_actividad = ? AND m.id_usuario = ?";
-        $stmt = $this->pdo->prepare($sqlRefPonderacion);
-        $stmt->execute([$id_tipo, $id_usuario]);
-        $countPond = (int) $stmt->fetchColumn();
-
-        if (($countAct > 0 || $countPond > 0) && !$force) {
-            throw new Exception("El tipo tiene referencias: actividades={$countAct}, ponderaciones={$countPond}");
-        }
-
-        // 3. Si force=true, eliminar dependencias (en transacción)
         try {
             $this->pdo->beginTransaction();
 
-            if ($countAct > 0) {
-                $delAct = $this->pdo->prepare("DELETE FROM ACTIVIDAD WHERE id_tipo_actividad = ? AND id_usuario = ?");
-                $delAct->execute([$id_tipo, $id_usuario]);
+            if ($forzar && $cantidadActividades > 0) {
+                $sqlEliminarActividades = "DELETE FROM ACTIVIDAD
+                                           WHERE id_tipo_actividad = :id_tipo
+                                             AND id_usuario = :id_usuario";
+                $sentenciaEliminarActividades = $this->pdo->prepare($sqlEliminarActividades);
+                $sentenciaEliminarActividades->execute([
+                    ':id_tipo' => $idTipo,
+                    ':id_usuario' => $idUsuario,
+                ]);
             }
 
-            if ($countPond > 0) {
-                $delP = $this->pdo->prepare("DELETE p FROM PONDERACION p INNER JOIN MATERIA m ON p.id_materia = m.id_materia WHERE p.id_tipo_actividad = ? AND m.id_usuario = ?");
-                $delP->execute([$id_tipo, $id_usuario]);
+            if ($forzar && $cantidadPonderaciones > 0) {
+                $sqlEliminarPonderaciones = "DELETE p
+                                             FROM PONDERACION p
+                                             INNER JOIN MATERIA m
+                                                 ON p.id_materia = m.id_materia
+                                             WHERE p.id_tipo_actividad = :id_tipo
+                                               AND m.id_usuario = :id_usuario";
+                $sentenciaEliminarPonderaciones = $this->pdo->prepare($sqlEliminarPonderaciones);
+                $sentenciaEliminarPonderaciones->execute([
+                    ':id_tipo' => $idTipo,
+                    ':id_usuario' => $idUsuario,
+                ]);
             }
 
-            $sql = "DELETE FROM TIPO_ACTIVIDAD WHERE id_tipo_actividad = ?";
-            $stmtDel = $this->pdo->prepare($sql);
-            $stmtDel->execute([$id_tipo]);
+            $sqlEliminarTipo = "DELETE FROM TIPO_ACTIVIDAD
+                                WHERE id_tipo_actividad = :id_tipo";
+            $sentenciaEliminarTipo = $this->pdo->prepare($sqlEliminarTipo);
+            $sentenciaEliminarTipo->execute([
+                ':id_tipo' => $idTipo,
+            ]);
 
             $this->pdo->commit();
-            return ['deleted_activities' => $countAct, 'deleted_ponderaciones' => $countPond];
-        } catch (\Exception $e) {
-            try { $this->pdo->rollBack(); } catch (\Exception $__) {}
-            throw $e;
+
+            return [
+                'deleted_activities' => $cantidadActividades,
+                'deleted_ponderaciones' => $cantidadPonderaciones,
+            ];
+        } catch (\Throwable $excepcion) {
+            try {
+                $this->pdo->rollBack();
+            } catch (\Throwable $ignored) {
+                // Ignorar errores de rollback para no ocultar la excepción original.
+            }
+
+            throw new TipoActividadException(
+                'Error al eliminar el tipo de actividad.',
+                0,
+                $excepcion
+            );
         }
     }
 
     /**
-     * Devuelve conteos de referencias a un tipo (actividades y ponderaciones)
+     * Contar referencias de un tipo de actividad en ACTIVIDAD y PONDERACION.
+     *
+     * @param int $idTipo Identificador del tipo de actividad.
+     * @param int $idUsuario Identificador del usuario.
+     *
+     * @return array<string,int> Arreglo con llaves 'actividades' y 'ponderaciones'.
      */
-    public function contarReferencias($id_tipo, $id_usuario)
-    {
-        $sqlRefActividad = "SELECT COUNT(*) FROM ACTIVIDAD WHERE id_tipo_actividad = ? AND id_usuario = ?";
-        $stmt = $this->pdo->prepare($sqlRefActividad);
-        $stmt->execute([$id_tipo, $id_usuario]);
-        $countAct = (int) $stmt->fetchColumn();
+    public function contarReferencias(int $idTipo, int $idUsuario): array {
+        $sqlRefActividad = "SELECT COUNT(*)
+                            FROM ACTIVIDAD
+                            WHERE id_tipo_actividad = :id_tipo
+                              AND id_usuario = :id_usuario";
 
-        $sqlRefPonderacion = "SELECT COUNT(*) FROM PONDERACION p INNER JOIN MATERIA m ON p.id_materia = m.id_materia WHERE p.id_tipo_actividad = ? AND m.id_usuario = ?";
-        $stmt = $this->pdo->prepare($sqlRefPonderacion);
-        $stmt->execute([$id_tipo, $id_usuario]);
-        $countPond = (int) $stmt->fetchColumn();
+        $sentencia = $this->pdo->prepare($sqlRefActividad);
+        $sentencia->execute([
+            ':id_tipo' => $idTipo,
+            ':id_usuario' => $idUsuario,
+        ]);
+        $cantidadActividades = (int) $sentencia->fetchColumn();
 
-        return ['actividades' => $countAct, 'ponderaciones' => $countPond];
+        $sqlRefPonderacion = "SELECT COUNT(*)
+                              FROM PONDERACION p
+                              INNER JOIN MATERIA m
+                                  ON p.id_materia = m.id_materia
+                              WHERE p.id_tipo_actividad = :id_tipo
+                                AND m.id_usuario = :id_usuario";
+
+        $sentencia = $this->pdo->prepare($sqlRefPonderacion);
+        $sentencia->execute([
+            ':id_tipo' => $idTipo,
+            ':id_usuario' => $idUsuario,
+        ]);
+        $cantidadPonderaciones = (int) $sentencia->fetchColumn();
+
+        return [
+            'actividades' => $cantidadActividades,
+            'ponderaciones' => $cantidadPonderaciones,
+        ];
     }
 
-    private function esPropietario($id_tipo, $id_usuario)
-    {
-        $sql = "SELECT id_usuario FROM TIPO_ACTIVIDAD WHERE id_tipo_actividad = ?";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id_tipo]);
-        $owner = $stmt->fetchColumn();
+    /**
+     * Verificar si un tipo de actividad pertenece al usuario.
+     *
+     * No se consideran propios los tipos del usuario sistema (predeterminados).
+     *
+     * @param int $idTipo Identificador del tipo de actividad.
+     * @param int $idUsuario Identificador del usuario.
+     *
+     * @return bool Verdadero si el tipo pertenece al usuario.
+     */
+    private function esPropietario(int $idTipo, int $idUsuario): bool {
+        $sql = "SELECT id_usuario
+                FROM TIPO_ACTIVIDAD
+                WHERE id_tipo_actividad = :id_tipo";
 
-        return $owner == $id_usuario;
-    }
+        $sentencia = $this->pdo->prepare($sql);
+        $sentencia->execute([
+            ':id_tipo' => $idTipo,
+        ]);
 
-    private function existeNombre($nombre, $id_usuario, $excluirId = null)
-    {
-        $sql = "SELECT COUNT(*) FROM TIPO_ACTIVIDAD 
-                WHERE nombre_tipo = ? AND (id_usuario = ? OR id_usuario = 1)";
+        $idOwner = $sentencia->fetchColumn();
 
-        $params = [$nombre, $id_usuario];
-
-        if ($excluirId) {
-            $sql .= " AND id_tipo_actividad != ?";
-            $params[] = $excluirId;
+        if ($idOwner === false) {
+            return false;
         }
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+        return (int) $idOwner === $idUsuario;
+    }
 
-        return $stmt->fetchColumn() > 0;
+    /**
+     * Verificar si ya existe un tipo con el mismo nombre para el usuario o como predeterminado.
+     *
+     * @param string $nombre Nombre del tipo de actividad.
+     * @param int $idUsuario Identificador del usuario.
+     * @param int|null $excluirId Identificador de tipo a excluir de la búsqueda (para updates).
+     *
+     * @return bool Verdadero si el nombre ya está en uso.
+     */
+    private function existeNombre(string $nombre, int $idUsuario, ?int $excluirId = null): bool {
+        $sql = "SELECT COUNT(*)
+                FROM TIPO_ACTIVIDAD
+                WHERE nombre_tipo = :nombre
+                  AND (id_usuario = :id_usuario OR id_usuario = :id_sistema)";
+
+        $parametros = [
+            ':nombre' => $nombre,
+            ':id_usuario' => $idUsuario,
+            ':id_sistema' => self::USUARIO_SISTEMA_ID,
+        ];
+
+        if ($excluirId !== null) {
+            $sql .= " AND id_tipo_actividad != :excluir_id";
+            $parametros[':excluir_id'] = $excluirId;
+        }
+
+        $sentencia = $this->pdo->prepare($sql);
+        $sentencia->execute($parametros);
+
+        return (int) $sentencia->fetchColumn() > 0;
     }
 }
