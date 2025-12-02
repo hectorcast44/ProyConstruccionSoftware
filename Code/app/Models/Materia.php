@@ -15,7 +15,8 @@ use PDO;
  *  - Obtener resúmenes de actividades por materia.
  *  - Gestionar las ponderaciones (tipos) de una materia.
  */
-class Materia {
+class Materia
+{
     /**
      * Conexión PDO hacia la base de datos.
      *
@@ -34,7 +35,8 @@ class Materia {
      *
      * @return void
      */
-    public function __construct(?PDO $pdo = null) {
+    public function __construct(?PDO $pdo = null)
+    {
         $this->pdo = $pdo ?? Database::getInstance()->getConnection();
     }
 
@@ -49,7 +51,8 @@ class Materia {
      *
      * @return int Identificador de la materia creada.
      */
-    public function crear(int $idUsuario, string $nombreMateria, float $calificacionMinima = self::CALIFICACION_MINIMA_POR_DEFECTO): int {
+    public function crear(int $idUsuario, string $nombreMateria, float $calificacionMinima = self::CALIFICACION_MINIMA_POR_DEFECTO): int
+    {
         $this->validarCalificacionMinima($calificacionMinima);
 
         if ($this->existeMateria($idUsuario, $nombreMateria)) {
@@ -92,7 +95,8 @@ class Materia {
      *
      * @return bool Verdadero si se actualizó al menos un registro.
      */
-    public function actualizar(int $idMateria, int $idUsuario, string $nombreMateria, float $calificacionMinima): bool {
+    public function actualizar(int $idMateria, int $idUsuario, string $nombreMateria, float $calificacionMinima): bool
+    {
         if (!$this->verificarPropiedad($idMateria, $idUsuario)) {
             throw new MateriaException('No tiene permisos para modificar esta materia.');
         }
@@ -128,7 +132,8 @@ class Materia {
      *
      * @return bool Verdadero si se eliminó al menos un registro.
      */
-    public function eliminar(int $idMateria, int $idUsuario): bool {
+    public function eliminar(int $idMateria, int $idUsuario): bool
+    {
         if (!$this->verificarPropiedad($idMateria, $idUsuario)) {
             throw new MateriaException('No tiene permisos para eliminar esta materia.');
         }
@@ -151,7 +156,8 @@ class Materia {
      *
      * @return array<int,array<string,mixed>> Lista de materias del usuario.
      */
-    public function obtenerPorUsuario(int $idUsuario): array {
+    public function obtenerPorUsuario(int $idUsuario): array
+    {
         $sql = "SELECT *
                 FROM MATERIA
                 WHERE id_usuario = ?
@@ -171,7 +177,8 @@ class Materia {
      *
      * @return array<string,mixed>|false Fila de la materia o false si no existe.
      */
-    public function obtenerPorId(int $idMateria, int $idUsuario) {
+    public function obtenerPorId(int $idMateria, int $idUsuario)
+    {
         $sql = "SELECT *
                 FROM MATERIA
                 WHERE id_materia = ?
@@ -191,7 +198,8 @@ class Materia {
      *
      * @return bool Verdadero si ya existe una materia con ese nombre.
      */
-    private function existeMateria(int $idUsuario, string $nombreMateria): bool {
+    private function existeMateria(int $idUsuario, string $nombreMateria): bool
+    {
         $sql = "SELECT COUNT(*)
                 FROM MATERIA
                 WHERE id_usuario = ?
@@ -212,7 +220,8 @@ class Materia {
      *
      * @return bool Verdadero si existe otra materia con ese nombre.
      */
-    private function existeMateriaExcepto(int $idUsuario, string $nombreMateria, int $idMateriaActual): bool {
+    private function existeMateriaExcepto(int $idUsuario, string $nombreMateria, int $idMateriaActual): bool
+    {
         $sql = "SELECT COUNT(*)
                 FROM MATERIA
                 WHERE id_usuario = ?
@@ -233,7 +242,8 @@ class Materia {
      *
      * @return bool Verdadero si la materia pertenece al usuario.
      */
-    private function verificarPropiedad(int $idMateria, int $idUsuario): bool {
+    private function verificarPropiedad(int $idMateria, int $idUsuario): bool
+    {
         $sql = "SELECT COUNT(*)
                 FROM MATERIA
                 WHERE id_materia = ?
@@ -252,7 +262,8 @@ class Materia {
      *
      * @return bool Verdadero si existen actividades relacionadas.
      */
-    private function tieneActividades(int $idMateria): bool {
+    private function tieneActividades(int $idMateria): bool
+    {
         $sql = "SELECT COUNT(*)
                 FROM ACTIVIDAD
                 WHERE id_materia = ?";
@@ -264,13 +275,34 @@ class Materia {
     }
 
     /**
+     * Verificar si una materia tiene actividades de un tipo específico.
+     *
+     * @param int $idMateria Identificador de la materia.
+     * @param int $idTipo Identificador del tipo de actividad.
+     *
+     * @return bool Verdadero si existen actividades de ese tipo.
+     */
+    public function tieneActividadesDeTipo(int $idMateria, int $idTipo): bool
+    {
+        $sql = "SELECT COUNT(*)
+                FROM ACTIVIDAD
+                WHERE id_materia = ? AND id_tipo_actividad = ?";
+
+        $sentencia = $this->pdo->prepare($sql);
+        $sentencia->execute([$idMateria, $idTipo]);
+
+        return (int) $sentencia->fetchColumn() > 0;
+    }
+
+    /**
      * Obtener un resumen de actividades por materia y tipo para un usuario.
      *
      * @param int $idUsuario Identificador del usuario.
      *
      * @return array<int,array<string,mixed>> Lista de resúmenes por materia y tipo.
      */
-    public function obtenerResumenActividades(int $idUsuario): array {
+    public function obtenerResumenActividades(int $idUsuario): array
+    {
         $sql = "SELECT
                     a.id_materia,
                     ta.nombre_tipo,
@@ -300,7 +332,8 @@ class Materia {
      *
      * @return array<int,array<string,mixed>> Lista de tipos con porcentaje.
      */
-    public function obtenerTipos(int $idMateria): array {
+    public function obtenerTipos(int $idMateria): array
+    {
         $sql = "SELECT
                     p.id_tipo_actividad,
                     ta.nombre_tipo,
@@ -326,7 +359,8 @@ class Materia {
      *
      * @return bool Verdadero si la operación se considera exitosa.
      */
-    public function setPonderaciones(int $idMateria, array $tipos): bool {
+    public function setPonderaciones(int $idMateria, array $tipos): bool
+    {
         if (empty($tipos)) {
             // No eliminar ponderaciones existentes para evitar borrados accidentales.
             return true;
@@ -369,6 +403,39 @@ class Materia {
     }
 
     /**
+     * Validar si el nuevo porcentaje de un tipo es suficiente para cubrir los puntos de las actividades existentes.
+     *
+     * @param int $idMateria Identificador de la materia.
+     * @param int $idTipo Identificador del tipo de actividad.
+     * @param float $nuevoPorcentaje Nuevo porcentaje asignado al tipo.
+     *
+     * @return bool|string True si es válido, o mensaje de error (string) si no lo es.
+     */
+    public function validarPonderacionActividades(int $idMateria, int $idTipo, float $nuevoPorcentaje)
+    {
+        // Obtener la actividad con mayor puntaje para este tipo
+        $sql = "SELECT MAX(puntos_posibles) as max_puntos 
+                FROM ACTIVIDAD 
+                WHERE id_materia = ? AND id_tipo_actividad = ?";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$idMateria, $idTipo]);
+        $maxPuntos = $stmt->fetchColumn();
+
+        if ($maxPuntos !== false && $maxPuntos > $nuevoPorcentaje) {
+            // Obtener nombre del tipo para el mensaje
+            $sqlTipo = "SELECT nombre_tipo FROM TIPO_ACTIVIDAD WHERE id_tipo_actividad = ?";
+            $stmtTipo = $this->pdo->prepare($sqlTipo);
+            $stmtTipo->execute([$idTipo]);
+            $nombreTipo = $stmtTipo->fetchColumn() ?: 'Tipo desconocido';
+
+            return "No se puede reducir la ponderación de '{$nombreTipo}' a {$nuevoPorcentaje}% porque existe una actividad con valor de {$maxPuntos}.";
+        }
+
+        return true;
+    }
+
+    /**
      * Validar que la calificación mínima esté dentro del rango permitido.
      *
      * @param float $calificacionMinima Calificación a validar.
@@ -377,7 +444,8 @@ class Materia {
      *
      * @return void
      */
-    private function validarCalificacionMinima(float $calificacionMinima): void {
+    private function validarCalificacionMinima(float $calificacionMinima): void
+    {
         if (
             $calificacionMinima < self::CALIFICACION_MINIMA_LIMITE_INFERIOR
             || $calificacionMinima > self::CALIFICACION_MINIMA_LIMITE_SUPERIOR

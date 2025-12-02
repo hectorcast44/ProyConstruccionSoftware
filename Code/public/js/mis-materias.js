@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await Promise.all(materias.map(async (mat) => {
           try {
             const r = await fetch(base + 'api/materias?id=' + encodeURIComponent(mat.id), { credentials: 'same-origin' });
-            const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch(e){ j = null; }
+            const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) { j = null; }
             if (r.ok && j && j.data && Array.isArray(j.data.tipos)) {
               mat.tipos = j.data.tipos.map(t => ({
                 id_tipo: t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? 0,
@@ -198,16 +198,37 @@ document.addEventListener('DOMContentLoaded', () => {
   window.abrirModalPonderacion = abrirModalPonderacion;
 
   // Abrir modal para asignar ponderaciones por tipo en una materia
-  async function abrirModalPonderacion(idMateria) {
+  async function abrirModalPonderacion(idMateria, prefillTipos = null) {
     const base = globalThis.BASE_URL || '';
     // intentar obtener los tipos de la materia
     const r = await fetch(base + 'api/materias?id=' + encodeURIComponent(idMateria), { credentials: 'same-origin' });
-    const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch(e){ j = null; }
+    const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) { j = null; }
     if (!r.ok || !j || !j.data) {
       throw new Error(j?.message || 'No se pudo obtener la materia');
     }
 
-    const tipos = Array.isArray(j.data.tipos) ? j.data.tipos : [];
+    let tipos = Array.isArray(j.data.tipos) ? j.data.tipos : [];
+
+    // Si vienen datos pre-cargados (del frontend), usarlos para preservar los porcentajes
+    // aunque en base de datos se hayan guardado en 0.
+    if (prefillTipos && Array.isArray(prefillTipos)) {
+      const mapPrefill = {};
+      prefillTipos.forEach(pt => {
+        // pt puede venir como { id: 1, porcentaje: 20 }
+        const pid = pt.id ?? pt.id_tipo ?? pt.id_tipo_actividad;
+        if (pid) mapPrefill[pid] = pt.porcentaje;
+      });
+
+      tipos = tipos.map(t => {
+        const tid = t.id_tipo_actividad ?? t.id_tipo ?? t.id;
+        // Si existe en el prefill, usamos ese porcentaje
+        if (mapPrefill[tid] !== undefined) {
+          // Aseguramos que sea número o string válido
+          t.porcentaje = mapPrefill[tid];
+        }
+        return t;
+      });
+    }
 
     // Crear dialog si no existe
     let dlg = document.getElementById('modal-ponderacion');
@@ -245,17 +266,17 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     // show modal
-    try { dlg.showModal(); } catch(e) { /* es ignorado */ }
+    try { dlg.showModal(); } catch (e) { /* es ignorado */ }
 
     const form = dlg.querySelector('#form-ponderaciones');
     const btnCancel = dlg.querySelector('#cancel-ponder');
     const btnSave = dlg.querySelector('#save-ponder');
 
-    btnCancel?.addEventListener('click', () => { try { dlg.close(); } catch(e){} });
+    btnCancel?.addEventListener('click', () => { try { dlg.close(); } catch (e) { } });
 
     // handler compartido para guardar ponderaciones (evita recarga si algo falla)
     async function handleGuardarPonderaciones(ev) {
-      try { ev && ev.preventDefault(); } catch(e){}
+      try { ev && ev.preventDefault(); } catch (e) { }
       // construir payload
       const inputs = Array.from(dlg.querySelectorAll('.ponder-row'));
       const tiposPayload = inputs.map(row => {
@@ -268,16 +289,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         const payload = { id_materia: Number(idMateria), tipos: tiposPayload };
-        try { console.debug && console.debug('Ponderacion - payload', payload); } catch(e){}
+        try { console.debug && console.debug('Ponderacion - payload', payload); } catch (e) { }
         const res = await fetch(base + 'api/materias', {
           method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const t = await res.text(); let jj = null; try { jj = JSON.parse(t); } catch(e){ jj = null; }
-        try { console.debug && console.debug('Ponderacion - response', { ok: res.ok, status: res.status, body: jj || t }); } catch(e){}
+        const t = await res.text(); let jj = null; try { jj = JSON.parse(t); } catch (e) { jj = null; }
+        try { console.debug && console.debug('Ponderacion - response', { ok: res.ok, status: res.status, body: jj || t }); } catch (e) { }
         if (!res.ok) throw new Error(jj?.message || ('HTTP ' + res.status));
 
-        try { dlg.close(); } catch(e){}
+        try { dlg.close(); } catch (e) { }
         ensureToast(jj?.message || 'Ponderaciones guardadas', 'success');
         if (typeof window.cargarMateriasDesdeAPI === 'function') window.cargarMateriasDesdeAPI();
       } catch (err) {
@@ -347,16 +368,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmar = typeof showConfirm === 'function'
           ? await showConfirm('Confirmar eliminación', '¿Eliminar esta materia? Se eliminarán sus actividades relacionadas.')
           : await (async () => {
-                return new Promise(resolve => {
-                  const dlg = document.createElement('dialog');
-                  dlg.className = 'confirm-dialog';
-                  // Forzar posicionamiento y z-index para que quede siempre encima de otros modales
-                  dlg.style.position = 'fixed';
-                  dlg.style.zIndex = '2147483647';
-                  // Intentar neutralizar cualquier backdrop-filter aplicado globalmente
-                  dlg.style.backdropFilter = 'none';
-                  dlg.style.webkitBackdropFilter = 'none';
-                  dlg.innerHTML = `
+            return new Promise(resolve => {
+              const dlg = document.createElement('dialog');
+              dlg.className = 'confirm-dialog';
+              // Forzar posicionamiento y z-index para que quede siempre encima de otros modales
+              dlg.style.position = 'fixed';
+              dlg.style.zIndex = '2147483647';
+              // Intentar neutralizar cualquier backdrop-filter aplicado globalmente
+              dlg.style.backdropFilter = 'none';
+              dlg.style.webkitBackdropFilter = 'none';
+              dlg.innerHTML = `
                     <div class="contenedor-modal_eliminar-materia">
                       <div class="modal-eliminar-materia">
                         <h3 style="margin:0 0 6px 0">Confirmar eliminación</h3>
@@ -368,21 +389,21 @@ document.addEventListener('DOMContentLoaded', () => {
                       </div>
                     </div>
                   `;
-                  // Append at the end of body to increase stacking context priority
-                  document.body.appendChild(dlg);
-                  try { dlg.showModal(); } catch(e) {
-                    // fallback: focus to ensure visibility
-                    try { dlg.style.display = 'block'; dlg.focus(); } catch(_) {}
-                  }
-                  const ok = dlg.querySelector('#__temp_ok_mat');
-                  const cancel = dlg.querySelector('#__temp_cancel_mat');
-                  ok && ok.focus();
-                  const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
-                  ok && ok.addEventListener('click', () => cleanup(true));
-                  cancel && cancel.addEventListener('click', () => cleanup(false));
-                  dlg.addEventListener('cancel', () => cleanup(false));
-                });
-              })();
+              // Append at the end of body to increase stacking context priority
+              document.body.appendChild(dlg);
+              try { dlg.showModal(); } catch (e) {
+                // fallback: focus to ensure visibility
+                try { dlg.style.display = 'block'; dlg.focus(); } catch (_) { }
+              }
+              const ok = dlg.querySelector('#__temp_ok_mat');
+              const cancel = dlg.querySelector('#__temp_cancel_mat');
+              ok && ok.focus();
+              const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch (e) { }; resolve(res); };
+              ok && ok.addEventListener('click', () => cleanup(true));
+              cancel && cancel.addEventListener('click', () => cleanup(false));
+              dlg.addEventListener('cancel', () => cleanup(false));
+            });
+          })();
         if (!confirmar) return;
 
         try {
@@ -417,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarMateriasDesdeAPI();
 
   // helpers
-  function escapeHtml(s){ return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+  function escapeHtml(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", "&#39;"); }
 
   // Mostrar toast seguro: intenta usar showToast global si existe, si no crea un toast mínimo
   function ensureToast(message, type = 'info', duration = 4500) {
@@ -466,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
       toast.style.opacity = '1';
       toast.style.transform = 'translateY(0)';
 
-      const hide = () => { toast.style.opacity = '0'; toast.style.transform = 'translateY(8px)'; setTimeout(() => { try { toast.remove(); } catch(e){} }, 260); };
+      const hide = () => { toast.style.opacity = '0'; toast.style.transform = 'translateY(8px)'; setTimeout(() => { try { toast.remove(); } catch (e) { } }, 260); };
       const timer = setTimeout(hide, duration);
       toast.addEventListener('click', () => { clearTimeout(timer); hide(); });
     } catch (e) {

@@ -1,3 +1,13 @@
+/**
+ * Lógica para el modal de filtrado de actividades.
+ * Permite filtrar por tipo, progreso, materia y fechas.
+ * Se encarga de cargar dinámicamente los tipos de actividad y las materias.
+ */
+
+/**
+ * Abre el modal de filtro. Si no existe en el DOM, carga el parcial HTML.
+ * Si ya existe, lo muestra y asegura que los datos estén actualizados.
+ */
 window.abrirModalFiltro = function abrirModalFiltro() {
     // Intentar obtener el elemento del modal; si no existe, cargamos el parcial.
     let modal = document.getElementById('modal-filtro');
@@ -55,9 +65,17 @@ window.abrirModalFiltro = function abrirModalFiltro() {
         return;
     }
 
+    // Si ya existe, asegurarnos de repoblar los tipos por si hubo cambios
+    if (typeof window.poblarTiposFiltro === 'function') {
+        window.poblarTiposFiltro();
+    }
     showModal();
 };
 
+/**
+ * Inicializa los eventos y la lógica del modal de filtro.
+ * Se llama una vez que el HTML del modal ha sido insertado en el DOM.
+ */
 function inicializarModalFiltro() {
     const modal = document.getElementById('modal-filtro');
     if (!modal) return;
@@ -68,6 +86,10 @@ function inicializarModalFiltro() {
 
     // Poblar select de materias desde la API
     const materiaSelect = document.getElementById('filtro-materia');
+
+    /**
+     * Obtiene las materias del usuario y puebla el select correspondiente.
+     */
     function poblarMaterias() {
         if (!materiaSelect) return;
         const base = globalThis.BASE_URL || '';
@@ -99,6 +121,51 @@ function inicializarModalFiltro() {
             });
     }
     poblarMaterias();
+
+    /**
+     * Obtiene los tipos de actividad (incluyendo personalizados) y puebla el select.
+     * Se expone globalmente como window.poblarTiposFiltro para poder refrescar la lista.
+     */
+    function poblarTipos() {
+        const tipoSelect = document.getElementById('filtro-tipo');
+        if (!tipoSelect) {
+            return;
+        }
+
+        const base = globalThis.BASE_URL || '';
+        const url = base + 'api/tipos-actividad';
+
+        fetch(url, { credentials: 'same-origin' })
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(payload => {
+                let list = [];
+                if (Array.isArray(payload)) list = payload;
+                else if (payload && Array.isArray(payload.data)) list = payload.data;
+                else {
+                    tipoSelect.innerHTML = '<option value="">Todos</option>';
+                    return;
+                }
+
+                tipoSelect.innerHTML = '<option value="">Todos</option>';
+                list.forEach(t => {
+                    const opt = document.createElement('option');
+                    const nombre = (t.nombre || t.nombre_tipo || '').toString();
+                    opt.value = nombre.toLowerCase();
+                    opt.textContent = nombre;
+                    tipoSelect.appendChild(opt);
+                });
+            })
+            .catch(err => {
+                console.error('No se pudieron cargar tipos para el filtro:', err);
+                // Fallback visual para el usuario
+                tipoSelect.innerHTML = '<option value="">Error cargando</option>';
+            });
+    }
+    poblarTipos();
+    window.poblarTiposFiltro = poblarTipos;
 
     // Botón para restablecer todos los filtros a su estado por defecto
     const resetBtn = document.getElementById('reset-filtros');
@@ -165,7 +232,7 @@ function inicializarModalFiltro() {
 
         // Delegar la lógica de mostrar/ocultar la tabla al verificador global si existe
         if (typeof verificarTablaVacia === 'function') {
-            try { verificarTablaVacia(); } catch(e) { console.error('verificarTablaVacia error:', e); }
+            try { verificarTablaVacia(); } catch (e) { console.error('verificarTablaVacia error:', e); }
         } else {
             // Fallback: mostrar/ocultar tabla y mensaje de coincidencias
             const tabla = document.getElementById('tabla');
