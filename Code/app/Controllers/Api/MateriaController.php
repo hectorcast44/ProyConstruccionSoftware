@@ -25,7 +25,9 @@ class MateriaController extends Controller
                 // adjuntar tipos/ponderaciones si existen
                 try {
                     $tipos = $this->materiaModel->obtenerTipos($materia['id_materia']);
-                } catch (\Exception $e) { $tipos = []; }
+                } catch (\Exception $e) {
+                    $tipos = [];
+                }
                 $materia['tipos'] = $tipos;
                 $this->json(['status' => 'success', 'data' => $materia]);
             } else {
@@ -97,10 +99,58 @@ class MateriaController extends Controller
         }
     }
 
+    /**
+     * Crear o actualizar una materia.
+     *
+     * Payload esperado (JSON):
+     * - id_materia (opcional): Si se envía, se actualiza la materia.
+     * - nombre_materia (required para crear): Nombre de la materia.
+     * - calif_minima (opcional): Calificación mínima (default 70).
+     * - tipos (opcional): Array de tipos de actividad. Puede ser array de IDs (int) o array de objetos {id: int, porcentaje: float}.
+     *
+     * Validaciones:
+     * - Si se envían porcentajes, la suma debe ser 100%.
+     * - Al actualizar, no se permite eliminar tipos que tengan actividades asociadas.
+     * - Al actualizar, no se permite reducir la ponderación de un tipo por debajo del puntaje de una actividad existente.
+     *
+     * @return void JSON response.
+     */
     public function store()
     {
         $idUsuario = AuthController::getUserId();
         $data = json_decode(file_get_contents('php://input'), true);
+
+        // Validar porcentajes de tipos si vienen en la petición
+        if (isset($data['tipos']) && is_array($data['tipos'])) {
+            // Solo validar si los datos tienen estructura de ponderación (array con 'porcentaje')
+            // Si son solo IDs (enteros), es la creación rápida y no se validan porcentajes aquí.
+            $shouldValidate = false;
+            if (count($data['tipos']) > 0) {
+                $first = reset($data['tipos']);
+                if (is_array($first) && array_key_exists('porcentaje', $first)) {
+                    $shouldValidate = true;
+                }
+            }
+
+            if ($shouldValidate) {
+                $sumaPorcentajes = 0.0;
+                foreach ($data['tipos'] as $tipo) {
+                    $porcentaje = isset($tipo['porcentaje']) ? (float) $tipo['porcentaje'] : 0.0;
+
+                    if ($porcentaje < 0 || $porcentaje > 100) {
+                        $this->json(['status' => 'error', 'message' => 'Los porcentajes deben estar entre 0 y 100.'], 400);
+                        return;
+                    }
+                    $sumaPorcentajes += $porcentaje;
+                }
+
+                // Validar que la suma sea 100% (con margen de error para flotantes)
+                if (abs($sumaPorcentajes - 100.0) > 0.01) {
+                    $this->json(['status' => 'error', 'message' => 'La sumatoria de los porcentajes debe ser igual a 100%.'], 400);
+                    return;
+                }
+            }
+        }
 
         try {
             if (isset($data['id_materia']) && $data['id_materia'] > 0) {
@@ -116,6 +166,49 @@ class MateriaController extends Controller
 
                 // si vienen tipos, actualizar ponderaciones (no tocar otros campos)
                 if (isset($data['tipos']) && is_array($data['tipos'])) {
+                    // Validar que no se estén eliminando tipos con actividades asociadas
+                    $currentTypes = $this->materiaModel->obtenerTipos($data['id_materia']);
+                    $currentIds = array_column($currentTypes, 'id_tipo_actividad');
+
+                    // Extraer IDs de los nuevos tipos
+                    $newIds = [];
+                    foreach ($data['tipos'] as $t) {
+                        if (is_array($t)) {
+                            $newIds[] = (int) ($t['id'] ?? $t['id_tipo'] ?? $t['id_tipo_actividad'] ?? 0);
+                        } else {
+                            $newIds[] = (int) $t;
+                        }
+                    }
+
+                    $removedIds = array_diff($currentIds, $newIds);
+
+                    foreach ($removedIds as $removedId) {
+                        if ($this->materiaModel->tieneActividadesDeTipo($data['id_materia'], $removedId)) {
+                            // Obtener nombre del tipo para el mensaje
+                            $nombreTipo = 'Desconocido';
+                            foreach ($currentTypes as $ct) {
+                                if ($ct['id_tipo_actividad'] == $removedId) {
+                                    $nombreTipo = $ct['nombre_tipo'];
+                                    break;
+                                }
+                            }
+                            $this->json(['status' => 'error', 'message' => "No se puede eliminar el tipo '$nombreTipo' porque tiene actividades asociadas."], 400);
+                            return;
+                        }
+                    }
+
+                    // Validar reducción de ponderación
+                    foreach ($data['tipos'] as $t) {
+                        if (is_array($t) && isset($t['porcentaje'])) {
+                            $tid = $t['id'] ?? $t['id_tipo'] ?? $t['id_tipo_actividad'] ?? 0;
+                            $res = $this->materiaModel->validarPonderacionActividades($data['id_materia'], $tid, (float) $t['porcentaje']);
+                            if ($res !== true) {
+                                $this->json(['status' => 'error', 'message' => $res], 400);
+                                return;
+                            }
+                        }
+                    }
+
                     $this->materiaModel->setPonderaciones($data['id_materia'], $data['tipos']);
                 }
 
