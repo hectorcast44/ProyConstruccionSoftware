@@ -1,3 +1,13 @@
+/**
+ * Lógica para el modal de filtrado de actividades.
+ * Permite filtrar por tipo, progreso, materia y fechas.
+ * Se encarga de cargar dinámicamente los tipos de actividad y las materias.
+ */
+
+/**
+ * Abre el modal de filtro. Si no existe en el DOM, carga el parcial HTML.
+ * Si ya existe, lo muestra y asegura que los datos estén actualizados.
+ */
 window.abrirModalFiltro = function abrirModalFiltro() {
     // Intentar obtener el elemento del modal; si no existe, cargamos el parcial.
     let modal = document.getElementById('modal-filtro');
@@ -62,6 +72,10 @@ window.abrirModalFiltro = function abrirModalFiltro() {
     showModal();
 };
 
+/**
+ * Inicializa los eventos y la lógica del modal de filtro.
+ * Se llama una vez que el HTML del modal ha sido insertado en el DOM.
+ */
 function inicializarModalFiltro() {
     const modal = document.getElementById('modal-filtro');
     if (!modal) return;
@@ -72,6 +86,10 @@ function inicializarModalFiltro() {
 
     // Poblar select de materias desde la API
     const materiaSelect = document.getElementById('filtro-materia');
+
+    /**
+     * Obtiene las materias del usuario y puebla el select correspondiente.
+     */
     function poblarMaterias() {
         if (!materiaSelect) return;
         const base = globalThis.BASE_URL || '';
@@ -104,17 +122,18 @@ function inicializarModalFiltro() {
     }
     poblarMaterias();
 
-    // Poblar select de tipos desde la API
+    /**
+     * Obtiene los tipos de actividad (incluyendo personalizados) y puebla el select.
+     * Se expone globalmente como window.poblarTiposFiltro para poder refrescar la lista.
+     */
     function poblarTipos() {
         const tipoSelect = document.getElementById('filtro-tipo');
         if (!tipoSelect) {
-            console.warn('Select filtro-tipo no encontrado');
             return;
         }
 
         const base = globalThis.BASE_URL || '';
         const url = base + 'api/tipos-actividad';
-        console.log('Cargando tipos desde:', url);
 
         fetch(url, { credentials: 'same-origin' })
             .then(r => {
@@ -122,7 +141,6 @@ function inicializarModalFiltro() {
                 return r.json();
             })
             .then(payload => {
-                console.log('Tipos cargados:', payload);
                 let list = [];
                 if (Array.isArray(payload)) list = payload;
                 else if (payload && Array.isArray(payload.data)) list = payload.data;

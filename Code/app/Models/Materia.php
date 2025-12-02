@@ -405,10 +405,11 @@ class Materia
     /**
      * Validar si el nuevo porcentaje de un tipo es suficiente para cubrir los puntos de las actividades existentes.
      *
-     * @param int $idMateria
-     * @param int $idTipo
-     * @param float $nuevoPorcentaje
-     * @return bool|string True si es válido, o mensaje de error si no lo es.
+     * @param int $idMateria Identificador de la materia.
+     * @param int $idTipo Identificador del tipo de actividad.
+     * @param float $nuevoPorcentaje Nuevo porcentaje asignado al tipo.
+     *
+     * @return bool|string True si es válido, o mensaje de error (string) si no lo es.
      */
     public function validarPonderacionActividades(int $idMateria, int $idTipo, float $nuevoPorcentaje)
     {

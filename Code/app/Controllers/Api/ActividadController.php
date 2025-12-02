@@ -89,6 +89,23 @@ class ActividadController extends Controller
         }
     }
 
+    /**
+     * Crear o actualizar una actividad.
+     *
+     * Payload esperado (JSON):
+     * - id_actividad (opcional): Si se envía, se actualiza la actividad.
+     * - id_materia (required): ID de la materia.
+     * - id_tipo_actividad (required): ID del tipo de actividad.
+     * - nombre_actividad (required): Nombre de la actividad.
+     * - puntos_posibles (opcional): Puntos máximos de la actividad.
+     * - puntos_obtenidos (opcional): Puntos obtenidos por el alumno.
+     *
+     * Validaciones:
+     * - Puntos obtenidos <= Puntos posibles.
+     * - Puntos posibles <= Puntos restantes disponibles para ese tipo en la materia.
+     *
+     * @return void JSON response.
+     */
     public function store()
     {
         $idUsuario = AuthController::getUserId();

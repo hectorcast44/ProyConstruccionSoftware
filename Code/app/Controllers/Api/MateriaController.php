@@ -99,6 +99,22 @@ class MateriaController extends Controller
         }
     }
 
+    /**
+     * Crear o actualizar una materia.
+     *
+     * Payload esperado (JSON):
+     * - id_materia (opcional): Si se envía, se actualiza la materia.
+     * - nombre_materia (required para crear): Nombre de la materia.
+     * - calif_minima (opcional): Calificación mínima (default 70).
+     * - tipos (opcional): Array de tipos de actividad. Puede ser array de IDs (int) o array de objetos {id: int, porcentaje: float}.
+     *
+     * Validaciones:
+     * - Si se envían porcentajes, la suma debe ser 100%.
+     * - Al actualizar, no se permite eliminar tipos que tengan actividades asociadas.
+     * - Al actualizar, no se permite reducir la ponderación de un tipo por debajo del puntaje de una actividad existente.
+     *
+     * @return void JSON response.
+     */
     public function store()
     {
         $idUsuario = AuthController::getUserId();
