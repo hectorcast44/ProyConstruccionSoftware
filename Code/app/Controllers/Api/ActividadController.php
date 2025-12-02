@@ -4,16 +4,20 @@ namespace App\Controllers\Api;
 
 use App\Core\Controller;
 use App\Models\Actividad;
+use App\Models\Materia;
 use App\Models\Calculadora;
 use App\Controllers\AuthController;
 
-class ActividadController extends Controller {
+class ActividadController extends Controller
+{
     private $actividadModel;
+    private $materiaModel;
     private $calculadoraModel;
 
     public function __construct()
     {
         $this->actividadModel = new Actividad();
+        $this->materiaModel = new Materia();
         $this->calculadoraModel = new Calculadora();
     }
 
@@ -97,6 +101,30 @@ class ActividadController extends Controller {
         }
 
         // Preparar datos
+        $puntosPosibles = isset($data['puntos_posibles']) && $data['puntos_posibles'] !== '' ? (float) $data['puntos_posibles'] : 0.0;
+        $puntosObtenidos = isset($data['puntos_obtenidos']) && $data['puntos_obtenidos'] !== '' ? (float) $data['puntos_obtenidos'] : null;
+
+        // Validación 1: Puntos obtenidos no pueden ser mayores a los posibles
+        if ($puntosObtenidos !== null && $puntosObtenidos > $puntosPosibles) {
+            $this->json(['status' => 'error', 'message' => 'Los puntos obtenidos no pueden ser mayores a los puntos posibles.'], 400);
+            return;
+        }
+
+        // Validación 2: Puntos posibles no pueden exceder lo restante del tipo
+        if ($puntosPosibles > 0) {
+            try {
+                $this->validarPuntosRestantes(
+                    $data['id_materia'],
+                    $data['id_tipo_actividad'],
+                    $puntosPosibles,
+                    $data['id_actividad'] ?? null
+                );
+            } catch (\Exception $e) {
+                $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
+                return;
+            }
+        }
+
         $actividadData = [
             'id_materia' => $data['id_materia'],
             'id_tipo_actividad' => $data['id_tipo_actividad'],
@@ -104,8 +132,8 @@ class ActividadController extends Controller {
             'nombre_actividad' => trim($data['nombre_actividad']),
             'fecha_entrega' => $data['fecha_entrega'] ?? date('Y-m-d'),
             'estado' => $data['estado'] ?? 'pendiente',
-            'puntos_posibles' => isset($data['puntos_posibles']) && $data['puntos_posibles'] !== '' ? (float)$data['puntos_posibles'] : null,
-            'puntos_obtenidos' => isset($data['puntos_obtenidos']) && $data['puntos_obtenidos'] !== '' ? (float)$data['puntos_obtenidos'] : null
+            'puntos_posibles' => $puntosPosibles > 0 ? $puntosPosibles : null,
+            'puntos_obtenidos' => $puntosObtenidos
         ];
 
         try {
@@ -157,6 +185,45 @@ class ActividadController extends Controller {
 
         } catch (\Exception $e) {
             $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
+        }
+    }
+
+    private function validarPuntosRestantes($idMateria, $idTipo, $puntosNuevos, $idActividadExcluir = null)
+    {
+        // 1. Obtener porcentaje del tipo
+        $tipos = $this->materiaModel->obtenerTipos($idMateria);
+        $porcentajeTipo = 0.0;
+        $encontrado = false;
+        foreach ($tipos as $t) {
+            if ($t['id_tipo_actividad'] == $idTipo) {
+                $porcentajeTipo = (float) $t['porcentaje'];
+                $encontrado = true;
+                break;
+            }
+        }
+
+        if (!$encontrado) {
+            throw new \Exception("El tipo de actividad seleccionado no pertenece a esta materia.");
+        }
+
+        // 2. Obtener suma de puntos de actividades existentes
+        $actividades = $this->actividadModel->obtenerPorMateria($idMateria, AuthController::getUserId());
+        $sumaExistente = 0.0;
+        foreach ($actividades as $act) {
+            if ($act['id_tipo_actividad'] == $idTipo) {
+                // Si estamos editando, excluir la actividad actual de la suma
+                if ($idActividadExcluir && $act['id_actividad'] == $idActividadExcluir) {
+                    continue;
+                }
+                $sumaExistente += (float) ($act['puntos_posibles'] ?? 0);
+            }
+        }
+
+        $disponible = $porcentajeTipo - $sumaExistente;
+
+        // Permitir un pequeño margen de error por flotantes
+        if (($puntosNuevos - $disponible) > 0.01) {
+            throw new \Exception("Los puntos de la actividad ($puntosNuevos) exceden los puntos disponibles para este tipo ($disponible de $porcentajeTipo).");
         }
     }
 }

@@ -38,8 +38,8 @@ function inicializarModalNuevaMateria() {
       nombre_materia: f.get('nombre_materia') || '',
       calif_minima: f.get('calif_minima') ? Number(f.get('calif_minima')) : 70,
       tipos: Array.from(document.querySelectorAll('#tipos-checkboxes input[type="checkbox"]'))
-                .filter(ch => ch.checked)
-                .map(ch => Number(ch.value)).filter(Number.isFinite)
+        .filter(ch => ch.checked)
+        .map(ch => Number(ch.value)).filter(Number.isFinite)
     };
 
     if (!payload.nombre_materia) {
@@ -58,7 +58,7 @@ function inicializarModalNuevaMateria() {
 
       const txt = await res.text();
       let json = null;
-      try { json = JSON.parse(txt); } catch(e){ throw new Error('Respuesta inválida del servidor'); }
+      try { json = JSON.parse(txt); } catch (e) { throw new Error('Respuesta inválida del servidor'); }
       if (!res.ok) throw new Error(json.message || ('HTTP ' + res.status));
 
       // éxito: cerrar y recargar la página para reflejar cambio
@@ -114,12 +114,12 @@ function prefilarModalMateria(data) {
     const checkContainer = document.getElementById('tipos-checkboxes');
     if (checkContainer && Array.isArray(data.tipos)) {
       // convertir a ids
-      const ids = data.tipos.map(t => Number(t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? t.id_tipo ?? 0)).filter(n => n>0);
+      const ids = data.tipos.map(t => Number(t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? t.id_tipo ?? 0)).filter(n => n > 0);
       Array.from(checkContainer.querySelectorAll('input[type="checkbox"]')).forEach(ch => {
         ch.checked = ids.includes(Number(ch.value));
       });
     }
-  } catch(e){}
+  } catch (e) { }
 }
 
 // Cargar tipos globales y renderizar checkboxes
@@ -142,7 +142,7 @@ async function cargarTiposParaModal() {
   try {
     const r = await fetch(base + 'api/tipos-actividad', { credentials: 'same-origin' });
     const txt = await r.text();
-    let json = null; try { json = JSON.parse(txt); } catch(e) { json = null; }
+    let json = null; try { json = JSON.parse(txt); } catch (e) { json = null; }
     const tipos = (json && Array.isArray(json.data)) ? json.data : [];
     renderLista(tipos);
   } catch (e) {
@@ -159,7 +159,7 @@ async function cargarTiposParaModal() {
           method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nombre_tipo: name })
         });
-        const txt = await res.text(); let json = null; try { json = JSON.parse(txt); } catch(e){ json = null; }
+        const txt = await res.text(); let json = null; try { json = JSON.parse(txt); } catch (e) { json = null; }
         if (!res.ok) throw new Error(json?.message || ('HTTP ' + res.status));
 
         // añadir checkbox nuevo y marcarlo
@@ -191,7 +191,7 @@ async function cargarTiposParaModal() {
     // obtener referencias para mostrar confirmación clara
     try {
       const r = await fetch((globalThis.BASE_URL || '') + 'api/tipos-actividad?id=' + encodeURIComponent(id), { credentials: 'same-origin' });
-      const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch(e){ json = null; }
+      const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch (e) { json = null; }
       if (!r.ok) {
         const msg = json?.message || ('HTTP ' + r.status);
         throw new Error(msg);
@@ -223,11 +223,11 @@ async function cargarTiposParaModal() {
           `;
           document.body.appendChild(dlg);
           // showModal asegura que el dialog esté por encima del modal existente
-          try { dlg.showModal(); } catch(e) { /* fallback if not supported */ }
+          try { dlg.showModal(); } catch (e) { /* fallback if not supported */ }
           const ok = dlg.querySelector('#__temp_ok_tipo');
           const cancel = dlg.querySelector('#__temp_cancel_tipo');
           ok && ok.focus();
-          const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch(e){}; resolve(res); };
+          const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch (e) { }; resolve(res); };
           ok && ok.addEventListener('click', () => cleanup(true));
           cancel && cancel.addEventListener('click', () => cleanup(false));
           dlg.addEventListener('cancel', () => cleanup(false));
@@ -238,14 +238,14 @@ async function cargarTiposParaModal() {
 
       // intentar eliminar sin force para detectar si el servidor exige force
       const res = await fetch((globalThis.BASE_URL || '') + 'api/tipos-actividad?id=' + encodeURIComponent(id), { method: 'DELETE', credentials: 'same-origin' });
-      const txt2 = await res.text(); let json2 = null; try { json2 = JSON.parse(txt2); } catch(e){ json2 = null; }
+      const txt2 = await res.text(); let json2 = null; try { json2 = JSON.parse(txt2); } catch (e) { json2 = null; }
       if (res.ok) {
         // eliminado exitoso
         label.remove();
         if (typeof showToast === 'function') showToast(json2?.message || 'Tipo eliminado', { type: 'success' });
         // refrescar selects globales si existen
-        try { if (typeof cargarTiposParaModal === 'function') cargarTiposParaModal(); } catch(e){}
-        try { if (typeof poblarSelectsModal === 'function') poblarSelectsModal(); } catch(e){}
+        try { if (typeof cargarTiposParaModal === 'function') cargarTiposParaModal(); } catch (e) { }
+        try { if (typeof poblarSelectsModal === 'function') poblarSelectsModal(); } catch (e) { }
         return;
       }
 
@@ -258,7 +258,7 @@ async function cargarTiposParaModal() {
 
         // llamar con force=1
         const resf = await fetch((globalThis.BASE_URL || '') + 'api/tipos-actividad?id=' + encodeURIComponent(id) + '&force=1', { method: 'DELETE', credentials: 'same-origin' });
-        const txtf = await resf.text(); let jsonf = null; try { jsonf = JSON.parse(txtf); } catch(e){ jsonf = null; }
+        const txtf = await resf.text(); let jsonf = null; try { jsonf = JSON.parse(txtf); } catch (e) { jsonf = null; }
         if (!resf.ok) {
           if (typeof showToast === 'function') showToast('No se pudo eliminar: ' + (jsonf?.message || txtf), { type: 'error' });
           else console.error('No se pudo eliminar: ', jsonf || txtf);
@@ -268,8 +268,8 @@ async function cargarTiposParaModal() {
         // success with force
         label.remove();
         if (typeof showToast === 'function') showToast(jsonf?.message || 'Tipo y actividades eliminadas', { type: 'success' });
-        try { if (typeof cargarTiposParaModal === 'function') cargarTiposParaModal(); } catch(e){}
-        try { if (typeof poblarSelectsModal === 'function') poblarSelectsModal(); } catch(e){}
+        try { if (typeof cargarTiposParaModal === 'function') cargarTiposParaModal(); } catch (e) { }
+        try { if (typeof poblarSelectsModal === 'function') poblarSelectsModal(); } catch (e) { }
       } else {
         if (typeof showToast === 'function') showToast('No se pudo eliminar: ' + errMsg, { type: 'error' });
         else console.error('No se pudo eliminar:', errMsg);
@@ -280,7 +280,7 @@ async function cargarTiposParaModal() {
     }
   });
 
-  function escapeHtml(s){ return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+  function escapeHtml(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", "&#39;"); }
 }
 
 // Al cargar el modal por primera vez, solicitar tipos

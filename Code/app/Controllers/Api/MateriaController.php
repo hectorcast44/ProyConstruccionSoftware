@@ -25,7 +25,9 @@ class MateriaController extends Controller
                 // adjuntar tipos/ponderaciones si existen
                 try {
                     $tipos = $this->materiaModel->obtenerTipos($materia['id_materia']);
-                } catch (\Exception $e) { $tipos = []; }
+                } catch (\Exception $e) {
+                    $tipos = [];
+                }
                 $materia['tipos'] = $tipos;
                 $this->json(['status' => 'success', 'data' => $materia]);
             } else {
@@ -101,6 +103,38 @@ class MateriaController extends Controller
     {
         $idUsuario = AuthController::getUserId();
         $data = json_decode(file_get_contents('php://input'), true);
+
+        // Validar porcentajes de tipos si vienen en la petición
+        if (isset($data['tipos']) && is_array($data['tipos'])) {
+            // Solo validar si los datos tienen estructura de ponderación (array con 'porcentaje')
+            // Si son solo IDs (enteros), es la creación rápida y no se validan porcentajes aquí.
+            $shouldValidate = false;
+            if (count($data['tipos']) > 0) {
+                $first = reset($data['tipos']);
+                if (is_array($first) && array_key_exists('porcentaje', $first)) {
+                    $shouldValidate = true;
+                }
+            }
+
+            if ($shouldValidate) {
+                $sumaPorcentajes = 0.0;
+                foreach ($data['tipos'] as $tipo) {
+                    $porcentaje = isset($tipo['porcentaje']) ? (float) $tipo['porcentaje'] : 0.0;
+
+                    if ($porcentaje < 0 || $porcentaje > 100) {
+                        $this->json(['status' => 'error', 'message' => 'Los porcentajes deben estar entre 0 y 100.'], 400);
+                        return;
+                    }
+                    $sumaPorcentajes += $porcentaje;
+                }
+
+                // Validar que la suma sea 100% (con margen de error para flotantes)
+                if (abs($sumaPorcentajes - 100.0) > 0.01) {
+                    $this->json(['status' => 'error', 'message' => 'La sumatoria de los porcentajes debe ser igual a 100%.'], 400);
+                    return;
+                }
+            }
+        }
 
         try {
             if (isset($data['id_materia']) && $data['id_materia'] > 0) {
