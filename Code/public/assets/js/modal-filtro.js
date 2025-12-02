@@ -55,6 +55,10 @@ window.abrirModalFiltro = function abrirModalFiltro() {
         return;
     }
 
+    // Si ya existe, asegurarnos de repoblar los tipos por si hubo cambios
+    if (typeof window.poblarTiposFiltro === 'function') {
+        window.poblarTiposFiltro();
+    }
     showModal();
 };
 
@@ -99,6 +103,51 @@ function inicializarModalFiltro() {
             });
     }
     poblarMaterias();
+
+    // Poblar select de tipos desde la API
+    function poblarTipos() {
+        const tipoSelect = document.getElementById('filtro-tipo');
+        if (!tipoSelect) {
+            console.warn('Select filtro-tipo no encontrado');
+            return;
+        }
+
+        const base = globalThis.BASE_URL || '';
+        const url = base + 'api/tipos-actividad';
+        console.log('Cargando tipos desde:', url);
+
+        fetch(url, { credentials: 'same-origin' })
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(payload => {
+                console.log('Tipos cargados:', payload);
+                let list = [];
+                if (Array.isArray(payload)) list = payload;
+                else if (payload && Array.isArray(payload.data)) list = payload.data;
+                else {
+                    tipoSelect.innerHTML = '<option value="">Todos</option>';
+                    return;
+                }
+
+                tipoSelect.innerHTML = '<option value="">Todos</option>';
+                list.forEach(t => {
+                    const opt = document.createElement('option');
+                    const nombre = (t.nombre || t.nombre_tipo || '').toString();
+                    opt.value = nombre.toLowerCase();
+                    opt.textContent = nombre;
+                    tipoSelect.appendChild(opt);
+                });
+            })
+            .catch(err => {
+                console.error('No se pudieron cargar tipos para el filtro:', err);
+                // Fallback visual para el usuario
+                tipoSelect.innerHTML = '<option value="">Error cargando</option>';
+            });
+    }
+    poblarTipos();
+    window.poblarTiposFiltro = poblarTipos;
 
     // Botón para restablecer todos los filtros a su estado por defecto
     const resetBtn = document.getElementById('reset-filtros');
@@ -165,7 +214,7 @@ function inicializarModalFiltro() {
 
         // Delegar la lógica de mostrar/ocultar la tabla al verificador global si existe
         if (typeof verificarTablaVacia === 'function') {
-            try { verificarTablaVacia(); } catch(e) { console.error('verificarTablaVacia error:', e); }
+            try { verificarTablaVacia(); } catch (e) { console.error('verificarTablaVacia error:', e); }
         } else {
             // Fallback: mostrar/ocultar tabla y mensaje de coincidencias
             const tabla = document.getElementById('tabla');
