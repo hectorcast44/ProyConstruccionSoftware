@@ -35,6 +35,31 @@ if ($publicPos === false) {
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/modal.css">
     <!-- estilos específicos -->
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>styles/dashboard.css">
+    
+    <!-- FullCalendar -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <style>
+        /* Estilos para la vista de calendario */
+        #calendar-view {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-top: 20px;
+            display: none; /* Oculto por defecto */
+        }
+        .fc-event {
+            cursor: pointer;
+        }
+        .fc-toolbar-title {
+            font-size: 1.25em !important;
+        }
+        .btn-icon-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
 </head>
 
 <body class="has-sidebar" data-page="dashboard">
@@ -61,6 +86,10 @@ if ($publicPos === false) {
                 <i data-feather="search" class="d-search-icon"></i>
                 <input type="text" id="d-search-input" class="d-search-input" placeholder="Buscar...">
             </div>
+            <button id="btn-toggle-view" class="btn-secondary btn-icon-text" title="Cambiar vista">
+                <i data-feather="calendar"></i>
+                <span>Calendario</span>
+            </button>
             <div id="contenedor-boton-filtro"></div>
         </div>
 
@@ -79,6 +108,10 @@ if ($publicPos === false) {
                 <!-- Filas de actividades generadas dinámicamente -->
             </tbody>
         </table>
+        
+        <!-- Contenedor del Calendario -->
+        <div id="calendar-view"></div>
+
         <p id="tabla-vacia" class="oculto">No se han encontrado actividades que coincidan con la búsqueda.</p>
         <div id="mensaje-vacio" class="oculto">
             <h3>No se han registrado actividades.</h3>

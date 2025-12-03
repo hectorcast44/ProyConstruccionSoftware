@@ -87,6 +87,9 @@ function actualizarUiModalActividad(modo) {
    ========================================================== */
 
 let modoEdicionActivo = false;
+let actividadesGlobales = [];
+let calendarInstance = null;
+let vistaActual = 'tabla'; // 'tabla' | 'calendario'
 
 /**
  * Normaliza distintos valores de estado desde la API/BD
@@ -424,7 +427,9 @@ async function cargarActividadesDesdeAPI() {
     const materias = await obtenerMateriasDesdeApi(base);
     const resultados = await obtenerActividadesPorMateria(base, materias);
     const filas = construirFilasActividades(resultados);
+    actividadesGlobales = filas;
     pintarFilasActividades(cuerpoTabla, filas);
+    actualizarCalendarioSiExiste();
   } catch (error) {
     manejarErrorCargaActividades(error, cuerpoTabla);
   }
@@ -980,9 +985,12 @@ function seleccionarOpcionEnSelect(selectEl, idValor, textoCelda) {
  * @param {*} timeoutMs 
  */
 async function esperarOpcionesSelect(selectEl, minOptions = 2, timeoutMs = 1000) {
+  if (!selectEl) {
+    return;
+  }
+
   const inicio = Date.now();
   while (
-    selectEl &&
     selectEl.options.length < minOptions &&
     Date.now() - inicio < timeoutMs
   ) {
@@ -1289,3 +1297,129 @@ function capitalizar(texto) {
   }
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
+
+/* ==========================================================
+   VISTA CALENDARIO
+   ========================================================== */
+
+function actualizarCalendarioSiExiste() {
+  if (calendarInstance) {
+    calendarInstance.removeAllEvents();
+    const eventos = mapearActividadesAEventos(actividadesGlobales);
+    calendarInstance.addEventSource(eventos);
+  }
+}
+
+function mapearActividadesAEventos(actividades) {
+  return actividades.map(act => {
+    // Asumimos que act.fecha es YYYY-MM-DD. Si tiene hora, FullCalendar lo maneja.
+    // Si no tiene fecha, no se puede mostrar.
+    if (!act.fecha) return null;
+
+    let color = '#3788d8'; // default blue
+    const tipo = (act.tipo || '').toLowerCase();
+
+    // Usar los mismos colores que los tags si es posible, o aproximados
+    if (tipo.includes('examen')) color = '#1976d2'; // Azul fuerte
+    else if (tipo.includes('proyecto')) color = '#2e7d32'; // Verde fuerte
+    else if (tipo.includes('tarea') || tipo.includes('trabajo')) color = '#ef6c00'; // Naranja fuerte
+    else if (tipo.includes('quiz')) color = '#7b1fa2'; // Púrpura fuerte
+    else if (tipo.includes('ejerc')) color = '#c2185b'; // Rosa fuerte
+
+    return {
+      title: act.nombre,
+      start: act.fecha,
+      allDay: true, // Asumimos todo el día por ahora
+      backgroundColor: color,
+      borderColor: color,
+      extendedProps: {
+        materia: act.materia,
+        tipo: act.tipo
+      }
+    };
+  }).filter(e => e !== null);
+}
+
+function inicializarCalendario() {
+  const calendarEl = document.getElementById('calendar-view');
+  if (!calendarEl) return;
+
+  // Verificar si FullCalendar está cargado
+  if (typeof FullCalendar === 'undefined') {
+    console.error('FullCalendar no está cargado');
+    return;
+  }
+
+  calendarInstance = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    locale: 'es',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,listMonth'
+    },
+    buttonText: {
+      today: 'Hoy',
+      month: 'Mes',
+      list: 'Lista'
+    },
+    events: mapearActividadesAEventos(actividadesGlobales),
+    eventClick: function (info) {
+      // Opcional: Mostrar detalles al hacer click
+      const props = info.event.extendedProps;
+      mostrarToastSeguro(`${info.event.title} (${props.materia})`, { type: 'info' });
+    }
+  });
+
+  calendarInstance.render();
+}
+
+function toggleVista() {
+  const tabla = document.getElementById('tabla');
+  const calendarEl = document.getElementById('calendar-view');
+  const btn = document.getElementById('btn-toggle-view');
+  const icon = btn.querySelector('i');
+  const text = btn.querySelector('span');
+  const searchBox = document.getElementById('search-box');
+  const btnFiltro = document.getElementById('contenedor-boton-filtro');
+
+  if (vistaActual === 'tabla') {
+    // Cambiar a calendario
+    vistaActual = 'calendario';
+    tabla.classList.add('oculto'); // Usar clase oculto existente o style
+    tabla.style.display = 'none'; // Asegurar ocultamiento
+    calendarEl.style.display = 'block';
+
+    // Actualizar botón
+    if (icon) icon.setAttribute('data-feather', 'list');
+    if (text) text.textContent = 'Tabla';
+
+    // Inicializar si es la primera vez
+    if (!calendarInstance) {
+      inicializarCalendario();
+    } else {
+      calendarInstance.updateSize(); // Reajustar tamaño por si acaso
+    }
+
+  } else {
+    // Cambiar a tabla
+    vistaActual = 'tabla';
+    tabla.style.display = ''; // Restaurar display original (table)
+    tabla.classList.remove('oculto');
+    calendarEl.style.display = 'none';
+
+    // Actualizar botón
+    if (icon) icon.setAttribute('data-feather', 'calendar');
+    if (text) text.textContent = 'Calendario';
+  }
+
+  if (globalThis.feather) globalThis.feather.replace();
+}
+
+// Inicializar listener del botón
+document.addEventListener('DOMContentLoaded', () => {
+  const btnToggle = document.getElementById('btn-toggle-view');
+  if (btnToggle) {
+    btnToggle.addEventListener('click', toggleVista);
+  }
+});
