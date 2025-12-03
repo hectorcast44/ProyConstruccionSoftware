@@ -2,7 +2,7 @@
  * Sidebar dinámico de la aplicación.
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+function initSidebar() {
   const mount = document.getElementById('sidebar-mount');
   if (!mount) return;
 
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
       activarEnlaceActual();
       inicializarColapsoSidebar();
       cargarUsuarioEnSidebar();
-      inicializarLogoutSidebar(); 
+      inicializarLogoutSidebar();
     })
     .catch(err => {
       console.error('Error cargando sidebar:', err);
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
         No se encontró el archivo en la ruta esperada.
       </div>`;
     });
-});
+}
 
 
 async function cargarUsuarioEnSidebar() {
@@ -110,3 +110,9 @@ function inicializarLogoutSidebar() {
   });
 }
 
+
+document.addEventListener('DOMContentLoaded', initSidebar);
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { initSidebar, cargarUsuarioEnSidebar, normalizarRuta, activarEnlaceActual, inicializarColapsoSidebar, inicializarLogoutSidebar };
+}

@@ -1,5 +1,5 @@
 function cargarPartial(ruta, contenedorId, botonId, callback) {
-  fetch(ruta)
+  return fetch(ruta)
     .then(r => r.text())
     .then(html => {
       const contenedor = document.getElementById(contenedorId);
@@ -24,12 +24,13 @@ function cargarPartial(ruta, contenedorId, botonId, callback) {
     .catch(err => console.error(`Error cargando ${ruta}:`, err));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+
+function initButtons() {
   const basePath = globalThis.BASE_URL || '';
 
   // Botón "Nueva"
   // Botón "Nueva" - elegir callback según la página (mis-materias usa abrirModalCrearMateria)
-  (function() {
+  (function () {
     const page = document.body?.dataset?.page || document.body?.className || '';
     let callback = null;
     if (String(page).includes('mis-materias') && typeof globalThis.abrirModalCrearMateria === 'function') {
@@ -84,4 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
     'boton-filtro',
     globalThis.abrirModalFiltro || null
   );
-});
+}
+
+document.addEventListener('DOMContentLoaded', initButtons);
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { cargarPartial, initButtons };
+}
