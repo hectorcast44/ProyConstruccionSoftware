@@ -118,6 +118,13 @@
         }
 
         menu.classList.toggle('accordion-card__menu--visible');
+        // Si el menú quedó visible, asegurar que la card esté expandida
+        try {
+          if (menu.classList.contains('accordion-card__menu--visible')) {
+            card.classList.add('open');
+          }
+        } catch (e) {  }
+
         return;
       }
 
