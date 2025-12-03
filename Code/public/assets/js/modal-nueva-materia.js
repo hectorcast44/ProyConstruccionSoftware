@@ -348,7 +348,7 @@ async function manejarEliminacionTipo(etiqueta, idTipo) {
     });
 
     const txt = await res.text();
-    let json = null; try { json = JSON.parse(txt); } catch (_) {}
+    let json = null; try { json = JSON.parse(txt); } catch (_) { console.warn('No se pudo parsear JSON de respuesta'); }
 
     if (res.ok) {
       etiqueta.remove();
@@ -369,7 +369,7 @@ async function manejarEliminacionTipo(etiqueta, idTipo) {
         });
 
         const txtForce = await resForce.text();
-        let jsonForce = null; try { jsonForce = JSON.parse(txtForce); } catch (_) {}
+        let jsonForce = null; try { jsonForce = JSON.parse(txtForce); } catch (_) { console.warn('No se pudo parsear JSON de respuesta forzada'); }
 
         if (resForce.ok) {
           etiqueta.remove();
