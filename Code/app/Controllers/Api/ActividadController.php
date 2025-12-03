@@ -108,64 +108,30 @@ class ActividadController extends Controller
      */
     public function store()
     {
-        $idUsuario = AuthController::getUserId();
-        $data = json_decode(file_get_contents('php://input'), true);
-
-        // Validaciones básicas
-        if (empty($data['id_materia']) || empty($data['id_tipo_actividad']) || empty($data['nombre_actividad'])) {
-            $this->json(['status' => 'error', 'message' => 'Faltan campos obligatorios'], 400);
-            return;
-        }
-
-        // Preparar datos
-        $puntosPosibles = isset($data['puntos_posibles']) && $data['puntos_posibles'] !== '' ? (float) $data['puntos_posibles'] : 0.0;
-        $puntosObtenidos = isset($data['puntos_obtenidos']) && $data['puntos_obtenidos'] !== '' ? (float) $data['puntos_obtenidos'] : null;
-
-        // Validación 1: Puntos obtenidos no pueden ser mayores a los posibles
-        if ($puntosObtenidos !== null && $puntosObtenidos > $puntosPosibles) {
-            $this->json(['status' => 'error', 'message' => 'Los puntos obtenidos no pueden ser mayores a los puntos posibles.'], 400);
-            return;
-        }
-
-        // Validación 2: Puntos posibles no pueden exceder lo restante del tipo
-        if ($puntosPosibles > 0) {
-            try {
-                $this->validarPuntosRestantes(
-                    $data['id_materia'],
-                    $data['id_tipo_actividad'],
-                    $puntosPosibles,
-                    $data['id_actividad'] ?? null
-                );
-            } catch (\Exception $e) {
-                $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
-                return;
-            }
-        }
-
-        $actividadData = [
-            'id_materia' => $data['id_materia'],
-            'id_tipo_actividad' => $data['id_tipo_actividad'],
-            'id_usuario' => $idUsuario,
-            'nombre_actividad' => trim($data['nombre_actividad']),
-            'fecha_entrega' => $data['fecha_entrega'] ?? date('Y-m-d'),
-            'estado' => $data['estado'] ?? 'pendiente',
-            'puntos_posibles' => $puntosPosibles > 0 ? $puntosPosibles : null,
-            'puntos_obtenidos' => $puntosObtenidos
-        ];
-
         try {
-            if (isset($data['id_actividad']) && $data['id_actividad'] > 0) {
-                // Actualizar
-                $this->actividadModel->actualizar($data['id_actividad'], $actividadData);
-                $message = 'Actividad actualizada correctamente';
-            } else {
-                // Crear
-                $this->actividadModel->crear($actividadData);
-                $message = 'Actividad creada correctamente';
-            }
+            $idUsuario = AuthController::getUserId();
+            $data = json_decode(file_get_contents('php://input'), true);
 
-            // Recalcular materia
-            $this->calculadoraModel->recalcularMateria($data['id_materia'], $idUsuario);
+            $this->validateStoreInput($data);
+
+            // Preparar datos
+            $puntosPosibles = isset($data['puntos_posibles']) && $data['puntos_posibles'] !== '' ? (float) $data['puntos_posibles'] : 0.0;
+            $puntosObtenidos = isset($data['puntos_obtenidos']) && $data['puntos_obtenidos'] !== '' ? (float) $data['puntos_obtenidos'] : null;
+
+            $this->validateStoreLogic($data, $puntosPosibles, $puntosObtenidos);
+
+            $actividadData = [
+                'id_materia' => $data['id_materia'],
+                'id_tipo_actividad' => $data['id_tipo_actividad'],
+                'id_usuario' => $idUsuario,
+                'nombre_actividad' => trim($data['nombre_actividad']),
+                'fecha_entrega' => $data['fecha_entrega'] ?? date('Y-m-d'),
+                'estado' => $data['estado'] ?? 'pendiente',
+                'puntos_posibles' => $puntosPosibles > 0 ? $puntosPosibles : null,
+                'puntos_obtenidos' => $puntosObtenidos
+            ];
+
+            $message = $this->saveActividad($data, $actividadData, $idUsuario);
 
             $resp = ['status' => 'success', 'message' => $message];
             if (isset($_GET['__dbg']) && $_GET['__dbg']) {
@@ -179,6 +145,49 @@ class ActividadController extends Controller
         } catch (\Exception $e) {
             $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
         }
+    }
+
+    private function validateStoreInput($data)
+    {
+        if (empty($data['id_materia']) || empty($data['id_tipo_actividad']) || empty($data['nombre_actividad'])) {
+            throw new \Exception('Faltan campos obligatorios');
+        }
+    }
+
+    private function validateStoreLogic($data, $puntosPosibles, $puntosObtenidos)
+    {
+        // Validación 1: Puntos obtenidos no pueden ser mayores a los posibles
+        if ($puntosObtenidos !== null && $puntosObtenidos > $puntosPosibles) {
+            throw new \Exception('Los puntos obtenidos no pueden ser mayores a los puntos posibles.');
+        }
+
+        // Validación 2: Puntos posibles no pueden exceder lo restante del tipo
+        if ($puntosPosibles > 0) {
+            $this->validarPuntosRestantes(
+                $data['id_materia'],
+                $data['id_tipo_actividad'],
+                $puntosPosibles,
+                $data['id_actividad'] ?? null
+            );
+        }
+    }
+
+    private function saveActividad($data, $actividadData, $idUsuario)
+    {
+        if (isset($data['id_actividad']) && $data['id_actividad'] > 0) {
+            // Actualizar
+            $this->actividadModel->actualizar($data['id_actividad'], $actividadData);
+            $message = 'Actividad actualizada correctamente';
+        } else {
+            // Crear
+            $this->actividadModel->crear($actividadData);
+            $message = 'Actividad creada correctamente';
+        }
+
+        // Recalcular materia
+        $this->calculadoraModel->recalcularMateria($data['id_materia'], $idUsuario);
+
+        return $message;
     }
 
     public function delete()
