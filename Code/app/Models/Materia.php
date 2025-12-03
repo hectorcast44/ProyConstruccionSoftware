@@ -138,15 +138,33 @@ class Materia
             throw new MateriaException('No tiene permisos para eliminar esta materia.');
         }
 
-        if ($this->tieneActividades($idMateria)) {
-            throw new MateriaException('No se puede eliminar una materia que tiene actividades asociadas.');
+        try {
+            $this->pdo->beginTransaction();
+
+            // 1. Eliminar actividades asociadas
+            $sqlActividades = "DELETE FROM ACTIVIDAD WHERE id_materia = ?";
+            $stmtAct = $this->pdo->prepare($sqlActividades);
+            $stmtAct->execute([$idMateria]);
+
+            // 2. Eliminar ponderaciones asociadas
+            $sqlPonderaciones = "DELETE FROM PONDERACION WHERE id_materia = ?";
+            $stmtPond = $this->pdo->prepare($sqlPonderaciones);
+            $stmtPond->execute([$idMateria]);
+
+            // 3. Eliminar la materia
+            $sqlMateria = "DELETE FROM MATERIA WHERE id_materia = ? AND id_usuario = ?";
+            $stmtMat = $this->pdo->prepare($sqlMateria);
+            $stmtMat->execute([$idMateria, $idUsuario]);
+
+            $this->pdo->commit();
+
+            return $stmtMat->rowCount() > 0;
+        } catch (\Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw new MateriaException('Error al eliminar la materia: ' . $e->getMessage());
         }
-
-        $sql = "DELETE FROM MATERIA WHERE id_materia = ? AND id_usuario = ?";
-        $sentencia = $this->pdo->prepare($sql);
-        $sentencia->execute([$idMateria, $idUsuario]);
-
-        return $sentencia->rowCount() > 0;
     }
 
     /**
