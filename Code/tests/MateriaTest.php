@@ -37,7 +37,15 @@ class MateriaTest extends TestCase
 
         $stmtInsertMock->expects($this->once())
             ->method('execute')
-            ->with([$id_usuario, $nombre_materia, $calif_minima]);
+            ->with([
+                $id_usuario,
+                $nombre_materia,
+                (float) $calif_minima,
+                0.0, // puntos_ganados
+                0.0, // puntos_perdidos
+                0.0, // puntos_pendientes
+                0.0  // calificacion_actual
+            ]);
 
         $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
@@ -58,7 +66,7 @@ class MateriaTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->stringContains('SELECT COUNT(*) FROM MATERIA'))
+            ->with($this->matchesRegularExpression('/SELECT\s+COUNT\(\*\)\s+FROM\s+MATERIA/i'))
             ->willReturn($stmtCheckMock);
 
         $stmtCheckMock->method('execute')->with([$id_usuario, $nombre_materia]);
@@ -111,12 +119,14 @@ class MateriaTest extends TestCase
 
         $stmtCheckPropiedadMock = $this->createMock(PDOStatement::class);
         $stmtCheckActividadesMock = $this->createMock(PDOStatement::class);
+        $stmtCheckPonderacionesMock = $this->createMock(PDOStatement::class);
         $stmtDeleteMock = $this->createMock(PDOStatement::class);
 
         $this->pdoMock->method('prepare')
             ->willReturnOnConsecutiveCalls(
                 $stmtCheckPropiedadMock,
                 $stmtCheckActividadesMock,
+                $stmtCheckPonderacionesMock,
                 $stmtDeleteMock
             );
 
@@ -125,6 +135,9 @@ class MateriaTest extends TestCase
 
         $stmtCheckActividadesMock->method('execute')->with([$id_materia]);
         $stmtCheckActividadesMock->method('fetchColumn')->willReturn(0);
+
+        $stmtCheckPonderacionesMock->method('execute')->with([$id_materia]);
+        $stmtCheckPonderacionesMock->method('fetchColumn')->willReturn(0);
 
         $stmtDeleteMock->expects($this->once())
             ->method('execute')
@@ -148,7 +161,7 @@ class MateriaTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->stringContains('SELECT * FROM MATERIA'))
+            ->with($this->matchesRegularExpression('/SELECT\s+\*\s+FROM\s+MATERIA/i'))
             ->willReturn($this->stmtMock);
 
         $this->stmtMock->expects($this->once())
