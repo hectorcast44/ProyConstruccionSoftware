@@ -295,21 +295,34 @@ function pintarFilasActividades(cuerpoTabla, filas) {
   }
 
   for (const fila of filas) {
-    const tr = document.createElement('tr');
-    const progreso = generarBadgeProgreso(fila.estado);
-    tr.dataset.idActividad = fila.id;
+    const tr = crearFilaActividad(fila);
+    cuerpoTabla.appendChild(tr);
+  }
 
-    if (fila.id_materia) {
-      tr.dataset.idMateria = fila.id_materia;
-    }
+  activarModoEdicionSiCorresponde(cuerpoTabla);
 
-    if (fila.id_tipo_actividad) {
-      tr.dataset.idTipo = fila.id_tipo_actividad;
-    }
+  globalThis.feather?.replace();
+  verificarTablaVacia();
+}
 
-    const claseTipo = tipoClase(fila.tipo);
+function crearFilaActividad(fila) {
+  const tr = document.createElement('tr');
+  tr.dataset.idActividad = fila.id;
 
-    tr.innerHTML = `
+  if (fila.id_materia) tr.dataset.idMateria = fila.id_materia;
+  if (fila.id_tipo_actividad) tr.dataset.idTipo = fila.id_tipo_actividad;
+
+  try {
+    tr.dataset.puntosObtenidos =
+      fila.obtenido != null ? String(fila.obtenido) : '';
+    tr.dataset.puntosMaximo =
+      fila.maximo != null ? String(fila.maximo) : '';
+  } catch (_) {}
+
+  const claseTipo = tipoClase(fila.tipo);
+  const progreso = generarBadgeProgreso(fila.estado);
+
+  tr.innerHTML = `
       <td>${escapeHtml(fila.fecha)}</td>
       <td>${escapeHtml(fila.nombre)}</td>
       <td>${escapeHtml(fila.materia)}</td>
@@ -317,12 +330,21 @@ function pintarFilasActividades(cuerpoTabla, filas) {
       <td>${progreso}</td>
     `;
 
-    cuerpoTabla.appendChild(tr);
-  }
-
-  globalThis.feather?.replace();
-  verificarTablaVacia();
+  return tr;
 }
+
+function activarModoEdicionSiCorresponde(cuerpoTabla) {
+  try {
+    if (typeof modoEdicionActivo === 'undefined' || !modoEdicionActivo) return;
+
+    const theadRow = document.querySelector('#tabla thead tr');
+
+    try { asegurarHeaderAcciones(theadRow); } catch (_) {}
+    try { agregarAccionesAFilas(cuerpoTabla.querySelectorAll('tr')); } catch (_) {}
+
+  } catch (_) {}
+}
+
 
 function manejarErrorCargaActividades(error, cuerpoTabla) {
   console.error('Error cargando actividades:', error);
@@ -798,8 +820,7 @@ async function esperarOpcionSelect(selectEl, value, timeout = 1200) {
   return false;
 }
 
-
-function editarFila(index) {
+async function editarFila(index) {
   const filas = document.querySelectorAll('#tabla-body tr');
   const tr = filas[index];
 
@@ -808,7 +829,10 @@ function editarFila(index) {
   }
 
   const celdas = tr.querySelectorAll('td');
-  abrirModalNueva();
+  // Asegurar que el modal existe y está inicializado antes de rellenar (evita el primer-load 'Crear')
+  try {
+    await abrirModalNueva();
+  } catch (e) { }
 
   completarFormularioDesdeFila(tr, celdas, index);
 }
@@ -832,7 +856,9 @@ function obtenerCamposFormularioActividad() {
     campoFecha: document.querySelector('#form-actividad [name="fecha"]'),
     campoNombre: document.querySelector('#form-actividad [name="actividad"]'),
     selectMateria: document.querySelector('#form-actividad select[name="materia"]'),
-    selectTipo: document.querySelector('#form-actividad select[name="tipo"]')
+    selectTipo: document.querySelector('#form-actividad select[name="tipo"]'),
+    campoPuntosMax: document.querySelector('#form-actividad [name="puntaje-max"]'),
+    campoPuntosObtenidos: document.querySelector('#form-actividad [name="puntaje"]')
   };
 }
 
@@ -897,6 +923,34 @@ async function completarFormularioDesdeFila(tr, celdas, index) {
   if (formulario) {
     formulario.dataset.editIndex = String(index);
   }
+
+  // Rellenar campos de puntaje desde los atributos de la fila (si existen)
+  try {
+    const puntosObtenidos = tr.dataset.puntosObtenidos || '';
+    const puntosMaximo = tr.dataset.puntosMaximo || '';
+
+    const { campoPuntosObtenidos, campoPuntosMax } = obtenerCamposFormularioActividad();
+
+    if (campoPuntosObtenidos) campoPuntosObtenidos.value = String(puntosObtenidos);
+    if (campoPuntosMax) campoPuntosMax.value = String(puntosMaximo);
+  } catch (err) {
+    console.debug('No se pudieron rellenar puntajes desde la fila:', err);
+  }
+
+  // Ajustar UI del modal para indicar modo edición: cambiar título y texto del botón
+  try {
+    const modal = document.getElementById('modal-nueva');
+    if (modal) {
+      const titleEl = modal.querySelector('.modal-title h2');
+      if (titleEl) titleEl.textContent = 'Editar Actividad';
+      const btnCrear = modal.querySelector('#crear-modal');
+      if (btnCrear) {
+        const span = btnCrear.querySelector('span'); if (span) span.textContent = 'Actualizar';
+        const ico = btnCrear.querySelector('i'); if (ico) ico.setAttribute('data-feather', 'check-circle');
+      }
+      if (window.feather) feather.replace();
+    }
+  } catch (e) { }
 }
 
 function desactivarModoEdicion() {

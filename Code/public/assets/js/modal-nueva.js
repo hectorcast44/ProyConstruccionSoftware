@@ -1,51 +1,70 @@
 function abrirModalNueva() {
-  let modal = document.getElementById('modal-nueva');
+  return new Promise((resolve) => {
+    let modal = document.getElementById('modal-nueva');
 
-  if (!modal) {
-    // cargar parcial del modal (una sola vez)
-    const basePath = globalThis.BASE_URL || '';
-    fetch(basePath + 'partials/modal-nueva.html')
-      .then(r => r.text())
-      .then(html => {
-        document.body.insertAdjacentHTML('beforeend', html);
+    if (!modal) {
+      // cargar parcial del modal (una sola vez)
+      const basePath = globalThis.BASE_URL || '';
+      fetch(basePath + 'partials/modal-nueva.html')
+        .then(r => r.text())
+        .then(html => {
+          document.body.insertAdjacentHTML('beforeend', html);
 
-        // Inicializar listeners del modal (cerrar, submit, feather) y poblar selects
-        inicializarModalNueva();
-        poblarSelectsModal();
+          // Inicializar listeners del modal (cerrar, submit, feather) y poblar selects
+          inicializarModalNueva();
+          poblarSelectsModal();
 
-        // asegurar estado limpio para crear: resetear form e id oculto
-        try {
-          const f = document.getElementById('form-actividad');
-          if (f) {
-            f.reset();
-            delete f.dataset.editIndex;
-          }
-          const hid = document.getElementById('id_actividad');
-          if (hid) hid.value = '';
-        } catch (e) { /* ignore */ }
+          // asegurar estado limpio para crear: resetear form e id oculto
+          try {
+            const f = document.getElementById('form-actividad');
+            if (f) {
+              f.reset();
+              delete f.dataset.editIndex;
+            }
+            const hid = document.getElementById('id_actividad');
+            if (hid) hid.value = '';
+          } catch (e) {  }
 
-        // renderizar iconos dentro del modal
-        if (window.feather) feather.replace();
+          // renderizar iconos dentro del modal
+          if (window.feather) feather.replace();
 
-        // mostrar modal
-        document.getElementById('modal-nueva').showModal();
-      })
-      .catch(err => console.error('Error cargando modal:', err));
-    return;
-  }
-
-  // al abrir (cuando ya existe), limpiar estado por defecto (crear)
-  try {
-    const f = document.getElementById('form-actividad');
-    if (f) {
-      f.reset();
-      delete f.dataset.editIndex;
+          // mostrar modal
+          const created = document.getElementById('modal-nueva');
+          try { created.showModal(); } catch (e) { /* ignore */ }
+          resolve(created);
+        })
+        .catch(err => {
+          console.error('Error cargando modal:', err);
+          resolve(null);
+        });
+      return;
     }
-    const hid = document.getElementById('id_actividad');
-    if (hid) hid.value = '';
-  } catch (e) { /* ignore */ }
 
-  modal.showModal();
+    // al abrir (cuando ya existe), limpiar estado por defecto (crear)
+    try {
+      const f = document.getElementById('form-actividad');
+      if (f) {
+        f.reset();
+        delete f.dataset.editIndex;
+      }
+      const hid = document.getElementById('id_actividad');
+      if (hid) hid.value = '';
+    } catch (e) { }
+
+    // Restaurar texto por defecto (modo crear) cuando se abre sin editar
+    try {
+      const titleEl = modal.querySelector('.modal-title h2');
+      if (titleEl) titleEl.textContent = 'Nueva Actividad';
+      const btnCrear = modal.querySelector('#crear-modal');
+      if (btnCrear) {
+        const span = btnCrear.querySelector('span'); if (span) span.textContent = 'Crear';
+        const ico = btnCrear.querySelector('i'); if (ico) ico.setAttribute('data-feather', 'plus-circle');
+      }
+    } catch (e) { }
+
+    try { modal.showModal(); } catch (e) { /* ignore */ }
+    resolve(modal);
+  });
 }
 
 function inicializarModalNueva() {
@@ -139,16 +158,15 @@ async function poblarSelectsModal() {
   const base = globalThis.BASE_URL || '';
   const selectMateria = document.querySelector('#modal-nueva select[name="materia"]');
   const selectTipo = document.querySelector('#modal-nueva select[name="tipo"]');
-
   if (!selectMateria && !selectTipo) return;
 
   try {
+    // cargar materias
     if (selectMateria) {
       const r = await fetch(base + 'api/materias', { credentials: 'same-origin' });
       const txt = await r.text();
       const json = JSON.parse(txt);
       const materias = json.data || [];
-      // limpiar y poblar - usar placeholder visible para evitar campo en blanco
       const options = materias.map(m => {
         const id = m.id ?? m.id_materia ?? m.idMateria ?? '';
         const nombre = m.nombre ?? m.nombre_materia ?? m.nombreMateria ?? String(id);
@@ -157,28 +175,74 @@ async function poblarSelectsModal() {
       selectMateria.innerHTML = '<option value="" disabled selected>Selecciona una materia</option>' + options;
     }
 
-    if (selectTipo) {
-      // No mostrar tipos por defecto: permanecerá deshabilitado hasta que se seleccione una materia
-      selectTipo.innerHTML = '<option value="" disabled selected>Selecciona una materia primero</option>';
-      selectTipo.disabled = true;
+    // cargar tipos globales UNA VEZ
+    let tiposGlobal = [];
+    try {
+      const r2 = await fetch(base + 'api/tipos-actividad', { credentials: 'same-origin' });
+      const txt2 = await r2.text();
+      const json2 = JSON.parse(txt2);
+      tiposGlobal = (json2 && Array.isArray(json2.data)) ? json2.data : [];
+    } catch (err) {
+      console.warn('No se pudieron cargar tipos globales inicialmente:', err);
+      tiposGlobal = [];
+    }
 
-      // cuando cambie la materia, cargar tipos específicos para esa materia (ponderaciones)
+    // poblar selectTipo con tipos globales (permitir elegir tipo antes de materia)
+    if (selectTipo) {
+      if (tiposGlobal.length) {
+        const opts = tiposGlobal.map(t => {
+          const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+          const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+          return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+        }).join('');
+        selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+        selectTipo.disabled = false;
+      } else {
+        selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos disponibles</option>';
+        selectTipo.disabled = true;
+      }
+    }
+
+    // cuando cambie la materia, preferir cargar los tipos específicos de esa materia (si existen)
+    if (selectMateria && selectTipo) {
       selectMateria.addEventListener('change', async () => {
         const val = selectMateria.value;
         if (!val) {
-          selectTipo.innerHTML = '<option value="" disabled selected>Selecciona una materia primero</option>';
+          // Restaurar tipos globales
+          if (tiposGlobal.length) {
+            const opts = tiposGlobal.map(t => {
+              const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+              const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+              return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+            }).join('');
+            selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+            selectTipo.disabled = false;
+            return;
+          }
+          selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos disponibles</option>';
           selectTipo.disabled = true;
           return;
         }
+
         try {
           const r = await fetch(base + 'api/materias/tipos?id=' + encodeURIComponent(val), { credentials: 'same-origin' });
-          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch (e) { json = null; }
+          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch(e){ json = null; }
           const tiposMat = (json && Array.isArray(json.data)) ? json.data : [];
 
           if (!tiposMat.length) {
-            // No hay tipos asignados para la materia: dejar select vacío y deshabilitado
-            selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
-            selectTipo.disabled = true;
+            // No hay tipos asignados para la materia: mantener los tipos globales o mostrar mensaje
+            if (tiposGlobal.length) {
+              const opts = tiposGlobal.map(t => {
+                const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+                const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+                return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+              }).join('');
+              selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+              selectTipo.disabled = false;
+            } else {
+              selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
+              selectTipo.disabled = false;
+            }
             return;
           }
 
