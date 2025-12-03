@@ -1,20 +1,26 @@
+/**
+ * Abre el modal de actividades en modo "crear".
+ *
+ * - Si el HTML del modal aún no está en el DOM, lo carga desde un parcial.
+ * - Siempre limpia el formulario y el id oculto antes de mostrarlo.
+ * - Devuelve una Promise que resuelve con el <dialog> o null si algo falla.
+ *
+ * @returns {Promise<HTMLDialogElement|null>}
+ */
 function abrirModalNueva() {
   return new Promise((resolve) => {
     let modal = document.getElementById('modal-nueva');
 
     if (!modal) {
-      // cargar parcial del modal (una sola vez)
       const basePath = globalThis.BASE_URL || '';
       fetch(basePath + 'partials/modal-nueva.html')
-        .then(r => r.text())
-        .then(html => {
+        .then((r) => r.text())
+        .then((html) => {
           document.body.insertAdjacentHTML('beforeend', html);
 
-          // Inicializar listeners del modal (cerrar, submit, feather) y poblar selects
           inicializarModalNueva();
           poblarSelectsModal();
 
-          // asegurar estado limpio para crear: resetear form e id oculto
           try {
             const f = document.getElementById('form-actividad');
             if (f) {
@@ -23,24 +29,24 @@ function abrirModalNueva() {
             }
             const hid = document.getElementById('id_actividad');
             if (hid) hid.value = '';
-          } catch (e) {  }
+          } catch (e) {}
 
-          // renderizar iconos dentro del modal
           if (window.feather) feather.replace();
 
-          // mostrar modal
           const created = document.getElementById('modal-nueva');
-          try { created.showModal(); } catch (e) { /* ignore */ }
+          try {
+            created.showModal();
+          } catch (e) {}
           resolve(created);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error('Error cargando modal:', err);
           resolve(null);
         });
+
       return;
     }
 
-    // al abrir (cuando ya existe), limpiar estado por defecto (crear)
     try {
       const f = document.getElementById('form-actividad');
       if (f) {
@@ -49,24 +55,35 @@ function abrirModalNueva() {
       }
       const hid = document.getElementById('id_actividad');
       if (hid) hid.value = '';
-    } catch (e) { }
+    } catch (e) {}
 
-    // Restaurar texto por defecto (modo crear) cuando se abre sin editar
     try {
       const titleEl = modal.querySelector('.modal-title h2');
       if (titleEl) titleEl.textContent = 'Nueva Actividad';
       const btnCrear = modal.querySelector('#crear-modal');
       if (btnCrear) {
-        const span = btnCrear.querySelector('span'); if (span) span.textContent = 'Crear';
-        const ico = btnCrear.querySelector('i'); if (ico) ico.setAttribute('data-feather', 'plus-circle');
+        const span = btnCrear.querySelector('span');
+        if (span) span.textContent = 'Crear';
+        const ico = btnCrear.querySelector('i');
+        if (ico) ico.setAttribute('data-feather', 'plus-circle');
       }
-    } catch (e) { }
+    } catch (e) {}
 
-    try { modal.showModal(); } catch (e) { /* ignore */ }
+    try {
+      modal.showModal();
+    } catch (e) {}
+
     resolve(modal);
   });
 }
 
+/**
+ * Configura un input para aceptar únicamente números enteros positivos,
+ * reforzando restricciones tanto a nivel de atributos como de evento input.
+ *
+ * @param {HTMLInputElement|null} input
+ * @returns {void}
+ */
 function configurarInputNumerico(input) {
   if (!input) return;
 
@@ -83,13 +100,19 @@ function configurarInputNumerico(input) {
 
   input.addEventListener('input', (ev) => {
     const v = ev.target.value || '';
-    // Sonar: replaceAll no aplica porque esta expresión requiere flags.
     const cleaned = String(v).replace(/[^0-9]/g, '');
     if (cleaned !== v) ev.target.value = cleaned;
   });
 }
 
-
+/**
+ * Inicializa el modal de actividades:
+ * - Gestiona cierre.
+ * - Configura validación manual del formulario.
+ * - Envía los datos al backend en formato JSON.
+ *
+ * @returns {void}
+ */
 function inicializarModalNueva() {
   const modal = document.getElementById('modal-nueva');
   const cerrar = document.getElementById('cerrar-modal');
@@ -97,50 +120,55 @@ function inicializarModalNueva() {
 
   if (!modal || !form) return;
 
-  // cerrar
   if (cerrar) cerrar.addEventListener('click', () => modal.close());
 
-  // Desactivar la validación nativa para controlar validaciones desde JS
   form.noValidate = true;
 
-  // Asegurar que los campos de puntaje sólo acepten valores numéricos positivos
   try {
-    
     const inputMax = form.querySelector('[name="puntaje-max"]');
     const inputObt = form.querySelector('[name="puntaje"]');
     configurarInputNumerico(inputMax);
     configurarInputNumerico(inputObt);
-
   } catch (err) {
     console.debug('No se pudieron inicializar validaciones de puntaje:', err);
   }
 
-  // submit del form: enviar al backend via fetch (JSON)
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Construir payload según espera ActividadController::store()
     const f = new FormData(form);
 
     const payload = {
-      // include id_actividad when editing (modal sets hidden input)
       ...(f.get('id_actividad') ? { id_actividad: Number(f.get('id_actividad')) } : {}),
       id_materia: f.get('materia') ? Number(f.get('materia')) : null,
       id_tipo_actividad: f.get('tipo') ? Number(f.get('tipo')) : null,
       nombre_actividad: f.get('actividad') || '',
       fecha_entrega: f.get('fecha') || '',
       estado: 'pendiente',
-      puntos_posibles: f.get('puntaje-max') !== null && f.get('puntaje-max') !== '' ? Number(f.get('puntaje-max')) : null,
-      puntos_obtenidos: f.get('puntaje') !== null && f.get('puntaje') !== '' ? Number(f.get('puntaje')) : null
+      puntos_posibles:
+        f.get('puntaje-max') !== null && f.get('puntaje-max') !== ''
+          ? Number(f.get('puntaje-max'))
+          : null,
+      puntos_obtenidos:
+        f.get('puntaje') !== null && f.get('puntaje') !== ''
+          ? Number(f.get('puntaje'))
+          : null
     };
 
-    // Validación mínima (controlada por JS porque desactivamos la validación nativa)
-    if (!payload.id_materia || !payload.id_tipo_actividad || !payload.nombre_actividad || payload.puntos_posibles === null || payload.fecha_entrega === '') {
-      showToast('Por favor completa los campos obligatorios: Materia, Tipo, Actividad, Puntaje máximo y Fecha.', { type: 'error' });
+    if (
+      !payload.id_materia ||
+      !payload.id_tipo_actividad ||
+      !payload.nombre_actividad ||
+      payload.puntos_posibles === null ||
+      payload.fecha_entrega === ''
+    ) {
+      showToast(
+        'Por favor completa los campos obligatorios: Materia, Tipo, Actividad, Puntaje máximo y Fecha.',
+        { type: 'error' }
+      );
       return;
     }
 
-    // Validar que los puntajes sean positivos (> 0)
     if (payload.puntos_posibles !== null && Number(payload.puntos_posibles) <= 0) {
       showToast('El puntaje máximo debe ser un número positivo.', { type: 'error' });
       return;
@@ -162,13 +190,18 @@ function inicializarModalNueva() {
 
       const txt = await res.text();
       let json = null;
-      try { json = JSON.parse(txt); } catch (e) { throw new Error('Respuesta inválida del servidor'); }
 
-      if (!res.ok) throw new Error(json.message || ('HTTP ' + res.status));
+      try {
+        json = JSON.parse(txt);
+      } catch (e) {
+        throw new Error('Respuesta inválida del servidor');
+      }
 
-      // éxito: cerrar modal y refrescar listas si hay funciones globales
+      if (!res.ok) throw new Error(json.message || `HTTP ${res.status}`);
+
       form.reset();
       modal.close();
+
       try {
         if (typeof window.cargarActividadesDesdeAPI === 'function') {
           window.cargarActividadesDesdeAPI();
@@ -176,12 +209,10 @@ function inicializarModalNueva() {
           window.cargarActividades();
         }
 
-        // refrescar lista de materias si existe
         if (typeof window.cargarMateriasDesdeAPI === 'function') {
           window.cargarMateriasDesdeAPI();
         }
 
-        // refrescar vista de detalle si está presente
         if (typeof window.cargarDetalleMateria === 'function') {
           window.cargarDetalleMateria();
         }
@@ -189,9 +220,7 @@ function inicializarModalNueva() {
         console.warn('No se pudieron invocar funciones de recarga tras crear actividad', e);
       }
 
-      // notificación no bloqueante
       showToast(json.message || 'Actividad creada', { type: 'success' });
-
     } catch (err) {
       console.error('Error creando actividad:', err);
       showToast('Error al crear actividad: ' + (err.message || err), { type: 'error' });
@@ -199,110 +228,151 @@ function inicializarModalNueva() {
   });
 }
 
-// Poblar selects de materia y tipo usando la API
+/**
+ * Pobla los selects de Materia y Tipo dentro del modal usando la API.
+ *
+ * Comportamiento:
+ * - Carga todas las materias disponibles.
+ * - Intenta obtener un catálogo global de tipos de actividad.
+ * - Cuando cambia la materia, intenta traer tipos específicos para esa materia.
+ *   Si no existen, reutiliza los tipos globales o muestra un mensaje.
+ *
+ * @returns {Promise<void>}
+ */
 async function poblarSelectsModal() {
   const base = globalThis.BASE_URL || '';
   const selectMateria = document.querySelector('#modal-nueva select[name="materia"]');
   const selectTipo = document.querySelector('#modal-nueva select[name="tipo"]');
+
   if (!selectMateria && !selectTipo) return;
 
   try {
-    // cargar materias
     if (selectMateria) {
       const r = await fetch(base + 'api/materias', { credentials: 'same-origin' });
       const txt = await r.text();
       const json = JSON.parse(txt);
       const materias = json.data || [];
-      const options = materias.map(m => {
-        const id = m.id ?? m.id_materia ?? m.idMateria ?? '';
-        const nombre = m.nombre ?? m.nombre_materia ?? m.nombreMateria ?? String(id);
-        return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
-      }).join('');
-      selectMateria.innerHTML = '<option value="" disabled selected>Selecciona una materia</option>' + options;
+      const options = materias
+        .map((m) => {
+          const id = m.id ?? m.id_materia ?? m.idMateria ?? '';
+          const nombre = m.nombre ?? m.nombre_materia ?? m.nombreMateria ?? String(id);
+          return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+        })
+        .join('');
+      selectMateria.innerHTML =
+        '<option value="" disabled selected>Selecciona una materia</option>' + options;
     }
 
-    // cargar tipos globales UNA VEZ
     let tiposGlobal = [];
     try {
       const r2 = await fetch(base + 'api/tipos-actividad', { credentials: 'same-origin' });
       const txt2 = await r2.text();
       const json2 = JSON.parse(txt2);
-      tiposGlobal = (json2 && Array.isArray(json2.data)) ? json2.data : [];
+      tiposGlobal = json2 && Array.isArray(json2.data) ? json2.data : [];
     } catch (err) {
       console.warn('No se pudieron cargar tipos globales inicialmente:', err);
       tiposGlobal = [];
     }
 
-    // poblar selectTipo con tipos globales (permitir elegir tipo antes de materia)
     if (selectTipo) {
       if (tiposGlobal.length) {
-        const opts = tiposGlobal.map(t => {
-          const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
-          const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
-          return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
-        }).join('');
-        selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+        const opts = tiposGlobal
+          .map((t) => {
+            const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+            const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+            return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+          })
+          .join('');
+        selectTipo.innerHTML =
+          '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
         selectTipo.disabled = false;
       } else {
-        selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos disponibles</option>';
+        selectTipo.innerHTML =
+          '<option value="" disabled selected>No hay tipos disponibles</option>';
         selectTipo.disabled = true;
       }
     }
 
-    // cuando cambie la materia, preferir cargar los tipos específicos de esa materia (si existen)
     if (selectMateria && selectTipo) {
       selectMateria.addEventListener('change', async () => {
         const val = selectMateria.value;
+
         if (!val) {
-          // Restaurar tipos globales
           if (tiposGlobal.length) {
-            const opts = tiposGlobal.map(t => {
-              const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
-              const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
-              return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
-            }).join('');
-            selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+            const opts = tiposGlobal
+              .map((t) => {
+                const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+                const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+                return `<option value="${escapeHtml(String(id))}">${escapeHtml(
+                  nombre
+                )}</option>`;
+              })
+              .join('');
+            selectTipo.innerHTML =
+              '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
             selectTipo.disabled = false;
             return;
           }
-          selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos disponibles</option>';
+
+          selectTipo.innerHTML =
+            '<option value="" disabled selected>No hay tipos disponibles</option>';
           selectTipo.disabled = true;
           return;
         }
 
         try {
-          const r = await fetch(base + 'api/materias/tipos?id=' + encodeURIComponent(val), { credentials: 'same-origin' });
-          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch(e){ json = null; }
-          const tiposMat = (json && Array.isArray(json.data)) ? json.data : [];
+          const r = await fetch(
+            base + 'api/materias/tipos?id=' + encodeURIComponent(val),
+            { credentials: 'same-origin' }
+          );
+          const txt = await r.text();
+          let json = null;
+          try {
+            json = JSON.parse(txt);
+          } catch (e) {
+            json = null;
+          }
+          const tiposMat = json && Array.isArray(json.data) ? json.data : [];
 
           if (!tiposMat.length) {
-            // No hay tipos asignados para la materia: mantener los tipos globales o mostrar mensaje
             if (tiposGlobal.length) {
-              const opts = tiposGlobal.map(t => {
-                const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
-                const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
-                return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
-              }).join('');
-              selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+              const opts = tiposGlobal
+                .map((t) => {
+                  const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+                  const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+                  return `<option value="${escapeHtml(String(id))}">${escapeHtml(
+                    nombre
+                  )}</option>`;
+                })
+                .join('');
+              selectTipo.innerHTML =
+                '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
               selectTipo.disabled = false;
             } else {
-              selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
+              selectTipo.innerHTML =
+                '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
               selectTipo.disabled = false;
             }
             return;
           }
 
-          const opts = tiposMat.map(t => {
-            const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
-            const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
-            return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
-          }).join('');
+          const opts = tiposMat
+            .map((t) => {
+              const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+              const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+              return `<option value="${escapeHtml(String(id))}">${escapeHtml(
+                nombre
+              )}</option>`;
+            })
+            .join('');
 
-          selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+          selectTipo.innerHTML =
+            '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
           selectTipo.disabled = false;
         } catch (e) {
           console.warn('No se pudieron cargar tipos de materia:', e);
-          selectTipo.innerHTML = '<option value="" disabled selected>Error cargando tipos</option>';
+          selectTipo.innerHTML =
+            '<option value="" disabled selected>Error cargando tipos</option>';
           selectTipo.disabled = true;
         }
       });
@@ -311,10 +381,27 @@ async function poblarSelectsModal() {
     console.warn('No se pudieron poblar selects del modal:', e);
   }
 
-  function escapeHtml(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", "&#39;"); }
+  function escapeHtml(s) {
+    return String(s || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
 }
 
-// Toast helper: muestra notificaciones temporales en la esquina inferior derecha
+/**
+ * Muestra notificaciones flotantes en pantalla.
+ *
+ * - Crea un contenedor fijo si no existe.
+ * - Inserta un toast con estilos inline para no depender de CSS externo.
+ * - Se cierra automáticamente tras `duration` ms o al hacer clic.
+ *
+ * @param {string} message Texto a mostrar en el toast.
+ * @param {{duration?: number, type?: 'info'|'success'|'error'}} [options]
+ * @returns {HTMLDivElement|undefined}
+ */
 function showToast(message, { duration = 4000, type = 'info' } = {}) {
   try {
     let container = document.getElementById('toast-container');
@@ -341,7 +428,8 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
       pointerEvents: 'auto',
       minWidth: '200px',
       maxWidth: '360px',
-      background: type === 'error' ? '#ff4d4f' : (type === 'success' ? '#22c55e' : '#333'),
+      background:
+        type === 'error' ? '#ff4d4f' : type === 'success' ? '#22c55e' : '#333',
       color: '#fff',
       padding: '10px 14px',
       borderRadius: '8px',
@@ -354,7 +442,6 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
 
     container.appendChild(toast);
 
-    // force reflow then show
     void toast.offsetWidth;
     toast.style.opacity = '1';
     toast.style.transform = 'translateY(0)';
@@ -362,12 +449,19 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
     const hide = () => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(8px)';
-      setTimeout(() => { try { toast.remove(); } catch (e) { } }, 260);
+      setTimeout(() => {
+        try {
+          toast.remove();
+        } catch (e) {}
+      }, 260);
     };
 
     const timer = setTimeout(hide, duration);
 
-    toast.addEventListener('click', () => { clearTimeout(timer); hide(); });
+    toast.addEventListener('click', () => {
+      clearTimeout(timer);
+      hide();
+    });
 
     return toast;
   } catch (e) {
