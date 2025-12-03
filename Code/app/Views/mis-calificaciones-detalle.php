@@ -1,22 +1,23 @@
 <?php
-  if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-  }
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
 
-  if (empty($_SESSION['id_usuario'])) {
-      header('Location: /auth/login');
-      exit;
-  }
+if (empty($_SESSION['id_usuario'])) {
+  header('Location: /auth/login');
+  exit;
+}
 
-  $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
-  $dirName = dirname($scriptName);
-  if ($dirName === '.' || $dirName === '/') {
-      $dirName = '';
-  }
-  $baseUrl = rtrim($dirName, '/') . '/';
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+$dirName = dirname($scriptName);
+if ($dirName === '.' || $dirName === '/') {
+  $dirName = '';
+}
+$baseUrl = rtrim($dirName, '/') . '/';
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -72,6 +73,12 @@
         <!-- usa las clases de table-theme.css -->
         <div class="item-table-wrapper">
           <table class="item-table">
+            <thead>
+              <tr>
+                <th>Concepto</th>
+                <th class="right">Valor</th>
+              </tr>
+            </thead>
             <tbody>
               <tr data-field="porcentaje-obtenido">
                 <td>Porcentaje obtenido %</td>
