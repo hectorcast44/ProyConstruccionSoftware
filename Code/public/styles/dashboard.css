@@ -38,7 +38,7 @@
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
-.search-input:focus ~ i[data-feather="search"],
+.search-input:focus~i[data-feather="search"],
 .search-content:focus-within i[data-feather="search"] {
   color: #4a90e2;
 }
@@ -69,7 +69,7 @@
   background-color: #dbdbff;
   width: 20px;
   max-width: 50px;
-  overflow: hidden;  
+  overflow: hidden;
 }
 
 .dashboard-table-wrapper td {
@@ -80,6 +80,9 @@
   font-size: 14px;
   vertical-align: middle;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dashboard-table-wrapper td:last-child,
@@ -105,7 +108,7 @@
   justify-content: center;
 }
 
-.btn-edit-fila, 
+.btn-edit-fila,
 .btn-delete-fila {
   background: none;
   border: none;
@@ -147,9 +150,9 @@
   font-size: 13px;
   font-weight: 500;
   border: 1.5px solid;
-  cursor: pointer;  
-  -webkit-user-select: none; 
-  -moz-user-select: none;  
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
 }
@@ -189,20 +192,20 @@
 */
 
 .content-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .search-box {
   position: relative;
   height: 40px;
-  width: 40px; 
+  width: 40px;
   transition: width 0.3s ease;
 }
 
 .search-box:focus-within {
-  width: 300px; 
+  width: 300px;
 }
 
 .d-search-icon {
@@ -226,7 +229,7 @@
   left: 0;
   height: 100%;
   width: 100%;
-  padding: 0 10px 0 38px; 
+  padding: 0 10px 0 38px;
   border: 1px solid #ddd;
   border-radius: 20px;
   font-size: 14px;
@@ -234,7 +237,7 @@
   transition: all 0.3s ease;
   background: transparent;
   border-color: transparent;
-  color: transparent; 
+  color: transparent;
 }
 
 .d-search-input::placeholder {
@@ -245,51 +248,53 @@
 .search-box:focus-within .d-search-input {
   background-color: #fff;
   border-color: #b6b6b6;
-  color: #000; 
+  color: #000;
   box-shadow: 0 0 0 3px rgba(124, 124, 124, 0.1);
   cursor: text;
 }
 
 .search-box:focus-within .d-search-input::placeholder {
-    color: #9c9c9c;
+  color: #9c9c9c;
 }
 
 /* Boton eliminar masivo */
 .modal-eliminar-masivo {
-  background:#fff;
-  padding:18px;
-  border-radius:8px;
-  max-width:520px;
-  width:92%;
-  box-shadow:0 10px 30px rgba(0,0,0,0.15);
+  background: #fff;
+  padding: 18px;
+  border-radius: 8px;
+  max-width: 520px;
+  width: 92%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
 .modal-eliminar-masivo h3 {
-  margin:0 0 8px 0;
-  font-size:1.05rem
+  margin: 0 0 8px 0;
+  font-size: 1.05rem
 }
 
 .modal-eliminar-masivo p {
-  margin:0 0 14px 0;
-  color:#333;
+  margin: 0 0 14px 0;
+  color: #333;
 }
 
 .modal-eliminar-masivo div {
-  display:flex;
-  gap:8px;
-  justify-content:flex-end;
-  margin-top:8px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
+
 .modal-eliminar-masivo button {
-  background:#eee;
-  border:0;
-  padding:8px 12px;
-  border-radius:6px;
+  background: #eee;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
   cursor: pointer;
 }
+
 .modal-eliminar-masivo button.btn-delete-fila {
-  background:#d9534f;
-  color:#fff;
+  background: #d9534f;
+  color: #fff;
 }
 
 
