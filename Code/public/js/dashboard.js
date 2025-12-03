@@ -57,6 +57,31 @@ function escapeHtml(texto) {
     .replaceAll("'", '&#39;');
 }
 
+/**
+ * Actualiza el título y el texto del botón del modal de actividad
+ * según el modo actual (crear/editar).
+ *
+ * @param {'crear'|'editar'} modo
+ * @returns {void}
+ */
+function actualizarUiModalActividad(modo) {
+  const titulo = document.getElementById('modal-actividad-titulo');
+  const btnSubmit = document.getElementById('modal-actividad-submit');
+
+  if (!titulo || !btnSubmit) {
+    return;
+  }
+
+  if (modo === 'editar') {
+    titulo.textContent = 'Editar actividad';
+    btnSubmit.textContent = 'Guardar';
+  } else {
+    // modo "crear" por defecto
+    titulo.textContent = 'Nueva actividad';
+    btnSubmit.textContent = 'Crear';
+  }
+}
+
 /* ==========================================================
    ESTADO Y NORMALIZADORES
    ========================================================== */
@@ -99,7 +124,7 @@ function normalizeEstado(raw) {
  * @returns {string} Clase CSS asociada.
  */
 function tipoClase(raw) {
-  if (!raw && raw !== 0) {
+  if (!raw && !raw === 0) {
     return 'tag-agua';
   }
 
@@ -283,7 +308,9 @@ function generarBadgeProgreso(estado) {
     etiqueta = 'Listo';
   }
 
-  return `<span class="progress-badge ${clase}" data-progreso="${escapeHtml(est)}">${escapeHtml(etiqueta)}</span>`;
+  return `<span class="progress-badge ${clase}" data-progreso="${escapeHtml(
+    est
+  )}">${escapeHtml(etiqueta)}</span>`;
 }
 
 function pintarFilasActividades(cuerpoTabla, filas) {
@@ -297,6 +324,7 @@ function pintarFilasActividades(cuerpoTabla, filas) {
   for (const fila of filas) {
     const tr = document.createElement('tr');
     const progreso = generarBadgeProgreso(fila.estado);
+
     tr.dataset.idActividad = fila.id;
 
     if (fila.id_materia) {
@@ -306,6 +334,10 @@ function pintarFilasActividades(cuerpoTabla, filas) {
     if (fila.id_tipo_actividad) {
       tr.dataset.idTipo = fila.id_tipo_actividad;
     }
+
+    // Guardar puntos en data-* (no se muestran en la tabla)
+    tr.dataset.maximo = fila.maximo ?? '';
+    tr.dataset.obtenido = fila.obtenido ?? '';
 
     const claseTipo = tipoClase(fila.tipo);
 
@@ -620,9 +652,9 @@ function aplicarFiltroBusqueda(textoFiltro) {
 
 function inicializarBuscador() {
   const searchInput =
-    document.getElementById('d-search-input')
-    || document.getElementById('search-input')
-    || document.querySelector('.search-input');
+    document.getElementById('d-search-input') ||
+    document.getElementById('search-input') ||
+    document.querySelector('.search-input');
 
   const searchToggle = document.getElementById('search-toggle');
   const searchWrapper = document.getElementById('dashboard-search-input-wrapper');
@@ -774,35 +806,12 @@ document.addEventListener('click', (evento) => {
    EDICIÓN INDIVIDUAL DE FILAS
    ========================================================== */
 
-async function esperarOpcionSelect(selectEl, value, timeout = 1200) {
-  if (!selectEl) {
-    return true;
-  }
-
-  const inicio = Date.now();
-  const valorTexto = String(value);
-
-  while (Date.now() - inicio < timeout) {
-    try {
-      const existe = Array.from(selectEl.options).some(
-        (opcion) => String(opcion.value) === valorTexto
-      );
-
-      if (existe) {
-        return true;
-      }
-    } catch (error) {
-      console.warn('Error comprobando opción en select:', error);
-      return false;
-    }
-
-    // eslint-disable-next-line no-await-in-loop
-    await new Promise((resolver) => setTimeout(resolver, 50));
-  }
-
-  return false;
-}
-
+/**
+ * Acción al pulsar el botón de editar para una fila.
+ *
+ * @param {number} index Índice de la fila en el tbody.
+ * @returns {void}
+ */
 function editarFila(index) {
   const filas = document.querySelectorAll('#tabla-body tr');
   const tr = filas[index];
@@ -812,8 +821,12 @@ function editarFila(index) {
   }
 
   const celdas = tr.querySelectorAll('td');
-  abrirModalNueva();
 
+  if (typeof abrirModalNueva === 'function') {
+    abrirModalNueva();
+  }
+
+  actualizarUiModalActividad('editar');
   completarFormularioDesdeFila(tr, celdas, index);
 }
 
@@ -821,6 +834,12 @@ function editarFila(index) {
    Helpers para edición de una fila
    ========================================= */
 
+/**
+ * Obtiene los IDs almacenados como data-* en la fila.
+ *
+ * @param {HTMLTableRowElement} tr
+ * @returns {{idActividad: string, idMateria: string, idTipo: string}}
+ */
 function obtenerIdsDesdeFila(tr) {
   return {
     idActividad: tr.dataset.idActividad || '',
@@ -829,6 +848,33 @@ function obtenerIdsDesdeFila(tr) {
   };
 }
 
+/**
+ * Obtiene los puntos máximo y obtenidos desde los data-* de la fila.
+ *
+ * @param {HTMLTableRowElement} tr
+ * @returns {{maximo: string, obtenido: string}}
+ */
+function obtenerPuntosDesdeFila(tr) {
+  return {
+    maximo: tr.dataset.maximo || '',
+    obtenido: tr.dataset.obtenido || ''
+  };
+}
+
+/**
+ * Devuelve referencias a los campos del formulario de actividad.
+ *
+ * @returns {{
+ *  formulario: HTMLFormElement|null,
+ *  campoIdOculto: HTMLInputElement|null,
+ *  campoFecha: HTMLInputElement|null,
+ *  campoNombre: HTMLInputElement|null,
+ *  selectMateria: HTMLSelectElement|null,
+ *  selectTipo: HTMLSelectElement|null,
+ *  campoPuntosMax: HTMLInputElement|null,
+ *  campoPuntos: HTMLInputElement|null
+ * }}
+ */
 function obtenerCamposFormularioActividad() {
   return {
     formulario: document.getElementById('form-actividad'),
@@ -836,10 +882,20 @@ function obtenerCamposFormularioActividad() {
     campoFecha: document.querySelector('#form-actividad [name="fecha"]'),
     campoNombre: document.querySelector('#form-actividad [name="actividad"]'),
     selectMateria: document.querySelector('#form-actividad select[name="materia"]'),
-    selectTipo: document.querySelector('#form-actividad select[name="tipo"]')
+    selectTipo: document.querySelector('#form-actividad select[name="tipo"]'),
+    campoPuntosMax: document.querySelector('#form-actividad [name="puntaje-max"]'),
+    campoPuntos: document.querySelector('#form-actividad [name="puntaje"]')
   };
 }
 
+/**
+ * Rellena los campos de texto básicos (fecha y nombre) desde las celdas.
+ *
+ * @param {NodeListOf<HTMLTableCellElement>} celdas
+ * @param {HTMLInputElement|null} campoFecha
+ * @param {HTMLInputElement|null} campoNombre
+ * @returns {void}
+ */
 function rellenarCamposTextoBasicos(celdas, campoFecha, campoNombre) {
   if (campoFecha && celdas[0]) {
     campoFecha.value = celdas[0].textContent.trim();
@@ -850,33 +906,53 @@ function rellenarCamposTextoBasicos(celdas, campoFecha, campoNombre) {
   }
 }
 
-async function seleccionarOpcionEnSelect(selectEl, idValor, textoCelda) {
+/**
+ * Selecciona una opción en un <select>:
+ * - Primero intenta por el valor (id)
+ * - Si no encuentra, intenta por el texto visible de la celda
+ *
+ * @param {HTMLSelectElement|null} selectEl
+ * @param {string} idValor
+ * @param {HTMLTableCellElement} [textoCelda]
+ * @returns {void}
+ */
+function seleccionarOpcionEnSelect(selectEl, idValor, textoCelda) {
   if (!selectEl) {
     return;
   }
 
+  const texto = textoCelda ? textoCelda.textContent.trim() : '';
+
   if (idValor) {
-    const existe = await esperarOpcionSelect(selectEl, idValor);
-    if (existe) {
-      selectEl.value = String(idValor);
-      return;
+    const idStr = String(idValor);
+    for (const opcion of selectEl.options) {
+      if (opcion.value === idStr) {
+        selectEl.value = idStr;
+        return;
+      }
     }
   }
 
-  if (!textoCelda) {
+  if (!texto) {
     return;
   }
 
-  const textoNormalizado = textoCelda.textContent.trim();
-
   for (const opcion of selectEl.options) {
-    if (opcion.textContent.trim() === textoNormalizado) {
+    if (opcion.textContent.trim() === texto) {
       selectEl.value = opcion.value;
-      break;
+      return;
     }
   }
 }
 
+/**
+ * Completa el formulario del modal usando los datos de la fila seleccionada.
+ *
+ * @param {HTMLTableRowElement} tr
+ * @param {NodeListOf<HTMLTableCellElement>} celdas
+ * @param {number} index
+ * @returns {Promise<void>}
+ */
 async function completarFormularioDesdeFila(tr, celdas, index) {
   const {
     formulario,
@@ -884,16 +960,46 @@ async function completarFormularioDesdeFila(tr, celdas, index) {
     campoFecha,
     campoNombre,
     selectMateria,
-    selectTipo
+    selectTipo,
+    campoPuntosMax,
+    campoPuntos
   } = obtenerCamposFormularioActividad();
 
   const { idActividad, idMateria, idTipo } = obtenerIdsDesdeFila(tr);
+  const { maximo, obtenido } = obtenerPuntosDesdeFila(tr);
 
+  // 1) Campos básicos
   rellenarCamposTextoBasicos(celdas, campoFecha, campoNombre);
 
-  await seleccionarOpcionEnSelect(selectMateria, idMateria, celdas[2]);
-  await seleccionarOpcionEnSelect(selectTipo, idTipo, celdas[3]);
+  // 2) Puntos máximo y obtenido
+  if (campoPuntosMax) {
+    campoPuntosMax.value = maximo || '';
+  }
 
+  if (campoPuntos) {
+    campoPuntos.value = obtenido || '';
+  }
+
+  // 3) Seleccionar materia (por id o texto)
+  seleccionarOpcionEnSelect(selectMateria, idMateria, celdas[2]);
+
+  // Disparar change para que se carguen los tipos según la materia
+  if (selectMateria) {
+    const changeEvent = new Event('change', { bubbles: true });
+    selectMateria.dispatchEvent(changeEvent);
+  }
+
+  // 4) Pequeña espera para que se llenen las opciones del select de tipo (si se cargan dinámicamente)
+  await new Promise((resolver) => setTimeout(resolver, 150));
+
+  // 5) Seleccionar tipo
+  seleccionarOpcionEnSelect(selectTipo, idTipo, celdas[3]);
+
+  if (selectTipo) {
+    selectTipo.disabled = false;
+  }
+
+  // 6) ID oculto e índice de edición
   if (campoIdOculto && idActividad) {
     campoIdOculto.value = String(idActividad);
   }
@@ -903,6 +1009,12 @@ async function completarFormularioDesdeFila(tr, celdas, index) {
   }
 }
 
+/**
+ * Intenta desactivar el modo edición si está activo,
+ * para mantener coherente la columna de acciones.
+ *
+ * @returns {void}
+ */
 function desactivarModoEdicion() {
   try {
     if (modoEdicionActivo !== undefined && modoEdicionActivo) {
@@ -919,6 +1031,12 @@ function desactivarModoEdicion() {
 }
 globalThis.desactivarModoEdicion = desactivarModoEdicion;
 
+/**
+ * Elimina una fila (actividad) individual, tanto del servidor como de la UI.
+ *
+ * @param {number} index Índice de la fila en el tbody.
+ * @returns {void}
+ */
 function eliminarFila(index) {
   (async () => {
     const filas = document.querySelectorAll('#tabla-body tr');
@@ -1003,7 +1121,6 @@ document.addEventListener('click', (evento) => {
     cambiarProgreso(badge);
   }
 });
-
 
 const ESTADOS_PROGRESO = ['pendiente', 'en curso', 'listo'];
 
