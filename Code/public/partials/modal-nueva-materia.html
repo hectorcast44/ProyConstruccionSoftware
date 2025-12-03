@@ -12,35 +12,37 @@
         </div>
 
         <div class="modal-form-section">
-          <input type="text" name="nombre_materia" id="nombre_materia" class="modal-form-input" placeholder=" " required />
+          <input type="text" name="nombre_materia" id="nombre_materia" class="modal-form-input" placeholder=" "
+            required />
           <label for="nombre_materia" class="modal-form-label"> Nombre de la materia </label>
         </div>
 
         <div class="modal-form-section">
-          <input type="number" name="calif_minima" id="calif_minima" class="modal-form-input" placeholder=" " min="0" max="100" value="70" />
+          <input type="number" name="calif_minima" id="calif_minima" class="modal-form-input" placeholder=" " min="0"
+            max="100" value="70" />
           <label for="calif_minima" class="modal-form-label"> Calificación mínima (%) </label>
         </div>
-       
-        <div class="modal-form-section" id="tipos-por-materia-section">
-    
-            <label class="label-tipos">Tipos asignables</label>
 
-            <div id="tipos-checkboxes" class="tipos-list"
-                style="display:flex;flex-direction:column;gap:6px;max-height:220px;
+        <div class="modal-form-section" id="tipos-por-materia-section">
+
+          <span class="label-tipos">Tipos asignables</span>
+
+          <div id="tipos-checkboxes" class="tipos-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;
                         overflow:auto;padding:6px;border:1px solid #eee;
                         border-radius:6px;background:#fafafa;margin-top:8px;">
-                <!-- checkboxes se inyectan aquí -->
-            </div>
+            <!-- checkboxes se inyectan aquí -->
+          </div>
 
-            <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-                <input type="text" id="nuevo-tipo-nombre" class="modal-form-input"
-                      placeholder="Nuevo tipo (ej. Tarea)" style="flex:1;" />
-                <button type="button" id="btn-crear-tipo-inline" class="boton-crear" style="padding:6px 10px;">Crear</button>
-            </div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <input type="text" id="nuevo-tipo-nombre" class="modal-form-input" placeholder="Nuevo tipo (ej. Tarea)"
+              style="flex:1;" />
+            <button type="button" id="btn-crear-tipo-inline" class="boton-crear"
+              style="padding:6px 10px;">Crear</button>
+          </div>
 
-            <small style="display:block;margin-top:6px;color:#666;">
-                Marca los tipos que correspondan a esta materia. Puedes crear nuevos tipos aquí.
-            </small>
+          <small style="display:block;margin-top:6px;color:#666;">
+            Marca los tipos que correspondan a esta materia. Puedes crear nuevos tipos aquí.
+          </small>
         </div>
 
 
