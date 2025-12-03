@@ -80,6 +80,40 @@ function inicializarModalNueva() {
   // Desactivar la validación nativa para controlar validaciones desde JS
   form.noValidate = true;
 
+  // Asegurar que los campos de puntaje sólo acepten valores numéricos positivos
+  try {
+    const inputMax = form.querySelector('[name="puntaje-max"]');
+    const inputObt = form.querySelector('[name="puntaje"]');
+
+    if (inputMax) {
+      try { inputMax.type = 'number'; } catch (e) { }
+      inputMax.setAttribute('inputmode', 'numeric');
+      inputMax.setAttribute('pattern', '[0-9]+');
+      inputMax.setAttribute('min', '1');
+      inputMax.setAttribute('step', '1');
+      inputMax.addEventListener('input', (ev) => {
+        const v = ev.target.value || '';
+        const cleaned = String(v).replace(/[^0-9]/g, '');
+        if (cleaned !== v) ev.target.value = cleaned;
+      });
+    }
+
+    if (inputObt) {
+      try { inputObt.type = 'number'; } catch (e) { }
+      inputObt.setAttribute('inputmode', 'numeric');
+      inputObt.setAttribute('pattern', '[0-9]+');
+      inputObt.setAttribute('min', '1');
+      inputObt.setAttribute('step', '1');
+      inputObt.addEventListener('input', (ev) => {
+        const v = ev.target.value || '';
+        const cleaned = String(v).replace(/[^0-9]/g, '');
+        if (cleaned !== v) ev.target.value = cleaned;
+      });
+    }
+  } catch (err) {
+    console.debug('No se pudieron inicializar validaciones de puntaje:', err);
+  }
+
   // submit del form: enviar al backend via fetch (JSON)
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -102,6 +136,17 @@ function inicializarModalNueva() {
     // Validación mínima (controlada por JS porque desactivamos la validación nativa)
     if (!payload.id_materia || !payload.id_tipo_actividad || !payload.nombre_actividad || payload.puntos_posibles === null || payload.fecha_entrega === '') {
       showToast('Por favor completa los campos obligatorios: Materia, Tipo, Actividad, Puntaje máximo y Fecha.', { type: 'error' });
+      return;
+    }
+
+    // Validar que los puntajes sean positivos (> 0)
+    if (payload.puntos_posibles !== null && Number(payload.puntos_posibles) <= 0) {
+      showToast('El puntaje máximo debe ser un número positivo.', { type: 'error' });
+      return;
+    }
+
+    if (payload.puntos_obtenidos !== null && Number(payload.puntos_obtenidos) <= 0) {
+      showToast('El puntaje obtenido debe ser un número positivo.', { type: 'error' });
       return;
     }
 
