@@ -67,6 +67,29 @@ function abrirModalNueva() {
   });
 }
 
+function configurarInputNumerico(input) {
+  if (!input) return;
+
+  try {
+    input.type = 'number';
+  } catch (e) {
+    console.warn('Error inesperado asignando tipo number:', e);
+  }
+
+  input.setAttribute('inputmode', 'numeric');
+  input.setAttribute('pattern', '[0-9]+');
+  input.setAttribute('min', '1');
+  input.setAttribute('step', '1');
+
+  input.addEventListener('input', (ev) => {
+    const v = ev.target.value || '';
+    // Sonar: replaceAll no aplica porque esta expresión requiere flags.
+    const cleaned = String(v).replace(/[^0-9]/g, '');
+    if (cleaned !== v) ev.target.value = cleaned;
+  });
+}
+
+
 function inicializarModalNueva() {
   const modal = document.getElementById('modal-nueva');
   const cerrar = document.getElementById('cerrar-modal');
@@ -82,34 +105,12 @@ function inicializarModalNueva() {
 
   // Asegurar que los campos de puntaje sólo acepten valores numéricos positivos
   try {
+    
     const inputMax = form.querySelector('[name="puntaje-max"]');
     const inputObt = form.querySelector('[name="puntaje"]');
+    configurarInputNumerico(inputMax);
+    configurarInputNumerico(inputObt);
 
-    if (inputMax) {
-      try { inputMax.type = 'number'; } catch (e) { }
-      inputMax.setAttribute('inputmode', 'numeric');
-      inputMax.setAttribute('pattern', '[0-9]+');
-      inputMax.setAttribute('min', '1');
-      inputMax.setAttribute('step', '1');
-      inputMax.addEventListener('input', (ev) => {
-        const v = ev.target.value || '';
-        const cleaned = String(v).replace(/[^0-9]/g, '');
-        if (cleaned !== v) ev.target.value = cleaned;
-      });
-    }
-
-    if (inputObt) {
-      try { inputObt.type = 'number'; } catch (e) { }
-      inputObt.setAttribute('inputmode', 'numeric');
-      inputObt.setAttribute('pattern', '[0-9]+');
-      inputObt.setAttribute('min', '1');
-      inputObt.setAttribute('step', '1');
-      inputObt.addEventListener('input', (ev) => {
-        const v = ev.target.value || '';
-        const cleaned = String(v).replace(/[^0-9]/g, '');
-        if (cleaned !== v) ev.target.value = cleaned;
-      });
-    }
   } catch (err) {
     console.debug('No se pudieron inicializar validaciones de puntaje:', err);
   }
