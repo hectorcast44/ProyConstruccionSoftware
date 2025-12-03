@@ -56,7 +56,7 @@ const UIHelpers = (() => {
      */
     getClassFor(key) {
       const raw = String(key || '').toLowerCase().trim();
-      
+
       if (this.classCache.has(raw)) return this.classCache.get(raw);
 
       let cssClass = 'tag-agua'; // Default
@@ -65,7 +65,7 @@ const UIHelpers = (() => {
       else if (raw.includes('examen')) cssClass = 'tag-azul';
       else if (raw.includes('proyecto')) cssClass = 'tag-verde';
       else if (raw.includes('tarea') || raw.includes('trabajo')) cssClass = 'tag-naranja';
-      else if (raw.includes('quiz') || raw.includes('quiz')) cssClass = 'tag-morado';
+      else if (raw.includes('quiz')) cssClass = 'tag-morado';
       else if (raw.includes('parcial')) cssClass = 'tag-azul-claro';
       else if (raw.includes('final')) cssClass = 'tag-rojo';
       else if (raw.includes('lab') || raw.includes('laboratorio')) cssClass = 'tag-verde-lima';
@@ -101,7 +101,7 @@ const UIHelpers = (() => {
     if (!grid) {
       grid = document.querySelector('.accordion-card-grid') || document.querySelector('.materias-grid');
     }
-    
+
     if (!grid) return;
 
     grid.addEventListener('click', (e) => {
@@ -147,7 +147,7 @@ const UIHelpers = (() => {
       const accordionHeader = e.target.closest('.accordion-card__header');
       if (accordionHeader && !e.target.closest('.accordion-card__actions')) {
         const card = accordionHeader.closest('.accordion-card');
-        
+
         if (card) {
           card.classList.toggle('open');
         }
@@ -236,7 +236,7 @@ const UIHelpers = (() => {
     // Filtrado personalizado o automático
     input.addEventListener('input', (e) => {
       const term = e.target.value;
-      
+
       // Si hay callback personalizado, usarlo
       if (typeof onFilter === 'function') {
         onFilter(term);
