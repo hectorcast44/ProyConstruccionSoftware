@@ -1,5 +1,8 @@
-document.addEventListener('DOMContentLoaded', () => {
-
+/**
+ * Inicializa la funcionalidad de la página de login/registro.
+ * Gestiona la animación de cambio entre paneles y el spinner de carga.
+ */
+function initLogin() {
     const container = document.getElementById('container');
     const btnSignUp = document.getElementById('signUp');
     const btnSignIn = document.getElementById('signIn');
@@ -14,16 +17,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Abrir panel de registro automáticamente
+    // Abrir panel de registro automáticamente si está configurado
     if (window.SIGNUP_OPEN === true && container) {
         container.classList.add('right-panel-active');
     }
 
-    // Spinner del login
-    const loginForm    = document.getElementById('signInForm');
-    const loginBtn     = document.getElementById('btnLogin');
+    // Gestión del spinner y estado de carga al enviar el formulario
+    const loginForm = document.getElementById('signInForm');
+    const loginBtn = document.getElementById('btnLogin');
     const loginSpinner = document.getElementById('loginSpinner');
-    const loginText    = document.getElementById('loginText');
+    const loginText = document.getElementById('loginText');
 
     if (loginForm && loginBtn && loginSpinner && loginText) {
         loginForm.addEventListener('submit', function () {
@@ -35,4 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }, delay);
         });
     }
-});
+}
+
+document.addEventListener('DOMContentLoaded', initLogin);
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { initLogin };
+}

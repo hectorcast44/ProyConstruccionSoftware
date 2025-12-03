@@ -1,7 +1,7 @@
 /**
- * Página "Mis materias" — render de cards tipo acordeón como en Mis Calificaciones.
+ * Inicializa la página "Mis materias", gestionando el listado, filtrado y creación de cards.
  */
-document.addEventListener('DOMContentLoaded', () => {
+function initMisMaterias() {
   let materias = [];
 
   const lista = document.getElementById('lista-materias');
@@ -11,11 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!lista) return;
 
+  /**
+   * Obtiene la clase CSS para el tag del tipo de actividad.
+   * @param {object} tipo - Objeto con información del tipo de actividad.
+   * @returns {string} Clase CSS.
+   */
   function obtenerTagClassPorTipo(tipo) {
     const key = tipo.id_tipo ?? tipo.id_tipo_actividad ?? tipo.nombre;
     return UIHelpers.TagStyleManager.getClassFor(key);
   }
 
+  /**
+   * Genera el HTML de las filas de la tabla de tipos de actividad.
+   * @param {Array} tipos - Lista de tipos de actividad.
+   * @returns {string} HTML de las filas.
+   */
   function generarFilasTipos(tipos = []) {
     if (!tipos.length) {
       return `
@@ -46,6 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
+  /**
+   * Crea el elemento DOM de la tarjeta (card) de una materia.
+   * @param {object} materia - Datos de la materia.
+   * @returns {HTMLElement} Elemento DOM de la tarjeta.
+   */
   function crearCardMateria(materia) {
     const wrapper = document.createElement('div');
     wrapper.classList.add('accordion-card-wrapper');
@@ -109,6 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return wrapper;
   }
 
+  /**
+   * Renderiza la lista de materias en el DOM.
+   * @param {Array} listaMaterias - Lista de materias a mostrar.
+   */
   function renderizarMaterias(listaMaterias) {
     lista.innerHTML = '';
 
@@ -130,12 +149,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (globalThis.feather) feather.replace();
   }
 
+  /**
+   * Filtra las materias según el término de búsqueda y actualiza la vista.
+   * @param {string} valor - Término de búsqueda.
+   */
   function filtrarYRenderizar(valor) {
     const termino = String(valor || '').toLowerCase().trim();
     const filtradas = materias.filter(m => (m.nombre || '').toLowerCase().includes(termino));
     renderizarMaterias(filtradas);
   }
 
+  /**
+   * Carga las materias desde la API, incluyendo sus detalles y tipos de actividad.
+   * Actualiza la variable local `materias` y renderiza la lista.
+   */
   async function cargarMateriasDesdeAPI() {
     const url = (globalThis.BASE_URL || '') + 'api/materias?t=' + Date.now();
 
@@ -177,11 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
               }));
             }
           } catch (e) {
-            // ignore per-materia fetch errors and leave existing tipos
           }
         }));
       } catch (e) {
-        // ignore
       }
 
       filtrarYRenderizar('');
@@ -197,7 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Exponer función de ponderación para que otros módulos (p. ej. modal de crear materia) la usen
   window.abrirModalPonderacion = abrirModalPonderacion;
 
-  // Abrir modal para asignar ponderaciones por tipo en una materia
+  /**
+   * Abre el modal para gestionar las ponderaciones de una materia.
+   * @param {number|string} idMateria - ID de la materia.
+   * @param {Array|null} prefillTipos - (Opcional) Tipos con porcentajes pre-cargados.
+   */
   async function abrirModalPonderacion(idMateria, prefillTipos = null) {
     const base = globalThis.BASE_URL || '';
     // intentar obtener los tipos de la materia
@@ -392,7 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
               // Append at the end of body to increase stacking context priority
               document.body.appendChild(dlg);
               try { dlg.showModal(); } catch (e) {
-                // fallback: focus to ensure visibility
                 try { dlg.style.display = 'block'; dlg.focus(); } catch (_) { }
               }
               const ok = dlg.querySelector('#__temp_ok_mat');
@@ -450,10 +478,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   cargarMateriasDesdeAPI();
 
-  // helpers
+  /**
+   * Escapa caracteres especiales HTML para prevenir XSS.
+   * @param {string} s - Cadena a escapar.
+   * @returns {string} Cadena escapada.
+   */
   function escapeHtml(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", "&#39;"); }
 
-  // Mostrar toast seguro: intenta usar showToast global si existe, si no crea un toast mínimo
+  /**
+   * Muestra un mensaje tipo "toast" en pantalla.
+   * @param {string} message - Mensaje a mostrar.
+   * @param {string} type - Tipo de mensaje ('info', 'success', 'error').
+   * @param {number} duration - Duración en milisegundos.
+   */
   function ensureToast(message, type = 'info', duration = 4500) {
     try {
       if (typeof showToast === 'function') {
@@ -507,4 +544,10 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('ensureToast failed', e, message);
     }
   }
-});
+}
+
+document.addEventListener('DOMContentLoaded', initMisMaterias);
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { initMisMaterias };
+}

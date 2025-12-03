@@ -6,15 +6,31 @@ use App\Core\Controller;
 use App\Models\Materia;
 use App\Controllers\AuthController;
 
+/**
+ * Controlador para gestionar las materias.
+ */
 class MateriaController extends Controller
 {
     private $materiaModel;
 
+    /**
+     * Constructor del controlador.
+     * Inicializa el modelo de Materia.
+     */
     public function __construct()
     {
         $this->materiaModel = new Materia();
     }
 
+    /**
+     * Obtiene la lista de materias o una materia específica.
+     *
+     * Si se proporciona el parámetro 'id' en la query string, devuelve el detalle de esa materia
+     * junto con sus tipos de actividad. De lo contrario, devuelve todas las materias del usuario
+     * con un resumen de puntos por tipo de actividad.
+     *
+     * @return void Envía una respuesta JSON.
+     */
     public function index()
     {
         $idUsuario = AuthController::getUserId();
@@ -79,8 +95,11 @@ class MateriaController extends Controller
     }
 
     /**
-     * Obtener tipos (ponderaciones) asociados a una materia
-     * GET /api/materias/tipos?id=123
+     * Obtiene los tipos de actividad (ponderaciones) asociados a una materia.
+     * 
+     * Requiere el parámetro 'id' en la query string.
+     *
+     * @return void Envía una respuesta JSON.
      */
     public function tipos()
     {
@@ -100,7 +119,7 @@ class MateriaController extends Controller
     }
 
     /**
-     * Crear o actualizar una materia.
+     * Crea o actualiza una materia.
      *
      * Payload esperado (JSON):
      * - id_materia (opcional): Si se envía, se actualiza la materia.
@@ -113,7 +132,7 @@ class MateriaController extends Controller
      * - Al actualizar, no se permite eliminar tipos que tengan actividades asociadas.
      * - Al actualizar, no se permite reducir la ponderación de un tipo por debajo del puntaje de una actividad existente.
      *
-     * @return void JSON response.
+     * @return void Envía una respuesta JSON.
      */
     public function store()
     {
@@ -231,6 +250,13 @@ class MateriaController extends Controller
         }
     }
 
+    /**
+     * Elimina una materia.
+     *
+     * Requiere el parámetro 'id' en la query string.
+     *
+     * @return void Envía una respuesta JSON.
+     */
     public function delete()
     {
         $idUsuario = AuthController::getUserId();

@@ -1,5 +1,15 @@
+/**
+ * Carga un fragmento HTML (partial) y lo inserta en un contenedor.
+ * Opcionalmente, asigna un evento click a un botón dentro del partial.
+ *
+ * @param {string} ruta - La URL del partial a cargar.
+ * @param {string} contenedorId - El ID del elemento contenedor donde se insertará el HTML.
+ * @param {string} botonId - (Opcional) El ID del botón al que se le asignará el callback.
+ * @param {function} callback - (Opcional) La función a ejecutar cuando se hace click en el botón.
+ * @returns {Promise<void>} Una promesa que se resuelve cuando la carga finaliza.
+ */
 function cargarPartial(ruta, contenedorId, botonId, callback) {
-  fetch(ruta)
+  return fetch(ruta)
     .then(r => r.text())
     .then(html => {
       const contenedor = document.getElementById(contenedorId);
@@ -24,21 +34,28 @@ function cargarPartial(ruta, contenedorId, botonId, callback) {
     .catch(err => console.error(`Error cargando ${ruta}:`, err));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+
+/**
+ * Inicializa los botones de acción (Nueva, Editar, Eliminar, Filtro) cargando sus partials
+ * y asignando los callbacks correspondientes definidos globalmente.
+ */
+function initButtons() {
   const basePath = globalThis.BASE_URL || '';
 
   // Botón "Nueva"
-  // Botón "Nueva" - elegir callback según la página (mis-materias usa abrirModalCrearMateria)
-  (function() {
+  (function () {
     const page = document.body?.dataset?.page || document.body?.className || '';
     let callback = null;
+
+    // Elegir callback según la página (mis-materias usa abrirModalCrearMateria)
     if (String(page).includes('mis-materias') && typeof globalThis.abrirModalCrearMateria === 'function') {
       callback = globalThis.abrirModalCrearMateria;
     } else if (typeof globalThis.abrirModalNueva === 'function') {
       callback = globalThis.abrirModalNueva;
     }
 
-    // Wrap only the 'Nueva' callback so it first deactivates edit mode, preserving toggle behavior for the Edit button
+    // Envolver el callback para desactivar primero el modo edición,
+    // preservando el comportamiento de alternancia para el botón Editar.
     let callbackToUse = callback;
     if (typeof callback === 'function') {
       callbackToUse = function (e) {
@@ -49,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
           console.error('Error al desactivar modo edición:', err);
         }
-        try { return callback(e); } catch (err) { console.error('callback error', err); }
+        try { return callback(e); } catch (err) { console.error('Error en callback:', err); }
       };
     }
 
@@ -84,4 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
     'boton-filtro',
     globalThis.abrirModalFiltro || null
   );
-});
+}
+
+document.addEventListener('DOMContentLoaded', initButtons);
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { cargarPartial, initButtons };
+}
