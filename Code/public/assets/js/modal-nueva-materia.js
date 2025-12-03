@@ -373,16 +373,19 @@ async function manejarEliminacionTipo(etiqueta, idTipo) {
           etiqueta.remove();
           if (typeof showToast === 'function') showToast('Tipo eliminado forzosamente', { type: 'success' });
         } else {
-          alert('Error eliminando: ' + (jsonForce?.message || txtForce));
+          if (typeof showToast === 'function') showToast('Error eliminando: ' + (jsonForce?.message || txtForce), { type: 'error' });
+          else console.warn('Error eliminando:', (jsonForce?.message || txtForce));
         }
       }
     } else {
-      alert('Error eliminando: ' + msg);
+      if (typeof showToast === 'function') showToast('Error eliminando: ' + msg, { type: 'error' });
+      else console.warn('Error eliminando:', msg);
     }
 
   } catch (err) {
     console.error('Error delete tipo:', err);
-    alert('Error de conexión al eliminar');
+    if (typeof showToast === 'function') showToast('Error de conexión al eliminar', { type: 'error' });
+    else console.error('Error de conexión al eliminar');
   }
 }
 
