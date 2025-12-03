@@ -295,27 +295,34 @@ function pintarFilasActividades(cuerpoTabla, filas) {
   }
 
   for (const fila of filas) {
-    const tr = document.createElement('tr');
-    const progreso = generarBadgeProgreso(fila.estado);
-    tr.dataset.idActividad = fila.id;
+    const tr = crearFilaActividad(fila);
+    cuerpoTabla.appendChild(tr);
+  }
 
-    if (fila.id_materia) {
-      tr.dataset.idMateria = fila.id_materia;
-    }
+  activarModoEdicionSiCorresponde(cuerpoTabla);
 
-    if (fila.id_tipo_actividad) {
-      tr.dataset.idTipo = fila.id_tipo_actividad;
-    }
+  globalThis.feather?.replace();
+  verificarTablaVacia();
+}
 
-    // exponer puntos en atributos para poder rellenar el modal al editar
-    try {
-      tr.dataset.puntosObtenidos = (fila.obtenido !== undefined && fila.obtenido !== null) ? String(fila.obtenido) : '';
-      tr.dataset.puntosMaximo = (fila.maximo !== undefined && fila.maximo !== null) ? String(fila.maximo) : '';
-    } catch (e) { }
+function crearFilaActividad(fila) {
+  const tr = document.createElement('tr');
+  tr.dataset.idActividad = fila.id;
 
-    const claseTipo = tipoClase(fila.tipo);
+  if (fila.id_materia) tr.dataset.idMateria = fila.id_materia;
+  if (fila.id_tipo_actividad) tr.dataset.idTipo = fila.id_tipo_actividad;
 
-    tr.innerHTML = `
+  try {
+    tr.dataset.puntosObtenidos =
+      fila.obtenido != null ? String(fila.obtenido) : '';
+    tr.dataset.puntosMaximo =
+      fila.maximo != null ? String(fila.maximo) : '';
+  } catch (_) {}
+
+  const claseTipo = tipoClase(fila.tipo);
+  const progreso = generarBadgeProgreso(fila.estado);
+
+  tr.innerHTML = `
       <td>${escapeHtml(fila.fecha)}</td>
       <td>${escapeHtml(fila.nombre)}</td>
       <td>${escapeHtml(fila.materia)}</td>
@@ -323,22 +330,21 @@ function pintarFilasActividades(cuerpoTabla, filas) {
       <td>${progreso}</td>
     `;
 
-    cuerpoTabla.appendChild(tr);
-  }
-
-  // Si el modo edición está activo, asegurarse de agregar la columna de acciones
-  try {
-    if (typeof modoEdicionActivo !== 'undefined' && modoEdicionActivo) {
-      const theadRow = document.querySelector('#tabla thead tr');
-      
-      try { asegurarHeaderAcciones(theadRow); } catch (e) {  }
-      try { agregarAccionesAFilas(cuerpoTabla.querySelectorAll('tr')); } catch (e) {  }
-    }
-  } catch (e) {  }
-
-  globalThis.feather?.replace();
-  verificarTablaVacia();
+  return tr;
 }
+
+function activarModoEdicionSiCorresponde(cuerpoTabla) {
+  try {
+    if (typeof modoEdicionActivo === 'undefined' || !modoEdicionActivo) return;
+
+    const theadRow = document.querySelector('#tabla thead tr');
+
+    try { asegurarHeaderAcciones(theadRow); } catch (_) {}
+    try { agregarAccionesAFilas(cuerpoTabla.querySelectorAll('tr')); } catch (_) {}
+
+  } catch (_) {}
+}
+
 
 function manejarErrorCargaActividades(error, cuerpoTabla) {
   console.error('Error cargando actividades:', error);
