@@ -232,9 +232,7 @@ async function cargarMateriasDesdeAPI() {
 
 function initMisCalificaciones() {
   const listaCalificaciones = document.getElementById('lista-calificaciones');
-  const buscadorInput = document.getElementById('buscador-menu');
-  const buscadorWrapper = document.querySelector('.search-wrapper');
-  const buscadorBtn = document.getElementById('search-toggle');
+  const buscadorInput = document.getElementById('d-search-input');
 
   if (listaCalificaciones) {
     listaCalificaciones.addEventListener('click', e => {
@@ -250,17 +248,16 @@ function initMisCalificaciones() {
     });
   }
 
-  // Inicializar acordeones y buscador si UIHelpers está disponible
   if (globalThis.UIHelpers && typeof UIHelpers.initAccordionGrid === 'function') {
     UIHelpers.initAccordionGrid(listaCalificaciones);
   }
-  
-  if (globalThis.UIHelpers && typeof UIHelpers.initSearchBar === 'function') {
-    UIHelpers.initSearchBar({
+
+  if (globalThis.UIHelpers && typeof UIHelpers.initInlineSearchBox === 'function') {
+    UIHelpers.initInlineSearchBox({
       input: buscadorInput,
-      toggleBtn: buscadorBtn,
-      wrapper: buscadorWrapper,
-      onFilter: filtrarYRenderizar
+      onFilter: (texto) => {
+        filtrarYRenderizar(texto || '');
+      }
     });
   }
 
@@ -268,6 +265,7 @@ function initMisCalificaciones() {
 }
 
 document.addEventListener('DOMContentLoaded', initMisCalificaciones);
+
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -281,4 +279,33 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 }
 
+/**
+ * Barra de búsqueda con estilo Dashboard para Mis Calificaciones
+ */
+function initSearchCalificaciones() {
+  const input = document.getElementById('d-search-input');
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+    const termino = input.value.toLowerCase().trim();
+    const cards = document.querySelectorAll('#lista-calificaciones .accordion-card');
+
+    let coincideAlguna = false;
+
+    cards.forEach(card => {
+      const titulo = (card.querySelector('.accordion-card__title')?.textContent || '')
+        .toLowerCase();
+
+      const tipos = Array.from(card.querySelectorAll('.tag'))
+        .map(t => t.textContent.toLowerCase());
+
+      const match =
+        titulo.includes(termino) ||
+        tipos.some(t => t.includes(termino));
+
+      card.style.display = match ? '' : 'none';
+      if (match) coincideAlguna = true;
+    });
+  });
+}
 

@@ -121,10 +121,10 @@ class Calculadora {
             [$puntosGanados, $puntosPerdidos, $puntosPendientes, $sumaCalifPorTipo] =
                 $this->calcularResultadosPorTipo($ponderaciones, $datosPorTipo);
 
-            $calificacionActual = $this->calcularCalificacionNormalizada(
-                $sumaCalifPorTipo,
-                $puntosEscalaTotal
-            );
+            // La calificación actual ES lo que llevo asegurado hoy en la escala total
+            // (normalmente 0–100), es decir, los puntos ganados ya ponderados.
+            $calificacionActual = $puntosGanados;
+
 
             [$puntosGanados, $puntosPerdidos, $puntosPendientes, $calificacionActual] =
                 $this->redondearResultadosGlobales(

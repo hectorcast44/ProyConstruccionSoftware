@@ -702,38 +702,22 @@ function inicializarBuscador() {
   const searchInput =
     document.getElementById('d-search-input') ||
     document.getElementById('search-input') ||
+    document.querySelector('.d-search-input') ||
     document.querySelector('.search-input');
 
-  const searchToggle = document.getElementById('search-toggle');
-  const searchWrapper = document.getElementById('dashboard-search-input-wrapper');
-
-  if (!searchInput && !searchToggle) {
+  if (!searchInput) {
     return;
   }
 
-  if (searchToggle) {
-    searchToggle.addEventListener('click', () => {
-      if (searchWrapper?.classList.contains('oculto')) {
-        searchWrapper.classList.remove('oculto');
-
-        setTimeout(() => {
-          try {
-            searchInput?.focus();
-          } catch (error) {
-            console.warn('No se pudo enfocar el buscador:', error);
-          }
-        }, 10);
-      } else {
-        if (searchInput) {
-          searchInput.value = '';
-        }
-        searchWrapper?.classList.add('oculto');
-        verificarTablaVacia();
+  if (window.UIHelpers && typeof UIHelpers.initInlineSearchBox === 'function') {
+    UIHelpers.initInlineSearchBox({
+      input: searchInput,
+      onFilter: (texto) => {
+        aplicarFiltroBusqueda(texto || '');
       }
     });
-  }
-
-  if (searchInput) {
+  } else {
+    // Fallback por si no cargó ui-helpers
     searchInput.addEventListener('input', () => {
       aplicarFiltroBusqueda(searchInput.value || '');
     });
@@ -745,6 +729,7 @@ if (document.readyState === 'loading') {
 } else {
   inicializarBuscador();
 }
+
 
 /* ==========================================================
    COLUMNA DE ACCIONES EDITAR / ELIMINAR

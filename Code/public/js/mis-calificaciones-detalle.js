@@ -233,8 +233,12 @@ function actualizarInformeYDiagnostico(progreso) {
 }
 
 function filtrarActividades() {
-  const buscadorInput = document.getElementById('buscador-menu');
-  const term = normalizar(buscadorInput?.value || '');
+  const input =
+    document.getElementById('d-search-input-detalle') ||
+    document.getElementById('d-search-input') ||
+    document.getElementById('buscador-menu');
+
+  const term = normalizar(input?.value || '');
 
   const filtradas = seccionesOriginal
     .map(sec => {
@@ -249,7 +253,7 @@ function filtrarActividades() {
       );
 
       if (coincideTipo) {
-        return { ...sec };
+        return { ...sec }; // conserva todas las actividades de ese tipo
       }
       if (actividadesFiltradas.length > 0) {
         return { ...sec, actividades: actividadesFiltradas };
@@ -260,6 +264,8 @@ function filtrarActividades() {
 
   renderSecciones(filtradas);
 }
+
+
 
 async function cargarDetalleMateria(idMateria) {
   const apiBase = (globalThis.BASE_URL || '');
@@ -361,9 +367,8 @@ function initMisCalificacionesDetalle() {
   }
 
   const contenedorSecciones = document.getElementById('lista-usuarios');
-  const buscadorInput = document.getElementById('buscador-menu');
-  const buscadorWrapper = document.querySelector('.search-wrapper');
-  const buscadorBtn = document.getElementById('search-toggle');
+  const buscadorInput = document.getElementById('d-search-input-detalle');
+
 
   if (contenedorSecciones) {
     contenedorSecciones.addEventListener('click', event => {
@@ -377,23 +382,15 @@ function initMisCalificacionesDetalle() {
     });
   }
 
-  buscadorInput?.addEventListener('input', filtrarActividades);
+  if (buscadorInput) {
+    buscadorInput.addEventListener('input', filtrarActividades);
+  }
 
-  buscadorBtn?.addEventListener('click', () => {
-    if (!buscadorWrapper || !buscadorInput) return;
-
-    buscadorWrapper.classList.toggle('active');
-
-    if (buscadorWrapper.classList.contains('active')) {
-      buscadorInput.focus();
-    } else {
-      buscadorInput.value = '';
-      renderSecciones(seccionesOriginal);
-    }
-  });
-
+  // Cargar datos iniciales
   cargarDetalleMateria(idMateria);
 }
+
+
 
 document.addEventListener('DOMContentLoaded', initMisCalificacionesDetalle);
 

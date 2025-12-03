@@ -1,105 +1,127 @@
-/* 
-  Barra flotante de búsqueda con animación (colapsada → expandida)
-*/
+/* ==========================================================
+   VARIABLES GLOBALES — Estilos reutilizables
+   ========================================================== */
+:root {
+  /* Colores de la barra */
+  --search-icon-color: #666;
+  --search-bg: #fff;
+  --search-focus-bg: #fff;
+  --search-border-color: #ddd;
+  --search-border-focus: #b6b6b6;
+  --search-shadow-focus: rgba(124, 124, 124, 0.1);
 
-.search-wrapper {
-  position: fixed;
-  top: 1.2rem;
-  right: 1.2rem;
-  z-index: 30;
-  display: flex;
-  align-items: center;
+  /* Colores del placeholder */
+  --search-placeholder-hidden: transparent;
+  --search-placeholder-visible: #9c9c9c;
+
+  /* Dimensiones */
+  --search-size: 40px;        /* tamaño inicial del botón */
+  --search-expanded-width: 300px;
+  --search-icon-padding: 10px;
+  --search-input-radius: 20px;
+  --search-animation: 0.3s ease;
+
+  /* Posición general del área */
+  --search-margin-top: 40px;
+  --search-margin-bottom: 20px;
 }
 
-/* Contenedor del input + botón, inicia como un círculo */
-.search-wrapper .input-holder {
-  height: 50px;
-  width: 50px;
-  background: transparent;
-  border-radius: 6px;
+/* ==========================================================
+   CONTENEDOR PRINCIPAL DEL BUSCADOR
+   ========================================================== */
+
+/* Contenedor donde se puede colocar buscador + botones */
+.content-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--search-margin-top);
+  margin-bottom: var(--search-margin-bottom);
+}
+
+/* Caja inicial del buscador (forma de círculo). 
+   Se expande al hacer focus dentro del contenedor. */
+.search-box {
   position: relative;
-  transition: all 0.3s ease-in-out;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: visible;
+  height: var(--search-size);
+  width: var(--search-size);
+  transition: width var(--search-animation);
 }
 
-/* Campo de texto (oculto en estado colapsado) */
-.search-wrapper .search-input {
-  width: 100%;
-  height: 100%;
-  padding: 0 50px 0 15px;
-  opacity: 0; /* se muestra solo en estado activo */
+/* Estado expandido (cuando el input recibe focus) */
+.search-box:focus-within {
+  width: var(--search-expanded-width);
+}
+
+/* ==========================================================
+   ÍCONO DE LUPA
+   ========================================================== */
+
+/* Ícono circular de fondo blanco que sirve como "botón" inicial */
+.d-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+
+  background-color: var(--search-bg);
+  color: var(--search-icon-color);
+
+  width: var(--search-size);
+  height: var(--search-size);
+  padding: var(--search-icon-padding);
+  border-radius: 50%;
+}
+
+/* ==========================================================
+   INPUT DEL BUSCADOR (oculto → visible)
+   ========================================================== */
+
+/* Input transparente en estado inicial (colapsado). 
+   Se vuelve visible cuando el contenedor tiene focus-within */
+.d-search-input {
+  cursor: pointer;
   position: absolute;
   top: 0;
   left: 0;
-  border: none;
+
+  width: 100%;
+  height: 100%;
+  padding: 0 10px 0 38px;
+
+  border: 1px solid var(--search-border-color);
+  border-radius: var(--search-input-radius);
+  background: transparent;
+  border-color: transparent;
   outline: none;
-  background: transparent;
-  font-size: 16px;
-  color: #fff;
-  transition: opacity .3s ease;
+
+  font-size: 14px;
+  color: transparent;
+
+  transition: all var(--search-animation);
 }
 
-.search-wrapper .search-input::placeholder {
-  color: rgba(255,255,255,0.6);
+/* Placeholder oculto en modo colapsado */
+.d-search-input::placeholder {
+  color: var(--search-placeholder-hidden);
 }
 
-/* Botón circular con ícono de lupa (estado colapsado) */
-.search-wrapper .search-icon {
-  width: 50px;
-  height: 50px;
-  border: none;
-  border-radius: 6px;
-  background: #fff;
-  position: absolute;
-  top: 0;
-  right: 0;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.20);
-  transition: all 0.3s ease-in-out;
+/* ==========================================================
+   ESTADO EXPANDIDO DEL INPUT
+   ========================================================== */
+
+/* Cuando la caja está activa/expandida */
+.search-box:focus-within .d-search-input {
+  background-color: var(--search-focus-bg);
+  border-color: var(--search-border-focus);
+  color: #000;
+  cursor: text;
+
+  box-shadow: 0 0 0 3px var(--search-shadow-focus);
 }
 
-.search-wrapper .search-icon svg {
-  stroke: #5a6ad4; /* color del ícono en estado colapsado */
-  stroke-width: 3px;
-  width: 25px;
-  height: 25px;
-}
-
-/* ============================
-   ESTADO EXPANDIDO (active)
-   ============================ */
-
-/* La caja se expande y se convierte en un campo largo */
-.search-wrapper.active .input-holder {
-  width: 300px;
-  border-radius: 25px;
-  background: rgba(0,0,0,0.5);
-}
-
-/* El input aparece */
-.search-wrapper.active .search-input {
-  opacity: 1;
-}
-
-/* El botón se reduce y se hace transparente */
-.search-wrapper.active .search-icon {
-  background: transparent;
-  box-shadow: none;
-  width: 30px;
-  height: 30px;
-  margin: 10px;
-  border-radius: 999px;
-}
-
-/* Ícono en blanco cuando está expandido */
-.search-wrapper.active .search-icon svg {
-  stroke: #fff;
-  width: 18px;
-  height: 18px;
+/* Placeholder visible solo mientras se escribe */
+.search-box:focus-within .d-search-input::placeholder {
+  color: var(--search-placeholder-visible);
 }
