@@ -43,7 +43,7 @@ if ($publicPos === false) {
     <main>
         <div class="main-bar">
             <div class="page-title">
-                <i data-feather="home"></i>
+                <i data-feather="layout"></i>
                 <h1>Dashboard</h1>
             </div>
 
@@ -89,6 +89,8 @@ if ($publicPos === false) {
     <script src="https://unpkg.com/feather-icons"></script>
     <!-- sidebar dinámico -->
     <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
+    <!-- ui-helpers -->
+    <script src="<?php echo $baseUrl; ?>assets/js/ui-helpers.js"></script>
     <!-- Modal nueva -->
     <script src="<?php echo $baseUrl; ?>assets/js/modal-nueva.js"></script>
     <!-- Modal filtro (define abrirModalFiltro) -->
