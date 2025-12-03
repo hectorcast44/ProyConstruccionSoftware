@@ -995,9 +995,12 @@ function seleccionarOpcionEnSelect(selectEl, idValor, textoCelda) {
  * @param {*} timeoutMs 
  */
 async function esperarOpcionesSelect(selectEl, minOptions = 2, timeoutMs = 1000) {
+  if (!selectEl) {
+    return;
+  }
+
   const inicio = Date.now();
   while (
-    selectEl &&
     selectEl.options.length < minOptions &&
     Date.now() - inicio < timeoutMs
   ) {
