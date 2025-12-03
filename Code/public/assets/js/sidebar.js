@@ -1,7 +1,14 @@
 /**
  * Sidebar dinámico de la aplicación.
+ * Gestiona la carga del sidebar, la información del usuario, la navegación activa y el logout.
  */
 
+/**
+ * Inicializa el sidebar.
+ * Carga el parcial HTML, inicializa iconos, activa el enlace actual y configura eventos.
+ *
+ * @returns {void}
+ */
 function initSidebar() {
   const mount = document.getElementById('sidebar-mount');
   if (!mount) return;
@@ -39,7 +46,11 @@ function initSidebar() {
     });
 }
 
-
+/**
+ * Carga la información del usuario actual (nombre, correo, avatar) en el sidebar.
+ *
+ * @returns {Promise<void>}
+ */
 async function cargarUsuarioEnSidebar() {
   try {
     const resp = await fetch((globalThis.BASE_URL || '') + 'auth/me', {
@@ -63,6 +74,12 @@ async function cargarUsuarioEnSidebar() {
   }
 }
 
+/**
+ * Normaliza una ruta eliminando query params y la extensión .php.
+ *
+ * @param {string} path Ruta a normalizar.
+ * @returns {string} Ruta normalizada.
+ */
 function normalizarRuta(path) {
   if (!path) return '';
   path = path.split('?')[0];
@@ -71,6 +88,11 @@ function normalizarRuta(path) {
   return path.replace(/\.php$/i, '');
 }
 
+/**
+ * Activa la clase 'active' en el enlace del sidebar que corresponde a la página actual.
+ *
+ * @returns {void}
+ */
 function activarEnlaceActual() {
   const currentPage = normalizarRuta(globalThis.location.pathname);
   const links = document.querySelectorAll('#sidebar a[href]');
@@ -87,6 +109,11 @@ function activarEnlaceActual() {
   }
 }
 
+/**
+ * Inicializa la funcionalidad de colapso del sidebar.
+ *
+ * @returns {void}
+ */
 function inicializarColapsoSidebar() {
   const sidebar = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('sidebarToggle');
@@ -99,6 +126,11 @@ function inicializarColapsoSidebar() {
   });
 }
 
+/**
+ * Inicializa el evento de logout en el sidebar.
+ *
+ * @returns {void}
+ */
 function inicializarLogoutSidebar() {
   const btnLogout = document.getElementById('sidebarLogout');
   if (!btnLogout) return;

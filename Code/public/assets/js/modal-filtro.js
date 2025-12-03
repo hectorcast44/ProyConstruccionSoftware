@@ -7,6 +7,8 @@
 /**
  * Abre el modal de filtro. Si no existe en el DOM, carga el parcial HTML.
  * Si ya existe, lo muestra y asegura que los datos estén actualizados.
+ *
+ * @returns {void}
  */
 window.abrirModalFiltro = function abrirModalFiltro() {
     // Intentar obtener el elemento del modal; si no existe, cargamos el parcial.
@@ -75,6 +77,8 @@ window.abrirModalFiltro = function abrirModalFiltro() {
 /**
  * Inicializa los eventos y la lógica del modal de filtro.
  * Se llama una vez que el HTML del modal ha sido insertado en el DOM.
+ *
+ * @returns {void}
  */
 function inicializarModalFiltro() {
     const modal = document.getElementById('modal-filtro');
@@ -89,6 +93,8 @@ function inicializarModalFiltro() {
 
     /**
      * Obtiene las materias del usuario y puebla el select correspondiente.
+     *
+     * @returns {void}
      */
     function poblarMaterias() {
         if (!materiaSelect) return;
@@ -125,6 +131,8 @@ function inicializarModalFiltro() {
     /**
      * Obtiene los tipos de actividad (incluyendo personalizados) y puebla el select.
      * Se expone globalmente como window.poblarTiposFiltro para poder refrescar la lista.
+     *
+     * @returns {void}
      */
     function poblarTipos() {
         const tipoSelect = document.getElementById('filtro-tipo');

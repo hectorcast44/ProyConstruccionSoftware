@@ -1,7 +1,9 @@
 /**
  * Abre el modal para crear o editar una materia.
  * Si se proporciona `data`, se pre-llena el formulario para edición.
+ *
  * @param {Object|null} data Datos de la materia a editar (opcional).
+ * @returns {void}
  */
 function abrirModalCrearMateria(data = null) {
   // Si se llama desde un evento (click), data es un Event. Lo tratamos como null.
@@ -44,6 +46,8 @@ function abrirModalCrearMateria(data = null) {
 /**
  * Inicializa los eventos del modal de nueva materia (submit, cerrar).
  * Configura la lógica de envío del formulario, incluyendo validación de porcentajes.
+ *
+ * @returns {void}
  */
 function inicializarModalNuevaMateria() {
   const modal = document.getElementById('modal-nueva-materia');
@@ -157,7 +161,9 @@ function inicializarModalNuevaMateria() {
 /**
  * Rellena el modal con los datos de una materia existente para su edición.
  * Marca los checkboxes de los tipos de actividad asociados y preserva sus porcentajes.
+ *
  * @param {Object} data Datos de la materia (id, nombre, calif_minima, tipos).
+ * @returns {void}
  */
 function prefilarModalMateria(data) {
   const form = document.getElementById('form-materia');
@@ -323,6 +329,9 @@ async function cargarTiposParaModal() {
 
 /**
  * Obtener referencias de un tipo de actividad desde la API.
+ *
+ * @param {number|string} idTipo ID del tipo de actividad.
+ * @returns {Promise<Object>} Datos de las referencias.
  */
 async function obtenerReferenciasTipo(idTipo) {
   const respuesta = await fetch(
@@ -330,61 +339,93 @@ async function obtenerReferenciasTipo(idTipo) {
     { credentials: 'same-origin' }
   );
   const texto = await respuesta.text();
-  const json = JSON.parse(texto); // asumiendo que parsearJsonSeguro no está disponible aquí, usar try/catch si es necesario
+  const json = JSON.parse(texto); 
   if (!respuesta.ok) throw new Error(json?.message || 'Error obteniendo referencias');
   return json.data; // Debería devolver objeto con conteo de referencias
 }
 
 /**
  * Gestionar el flujo completo de eliminación de un tipo de actividad.
+ *
+ * @param {HTMLElement} etiqueta Elemento DOM que representa el tipo en la lista.
+ * @param {number|string} idTipo ID del tipo de actividad.
+ * @returns {Promise<void>}
  */
 async function manejarEliminacionTipo(etiqueta, idTipo) {
-  // Confirmación inicial
   if (!confirm('¿Estás seguro de eliminar este tipo de actividad?')) return;
 
   try {
-    // Intentar eliminar (sin force)
     const res = await fetch(`${globalThis.BASE_URL || ''}api/tipos-actividad?id=${encodeURIComponent(idTipo)}`, {
       method: 'DELETE',
       credentials: 'same-origin'
     });
+
     const txt = await res.text();
-    let json = null; try { json = JSON.parse(txt); } catch (e) { }
+    let json;
+    try {
+      json = JSON.parse(txt);
+    } catch (e) {
+      console.error('Error parseando JSON: ', e);
+      throw e; 
+    }
+
 
     if (res.ok) {
       etiqueta.remove();
-      if (typeof showToast === 'function') showToast('Tipo eliminado', { type: 'success' });
+      if (typeof showToast === 'function')
+        showToast('Tipo eliminado', { type: 'success' });
       return;
     }
 
-    // Si falla, verificar si es por referencias
     const msg = json?.message || txt;
+
     if (msg.toLowerCase().includes('referenc') || msg.toLowerCase().includes('asociadas')) {
+
       if (confirm('Este tipo tiene actividades o ponderaciones asociadas. ¿Deseas forzar la eliminación (se borrarán las actividades asociadas)?')) {
-        // Reintentar con force
+
         const resForce = await fetch(`${globalThis.BASE_URL || ''}api/tipos-actividad?id=${encodeURIComponent(idTipo)}&force=1`, {
           method: 'DELETE',
           credentials: 'same-origin'
         });
+
         const txtForce = await resForce.text();
-        let jsonForce = null; try { jsonForce = JSON.parse(txtForce); } catch (e) { }
+        let jsonForce = null; 
+        try { 
+          jsonForce = JSON.parse(txtForce); 
+        }  catch (e) {
+            console.error('Error parseando jsonForce: ', e);
+            throw e; 
+        }
 
         if (resForce.ok) {
           etiqueta.remove();
-          if (typeof showToast === 'function') showToast('Tipo eliminado forzosamente', { type: 'success' });
+          if (typeof showToast === 'function') {
+            showToast('Tipo eliminado forzosamente', { type: 'success' });
+          }
+        } else if (typeof showToast === 'function') {
+          showToast('Error eliminando: ' + (jsonForce?.message || txtForce), { type: 'error' });
         } else {
-          alert('Error eliminando: ' + (jsonForce?.message || txtForce));
+          console.warn('Error eliminando:', (jsonForce?.message || txtForce));
         }
+
       }
+
+    } else if (typeof showToast === 'function') {
+      showToast('Error eliminando: ' + msg, { type: 'error' });
     } else {
-      alert('Error eliminando: ' + msg);
+      console.warn('Error eliminando:', msg);
     }
 
   } catch (err) {
     console.error('Error delete tipo:', err);
-    alert('Error de conexión al eliminar');
+    if (typeof showToast === 'function') {
+      showToast('Error de conexión al eliminar', { type: 'error' });
+    } else {
+      console.error('Error de conexión al eliminar');
+    }
   }
 }
+
 
 /**
  * Al cargar el documento, intentar inicializar el modal de tipos cuando exista.
