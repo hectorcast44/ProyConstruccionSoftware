@@ -134,6 +134,10 @@ function inicializarModalNuevaMateria() {
       // éxito: cerrar y recargar la página para reflejar cambio
       const isEdit = !!payload.id_materia;
       const targetId = payload.id_materia || json?.id_materia || json?.id;
+      resetTexts();
+      modal.close();
+
+      try { console.debug && console.debug('modal-nueva-materia: create/update response', { payload, json, targetId, isEdit }); } catch (e) {}
 
       resetTexts();
       modal.close();

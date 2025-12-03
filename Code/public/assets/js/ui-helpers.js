@@ -57,6 +57,26 @@ const UIHelpers = (() => {
       element.style.backgroundColor = style.bg;
       element.style.color = style.text;
     }
+    ,
+    /**
+     * Compatibilidad: devolver una clase CSS para el tag basada en el texto.
+     * Esto mantiene backwards-compatibility con código que espera
+     * `TagStyleManager.getClassFor(text)` y utiliza clases como `tag-rojo`.
+     *
+     * @param {string} text
+     * @returns {string} nombre de la clase (ej. 'tag-rojo')
+     */
+    getClassFor(text) {
+      const classNames = ['tag-azul', 'tag-verde', 'tag-naranja', 'tag-morado', 'tag-agua', 'tag-rosa', 'tag-verde-lima', 'tag-amarillo'];
+      if (!text) return classNames[0];
+      // mismo hash simple que en getStyle para consistencia
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) {
+        hash = text.codePointAt(i) + ((hash << 5) - hash);
+      }
+      const idx = Math.abs(hash) % classNames.length;
+      return classNames[idx];
+    }
   };
 
   /**

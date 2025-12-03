@@ -165,12 +165,14 @@ function initMisMaterias() {
    */
   async function cargarMateriasDesdeAPI() {
     const url = (globalThis.BASE_URL || '') + 'api/materias?t=' + Date.now();
+    try { console.debug && console.debug('cargarMateriasDesdeAPI -> fetch url', url); } catch(e) {}
 
     try {
       const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' });
       const text = await resp.text();
       let json = null;
       try { json = JSON.parse(text); } catch { json = null; }
+      try { console.debug && console.debug('cargarMateriasDesdeAPI -> response', { ok: resp.ok, status: resp.status, body: json || text }); } catch(e) {}
 
       if (!json?.data) {
         materias = [];
