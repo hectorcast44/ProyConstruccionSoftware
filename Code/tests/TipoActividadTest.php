@@ -27,12 +27,15 @@ class TipoActividadTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->stringContains('SELECT *, (id_usuario = ?) as es_propio'))
+            ->with($this->matchesRegularExpression('/SELECT\s+\*,\s+\(id_usuario\s+=\s+:id_usuario\)\s+AS\s+es_propio/i'))
             ->willReturn($this->stmtMock);
 
         $this->stmtMock->expects($this->once())
             ->method('execute')
-            ->with([$id_usuario, $id_usuario]);
+            ->with([
+                ':id_usuario' => $id_usuario,
+                ':id_sistema' => 1
+            ]);
 
         $this->stmtMock->expects($this->once())
             ->method('fetchAll')
@@ -118,6 +121,8 @@ class TipoActividadTest extends TestCase
 
         $resultado = $this->tipoActividadModel->eliminar($id_tipo, $id_usuario);
 
-        $this->assertTrue($resultado);
+        $this->assertIsArray($resultado);
+        $this->assertArrayHasKey('deleted_activities', $resultado);
+        $this->assertArrayHasKey('deleted_ponderaciones', $resultado);
     }
 }
