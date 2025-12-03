@@ -339,55 +339,67 @@ async function obtenerReferenciasTipo(idTipo) {
  * Gestionar el flujo completo de eliminación de un tipo de actividad.
  */
 async function manejarEliminacionTipo(etiqueta, idTipo) {
-  // Confirmación inicial
   if (!confirm('¿Estás seguro de eliminar este tipo de actividad?')) return;
 
   try {
-    // Intentar eliminar (sin force)
     const res = await fetch(`${globalThis.BASE_URL || ''}api/tipos-actividad?id=${encodeURIComponent(idTipo)}`, {
       method: 'DELETE',
       credentials: 'same-origin'
     });
+
     const txt = await res.text();
-    let json = null; try { json = JSON.parse(txt); } catch (e) { }
+    let json = null; try { json = JSON.parse(txt); } catch (_) {}
 
     if (res.ok) {
       etiqueta.remove();
-      if (typeof showToast === 'function') showToast('Tipo eliminado', { type: 'success' });
+      if (typeof showToast === 'function')
+        showToast('Tipo eliminado', { type: 'success' });
       return;
     }
 
-    // Si falla, verificar si es por referencias
     const msg = json?.message || txt;
+
     if (msg.toLowerCase().includes('referenc') || msg.toLowerCase().includes('asociadas')) {
+
       if (confirm('Este tipo tiene actividades o ponderaciones asociadas. ¿Deseas forzar la eliminación (se borrarán las actividades asociadas)?')) {
-        // Reintentar con force
+
         const resForce = await fetch(`${globalThis.BASE_URL || ''}api/tipos-actividad?id=${encodeURIComponent(idTipo)}&force=1`, {
           method: 'DELETE',
           credentials: 'same-origin'
         });
+
         const txtForce = await resForce.text();
-        let jsonForce = null; try { jsonForce = JSON.parse(txtForce); } catch (e) { }
+        let jsonForce = null; try { jsonForce = JSON.parse(txtForce); } catch (_) {}
 
         if (resForce.ok) {
           etiqueta.remove();
-          if (typeof showToast === 'function') showToast('Tipo eliminado forzosamente', { type: 'success' });
+          if (typeof showToast === 'function') {
+            showToast('Tipo eliminado forzosamente', { type: 'success' });
+          }
+        } else if (typeof showToast === 'function') {
+          showToast('Error eliminando: ' + (jsonForce?.message || txtForce), { type: 'error' });
         } else {
-          if (typeof showToast === 'function') showToast('Error eliminando: ' + (jsonForce?.message || txtForce), { type: 'error' });
-          else console.warn('Error eliminando:', (jsonForce?.message || txtForce));
+          console.warn('Error eliminando:', (jsonForce?.message || txtForce));
         }
+
       }
+
+    } else if (typeof showToast === 'function') {
+      showToast('Error eliminando: ' + msg, { type: 'error' });
     } else {
-      if (typeof showToast === 'function') showToast('Error eliminando: ' + msg, { type: 'error' });
-      else console.warn('Error eliminando:', msg);
+      console.warn('Error eliminando:', msg);
     }
 
   } catch (err) {
     console.error('Error delete tipo:', err);
-    if (typeof showToast === 'function') showToast('Error de conexión al eliminar', { type: 'error' });
-    else console.error('Error de conexión al eliminar');
+    if (typeof showToast === 'function') {
+      showToast('Error de conexión al eliminar', { type: 'error' });
+    } else {
+      console.error('Error de conexión al eliminar');
+    }
   }
 }
+
 
 /**
  * Al cargar el documento, intentar inicializar el modal de tipos cuando exista.
