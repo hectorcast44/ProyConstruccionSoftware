@@ -8,12 +8,19 @@ use App\Models\Materia;
 use App\Models\Calculadora;
 use App\Controllers\AuthController;
 
+/**
+ * Controlador para gestionar las actividades de las materias.
+ */
 class ActividadController extends Controller
 {
     private $actividadModel;
     private $materiaModel;
     private $calculadoraModel;
 
+    /**
+     * Constructor del controlador.
+     * Inicializa los modelos de Actividad, Materia y Calculadora.
+     */
     public function __construct()
     {
         $this->actividadModel = new Actividad();
@@ -21,6 +28,14 @@ class ActividadController extends Controller
         $this->calculadoraModel = new Calculadora();
     }
 
+    /**
+     * Obtiene la lista de actividades de una materia, agrupadas por tipo.
+     * También devuelve el progreso actual de la materia.
+     *
+     * Requiere el parámetro 'id_materia' o 'id' en la query string.
+     *
+     * @return void Envía una respuesta JSON con las actividades y el progreso.
+     */
     public function index()
     {
         $idUsuario = AuthController::getUserId();
@@ -147,6 +162,12 @@ class ActividadController extends Controller
         }
     }
 
+    /**
+     * Valida que los campos obligatorios estén presentes en el payload.
+     *
+     * @param array $data Datos de la petición.
+     * @throws \Exception Si faltan campos obligatorios.
+     */
     private function validateStoreInput($data)
     {
         if (empty($data['id_materia']) || empty($data['id_tipo_actividad']) || empty($data['nombre_actividad'])) {
@@ -154,6 +175,17 @@ class ActividadController extends Controller
         }
     }
 
+    /**
+     * Valida la lógica de negocio para crear/actualizar una actividad.
+     *
+     * Verifica que los puntos obtenidos no superen los posibles y que
+     * los puntos posibles no excedan el porcentaje restante del tipo de actividad.
+     *
+     * @param array $data Datos de la petición.
+     * @param float $puntosPosibles Puntos posibles de la actividad.
+     * @param float|null $puntosObtenidos Puntos obtenidos (opcional).
+     * @throws \Exception Si alguna validación falla.
+     */
     private function validateStoreLogic($data, $puntosPosibles, $puntosObtenidos)
     {
         // Validación 1: Puntos obtenidos no pueden ser mayores a los posibles
@@ -172,6 +204,14 @@ class ActividadController extends Controller
         }
     }
 
+    /**
+     * Guarda la actividad en la base de datos (crear o actualizar) y recalcula la materia.
+     *
+     * @param array $data Datos originales de la petición (para ID).
+     * @param array $actividadData Datos preparados para el modelo.
+     * @param int $idUsuario ID del usuario autenticado.
+     * @return string Mensaje de éxito.
+     */
     private function saveActividad($data, $actividadData, $idUsuario)
     {
         if (isset($data['id_actividad']) && $data['id_actividad'] > 0) {
@@ -190,6 +230,14 @@ class ActividadController extends Controller
         return $message;
     }
 
+    /**
+     * Elimina una actividad.
+     *
+     * Requiere el parámetro 'id' en la query string.
+     * Recalcula el promedio de la materia tras la eliminación.
+     *
+     * @return void Envía una respuesta JSON.
+     */
     public function delete()
     {
         $idUsuario = AuthController::getUserId();
@@ -214,6 +262,15 @@ class ActividadController extends Controller
         }
     }
 
+    /**
+     * Valida si los puntos de la nueva actividad caben en el porcentaje restante del tipo.
+     *
+     * @param int $idMateria ID de la materia.
+     * @param int $idTipo ID del tipo de actividad.
+     * @param float $puntosNuevos Puntos posibles de la nueva actividad.
+     * @param int|null $idActividadExcluir ID de actividad a excluir (en caso de edición).
+     * @throws \Exception Si los puntos exceden lo disponible.
+     */
     private function validarPuntosRestantes($idMateria, $idTipo, $puntosNuevos, $idActividadExcluir = null)
     {
         // 1. Obtener porcentaje del tipo

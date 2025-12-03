@@ -1,233 +1,225 @@
 /**
- * Helpers genéricos para la UI.
- *
- * Proporciona:
- *  - TagStyleManager: asigna clases de color pastel consistentes a los tags.
- *  - initAccordionGrid: controla la interacción de las cards tipo acordeón.
- *  - initSearchBar: gestiona la barra de búsqueda flotante y sus eventos.
+ * Módulo de utilidades de interfaz de usuario.
+ * Proporciona helpers para colores de etiquetas, acordeones y barra de búsqueda.
+ * Se expone globalmente como `UIHelpers`.
  */
-(function (global) {
-  'use strict';
-
-  // ==========================================================================
-  // TagStyleManager
-  //   Asigna una clase de tag pastel consistente por "clave" (id o nombre).
-  // ==========================================================================
-
-  const TagStyleManager = (function () {
-    /**
-     * Paleta de clases CSS para tags pastel.
-     * Se usan de forma cíclica conforme aparecen nuevos tipos.
-     * @type {string[]}
-     */
-    const PALETTE = [
-      'tag-rojo',
-      'tag-azul',
-      'tag-amarillo',
-      'tag-morado',
-      'tag-naranja',
-      'tag-agua',
-      'tag-magenta',
-      'tag-verde',
-      'tag-rosa',
-      'tag-azul-claro',
-      'tag-melocoton',
-      'tag-lavanda',
-      'tag-verde-lima',
-      'tag-dorado',
-      'tag-durazno'
-    ];
-
-    /**
-     * Mapa clave → clase CSS asignada.
-     * Mantiene la consistencia entre recargas de datos.
-     * @type {Map<string, string>}
-     */
-    const assigned = new Map();
-
-    /**
-     * Devuelve una clase de la paleta para una clave (id o nombre de tipo).
-     * Mientras haya menos o igual a PALETTE.length claves distintas,
-     * no se repiten colores.
-     *
-     * @param {string|number|null|undefined} key Clave lógica del tipo.
-     * @returns {string} Clase CSS a aplicar en el tag.
-     */
-    function getClassFor(key) {
-      if (key === undefined || key === null) {
-        return 'tag-lavanda';
-      }
-
-      const normalizedKey = String(key);
-
-      // Si ya se asignó antes, devolver siempre la misma clase
-      if (assigned.has(normalizedKey)) {
-        return assigned.get(normalizedKey);
-      }
-
-      // Nuevo tipo → siguiente color de la paleta (uso cíclico)
-      const index = assigned.size % PALETTE.length;
-      const cssClass = PALETTE[index];
-
-      assigned.set(normalizedKey, cssClass);
-      return cssClass;
-    }
-
-    return { getClassFor };
-  })();
-
-  // ==========================================================================
-  // Accordion grid
-  //   Maneja abrir/cerrar cards y el menú contextual de .accordion-card
-  // ==========================================================================
+const UIHelpers = (() => {
 
   /**
-   * Inicializa el comportamiento de acordeón sobre un grid de cards.
+   * Gestor de estilos para etiquetas (tags).
+   * Asigna colores pastel consistentes basados en el texto de la etiqueta.
+   */
+  const TagStyleManager = {
+    colors: [
+      { bg: '#e3f2fd', text: '#1976d2' }, // Azul
+      { bg: '#e8f5e9', text: '#2e7d32' }, // Verde
+      { bg: '#fff3e0', text: '#ef6c00' }, // Naranja
+      { bg: '#f3e5f5', text: '#7b1fa2' }, // Púrpura
+      { bg: '#e0f7fa', text: '#0097a7' }, // Cyan
+      { bg: '#fce4ec', text: '#c2185b' }, // Rosa
+      { bg: '#f1f8e9', text: '#558b2f' }, // Verde claro
+      { bg: '#fff8e1', text: '#ffa000' }  // Ámbar
+    ],
+    cache: new Map(),
+
+    /**
+     * Obtiene el estilo (fondo y color de texto) para una etiqueta dada.
+     * Si la etiqueta ya tiene un estilo asignado, lo devuelve de la caché.
+     * Si no, genera uno nuevo basado en el hash del texto.
+     *
+     * @param {string} text Texto de la etiqueta.
+     * @returns {Object} Objeto con propiedades `bg` y `text`.
+     */
+    getStyle(text) {
+      if (!text) return this.colors[0];
+      if (this.cache.has(text)) return this.cache.get(text);
+
+      // Hash simple para consistencia
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) {
+        hash = text.codePointAt(i) + ((hash << 5) - hash);
+      }
+
+      const index = Math.abs(hash) % this.colors.length;
+      const style = this.colors[index];
+      this.cache.set(text, style);
+      return style;
+    },
+
+    /**
+     * Aplica el estilo calculado a un elemento DOM.
+     *
+     * @param {HTMLElement} element Elemento al que aplicar el estilo.
+     * @param {string} text Texto base para calcular el color.
+     */
+    applyStyle(element, text) {
+      const style = this.getStyle(text);
+      element.style.backgroundColor = style.bg;
+      element.style.color = style.text;
+    }
+  };
+
+  /**
+   * Inicializa la funcionalidad de acordeón para tarjetas de materias.
+   * Maneja la apertura/cierre de paneles y la interacción con menús contextuales.
    *
-   * - Abre/cierra el panel de una card al hacer clic en el header.
-   * - Abre/cierra el menú contextual de la card (tres puntitos).
-   * - Cierra menús de otras cards cuando se abre uno nuevo.
-   *
-   * @param {HTMLElement|null} container Contenedor que envuelve las .accordion-card.
    * @returns {void}
    */
-  function initAccordionGrid(container) {
-    if (!container) return;
+  function initAccordionGrid() {
+    const grid = document.querySelector('.materias-grid');
+    if (!grid) return;
 
-    container.addEventListener('click', event => {
-      const menuToggle = event.target.closest('.accordion-card__menu-toggle');
-      const menuItemDetalle = event.target.closest('.js-card-detail');
-      const header = event.target.closest('.accordion-card__header');
-      const actions = event.target.closest('.accordion-card__actions');
-
-      // Abrir/cerrar menú contextual (tres puntitos)
-      if (menuToggle) {
-        event.stopPropagation();
-
-        const card = menuToggle.closest('.accordion-card');
-        const menu = card.querySelector('.accordion-card__menu');
-
-        const openMenus = document.querySelectorAll(
-          '.accordion-card__menu.accordion-card__menu--visible'
-        );
-
-        for (const m of openMenus) {
-          if (m !== menu) {
-            m.classList.remove('accordion-card__menu--visible');
-          }
-        }
-
-        menu.classList.toggle('accordion-card__menu--visible');
-        // Si el menú quedó visible, asegurar que la card esté expandida
-        try {
-          if (menu.classList.contains('accordion-card__menu--visible')) {
-            card.classList.add('open');
-          }
-        } catch (e) {  }
-
+    grid.addEventListener('click', (e) => {
+      // Manejo de menú contextual (tres puntos)
+      const menuBtn = e.target.closest('.materia-menu-btn');
+      if (menuBtn) {
+        e.stopPropagation();
+        // Cerrar otros menús abiertos
+        document.querySelectorAll('.materia-menu-content.show').forEach(m => {
+          if (m !== menuBtn.nextElementSibling) m.classList.remove('show');
+        });
+        const menu = menuBtn.nextElementSibling;
+        menu.classList.toggle('show');
         return;
       }
 
-      // Clic en "Detalles" dentro del menú contextual
-      if (menuItemDetalle) {
-        event.stopPropagation();
-
-        const card = menuItemDetalle.closest('.accordion-card');
-        card.classList.toggle('open');
-
-        const menu = menuItemDetalle.closest('.accordion-card__menu');
-        if (menu) {
-          menu.classList.remove('accordion-card__menu--visible');
-        }
-        return;
+      // Cerrar menús al hacer click fuera
+      if (!e.target.closest('.materia-menu-content')) {
+        document.querySelectorAll('.materia-menu-content.show').forEach(m => {
+          m.classList.remove('show');
+        });
       }
 
-      // Clic directo en el header (pero no en el área de acciones)
-      if (header && !actions) {
-        const card = header.closest('.accordion-card');
-        card.classList.toggle('open');
+      // Manejo del acordeón (expandir/contraer tarjeta)
+      const header = e.target.closest('.materia-header');
+      // Ignorar si el click fue en botones de acción dentro del header
+      if (header && !e.target.closest('.materia-actions') && !e.target.closest('.materia-menu')) {
+        const card = header.closest('.materia-card');
+        const content = card.querySelector('.materia-content');
+        const icon = header.querySelector('.chevron-icon');
 
-        const openMenus = document.querySelectorAll(
-          '.accordion-card__menu.accordion-card__menu--visible'
-        );
+        // Toggle actual
+        const isClosed = content.style.maxHeight === '0px' || !content.style.maxHeight;
 
-        for (const m of openMenus) {
-          m.classList.remove('accordion-card__menu--visible');
+        if (isClosed) {
+          // Abrir
+          content.style.maxHeight = content.scrollHeight + 'px';
+          content.style.opacity = '1';
+          content.style.marginTop = '1rem';
+          if (icon) icon.style.transform = 'rotate(180deg)';
+        } else {
+          // Cerrar
+          content.style.maxHeight = '0px';
+          content.style.opacity = '0';
+          content.style.marginTop = '0';
+          if (icon) icon.style.transform = 'rotate(0deg)';
         }
       }
     });
 
-    // Cerrar menú contextual al hacer clic fuera de las acciones
-    document.addEventListener('click', event => {
-      if (!event.target.closest('.accordion-card__actions')) {
-        const openMenus = document.querySelectorAll(
-          '.accordion-card__menu.accordion-card__menu--visible'
-        );
-
-        for (const m of openMenus) {
-          m.classList.remove('accordion-card__menu--visible');
-        }
+    // Cerrar menús al hacer click en cualquier parte del documento
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.materia-menu')) {
+        document.querySelectorAll('.materia-menu-content.show').forEach(m => {
+          m.classList.remove('show');
+        });
       }
     });
   }
-
-  // ==========================================================================
-  // Search bar
-  //   Maneja el input + botón de mostrar/ocultar y notifica cambios
-  // ==========================================================================
 
   /**
    * Inicializa la barra de búsqueda flotante.
+   * Configura el toggle de visibilidad y el filtrado en tiempo real.
    *
-   * - Llama a `onFilter(valor)` cada vez que cambia el texto del input.
-   * - Muestra u oculta el wrapper al hacer clic en el botón de toggle.
-   * - Limpia el input y notifica filtro vacío al cerrar la barra.
-   *
-   * @param {Object} params Parámetros de configuración.
-   * @param {HTMLInputElement|null} params.input Campo de texto donde se escribe el filtro.
-   * @param {HTMLButtonElement|null} params.toggleBtn Botón que abre/cierra la barra.
-   * @param {HTMLElement|null} params.wrapper Contenedor visual de la barra.
-   * @param {(valor:string) => void} params.onFilter Callback que se ejecuta al cambiar el filtro.
    * @returns {void}
    */
-  function initSearchBar({ input, toggleBtn, wrapper, onFilter }) {
-    if (!input && !toggleBtn) return;
+  function initSearchBar() {
+    const searchContainer = document.querySelector('.floating-search');
+    const searchInput = document.getElementById('search-input');
+    const searchToggle = document.getElementById('search-toggle');
+    const searchClose = document.getElementById('search-close');
 
-    if (input && typeof onFilter === 'function') {
-      input.addEventListener('input', () => {
-        onFilter(input.value);
+    if (!searchContainer || !searchInput || !searchToggle) return;
+
+    // Toggle búsqueda
+    searchToggle.addEventListener('click', () => {
+      searchContainer.classList.add('active');
+      searchInput.focus();
+    });
+
+    if (searchClose) {
+      searchClose.addEventListener('click', () => {
+        searchContainer.classList.remove('active');
+        searchInput.value = '';
+        // Disparar evento input para limpiar filtro
+        searchInput.dispatchEvent(new Event('input'));
       });
     }
 
-    if (toggleBtn && wrapper) {
-      toggleBtn.addEventListener('click', () => {
-        wrapper.classList.toggle('active');
+    // Cerrar con Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && searchContainer.classList.contains('active')) {
+        searchContainer.classList.remove('active');
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+      }
+    });
 
-        if (wrapper.classList.contains('active')) {
-          if (input) input.focus();
-        } else if (input) {
-          input.value = '';
-          if (typeof onFilter === 'function') {
-            onFilter('');
+    // Filtrado
+    searchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.materia-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const title = card.querySelector('h3')?.textContent.toLowerCase() || '';
+        const tags = Array.from(card.querySelectorAll('.tag')).map(t => t.textContent.toLowerCase());
+
+        const matches = title.includes(term) || tags.some(tag => tag.includes(term));
+
+        if (matches) {
+          card.style.display = '';
+          // Si hay término de búsqueda, expandir automáticamente los resultados
+          if (term.length > 0) {
+            const content = card.querySelector('.materia-content');
+            const icon = card.querySelector('.chevron-icon');
+            if (content) {
+              content.style.maxHeight = content.scrollHeight + 'px';
+              content.style.opacity = '1';
+              content.style.marginTop = '1rem';
+            }
+            if (icon) icon.style.transform = 'rotate(180deg)';
           }
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
         }
       });
-    }
+
+      // Mostrar estado vacío si no hay resultados
+      const emptyState = document.querySelector('.empty-state');
+      if (emptyState) {
+        if (visibleCount === 0 && cards.length > 0) {
+          emptyState.style.display = 'flex';
+          const msg = emptyState.querySelector('p');
+          if (msg) msg.textContent = `No se encontraron materias que coincidan con "${term}"`;
+        } else {
+          emptyState.style.display = 'none';
+        }
+      }
+    });
   }
 
-  /**
-   * Namespace global para utilidades de interfaz.
-   * @type {{TagStyleManager: {getClassFor: function(string|number|null|undefined):string},
-   *         initAccordionGrid: function(HTMLElement|null):void,
-   *         initSearchBar: function(Object):void}}
-   */
-  global.UIHelpers = {
+  return {
     TagStyleManager,
     initAccordionGrid,
     initSearchBar
   };
-})(globalThis);
+})();
+
+// Exponer globalmente
+window.UIHelpers = UIHelpers;
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = globalThis.UIHelpers;
+  module.exports = UIHelpers;
 }
