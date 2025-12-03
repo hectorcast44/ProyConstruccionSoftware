@@ -1,7 +1,7 @@
 /**
  * Página "Mis materias" — render de cards tipo acordeón como en Mis Calificaciones.
  */
-document.addEventListener('DOMContentLoaded', () => {
+function initMisMaterias() {
   let materias = [];
 
   const lista = document.getElementById('lista-materias');
@@ -507,4 +507,10 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('ensureToast failed', e, message);
     }
   }
-});
+}
+
+document.addEventListener('DOMContentLoaded', initMisMaterias);
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { initMisMaterias };
+}
