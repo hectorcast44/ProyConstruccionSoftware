@@ -330,7 +330,7 @@ async function obtenerReferenciasTipo(idTipo) {
     { credentials: 'same-origin' }
   );
   const texto = await respuesta.text();
-  const json = JSON.parse(texto); // asumiendo que parsearJsonSeguro no está disponible aquí, usar try/catch si es necesario
+  const json = JSON.parse(texto); 
   if (!respuesta.ok) throw new Error(json?.message || 'Error obteniendo referencias');
   return json.data; // Debería devolver objeto con conteo de referencias
 }
@@ -348,7 +348,13 @@ async function manejarEliminacionTipo(etiqueta, idTipo) {
     });
 
     const txt = await res.text();
-    let json = null; try { json = JSON.parse(txt); } catch (_) { console.warn('No se pudo parsear JSON de respuesta'); }
+    let json = null; 
+    try { 
+      json = JSON.parse(txt); 
+    } catch (_) { 
+      console.warn('No se pudo parsear JSON de respuesta'); 
+      json = null;
+    }
 
     if (res.ok) {
       etiqueta.remove();
@@ -369,7 +375,13 @@ async function manejarEliminacionTipo(etiqueta, idTipo) {
         });
 
         const txtForce = await resForce.text();
-        let jsonForce = null; try { jsonForce = JSON.parse(txtForce); } catch (_) { console.warn('No se pudo parsear JSON de respuesta forzada'); }
+        let jsonForce = null; 
+        try { 
+          jsonForce = JSON.parse(txtForce); 
+        } catch (_) {
+          console.warn('No se pudo parsear JSON de respuesta forzada'); 
+          jsonForce = null;
+        }
 
         if (resForce.ok) {
           etiqueta.remove();
