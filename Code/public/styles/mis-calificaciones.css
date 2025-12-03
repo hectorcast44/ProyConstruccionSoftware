@@ -4,7 +4,7 @@
    Depende de:
      - assets/css/layout.css          (estructura principal, .page-title, etc.)
      - assets/css/sidebar.css         (layout con sidebar)
-     - assets/css/search-bar.css      (componente de buscador flotante)
+     - assets/css/search-bar.css      (componente de buscador del Dashboard)
      - assets/css/card-accordion.css  (componente de cards con acordeón)
      - assets/css/table-theme.css     (estilo de tablas dentro del panel)
    ========================================================================== */
@@ -13,25 +13,17 @@
    CONTEXTO DE PÁGINA
    -------------------------------------------------------------------------- */
 
-/* Ajustes de layout solo para esta vista:
-   - Mayor separación superior del contenido respecto al header/buscador.
-*/
 .page-calificaciones main {
-  padding-inline: 1.5rem;
+  padding: 1.5rem;
 }
 
-/* Título de la página "Mis calificaciones":
-   - Alineación y separación con el grid de cards.
-*/
 .page-calificaciones .page-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.5rem;  
 }
 
-/* Icono del título (bar-chart) alineado con el estilo general del sistema. */
 .page-calificaciones .page-title i {
   width: 1.1rem;
   height: 1.1rem;
@@ -41,10 +33,7 @@
    GRID DE CARDS (LISTA DE MATERIAS)
    -------------------------------------------------------------------------- */
 
-/* El grid como tal ya lo define card-accordion.css mediante .accordion-card-grid.
-   Aquí solo afinamos la relación con el título/buscador en esta página. */
 .page-calificaciones #lista-calificaciones {
-  /* Permite pequeños ajustes en esta vista sin afectar otros grids. */
   margin-top: 1.5rem;
 }
 
@@ -52,11 +41,26 @@
    ESTADOS DE LISTA (SIN DATOS)
    -------------------------------------------------------------------------- */
 
-/* Mensaje mostrado cuando no hay materias para renderizar.
-   Clase usada desde mis-calificaciones.js. */
 .page-calificaciones .texto-vacio {
   font-size: 0.8rem;
   color: #777;
   text-align: center;
   margin-top: 2rem;
+}
+
+/* --------------------------------------------------------------------------
+   BARRA DE BÚSQUEDA TIPO DASHBOARD
+   -------------------------------------------------------------------------- */
+
+/* La barra de búsqueda comparte patrón con Dashboard:
+   .main-bar a la izquierda (título) y .content-group debajo */
+.page-calificaciones .main-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.page-calificaciones .search-box {
+  margin-right: 0.5rem;
 }

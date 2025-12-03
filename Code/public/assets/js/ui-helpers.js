@@ -1,6 +1,9 @@
 /**
  * Módulo de utilidades de interfaz de usuario.
- * Proporciona helpers para colores de etiquetas, acordeones y barra de búsqueda.
+ * Proporciona helpers para:
+ *  - Colores de etiquetas (tags).
+ *  - Acordeones de tarjetas.
+ *  - Barra de búsqueda inline (como la del Dashboard).
  * Se expone globalmente como `UIHelpers`.
  */
 const UIHelpers = (() => {
@@ -11,18 +14,23 @@ const UIHelpers = (() => {
    */
   const TagStyleManager = {
     colors: [
-      { bg: '#e3f2fd', text: '#1976d2' },
-      { bg: '#e8f5e9', text: '#2e7d32' },
-      { bg: '#fff3e0', text: '#ef6c00' },
-      { bg: '#f3e5f5', text: '#7b1fa2' },
-      { bg: '#e0f7fa', text: '#0097a7' },
-      { bg: '#fce4ec', text: '#c2185b' },
-      { bg: '#f1f8e9', text: '#558b2f' },
-      { bg: '#fff8e1', text: '#ffa000' }
+      { bg: '#e3f2fd', text: '#1976d2' }, // Azul
+      { bg: '#e8f5e9', text: '#2e7d32' }, // Verde
+      { bg: '#fff3e0', text: '#ef6c00' }, // Naranja
+      { bg: '#f3e5f5', text: '#7b1fa2' }, // Púrpura
+      { bg: '#e0f7fa', text: '#0097a7' }, // Cyan
+      { bg: '#fce4ec', text: '#c2185b' }, // Rosa
+      { bg: '#f1f8e9', text: '#558b2f' }, // Verde claro
+      { bg: '#fff8e1', text: '#ffa000' }  // Ámbar
     ],
     cache: new Map(),
     classCache: new Map(),
 
+    /**
+     * Devuelve colores pastel para un texto dado (cacheado).
+     * @param {string} text
+     * @returns {{bg:string, text:string}}
+     */
     getStyle(text) {
       if (!text) return this.colors[0];
       if (this.cache.has(text)) return this.cache.get(text);
@@ -38,11 +46,18 @@ const UIHelpers = (() => {
       return style;
     },
 
+    /**
+     * Devuelve una clase CSS para un tipo de actividad.
+     * Internamente usa palabras clave del nombre.
+     *
+     * @param {string|number} key
+     * @returns {string}
+     */
     getClassFor(key) {
       const raw = String(key || '').toLowerCase().trim();
       if (this.classCache.has(raw)) return this.classCache.get(raw);
 
-      let cssClass = 'tag-agua';
+      let cssClass = 'tag-agua'; // por defecto
 
       if (raw.includes('ejerc')) cssClass = 'tag-rojo';
       else if (raw.includes('examen')) cssClass = 'tag-azul';
@@ -57,6 +72,11 @@ const UIHelpers = (() => {
       return cssClass;
     },
 
+    /**
+     * Aplica colores pastel directamente a un elemento.
+     * @param {HTMLElement} element
+     * @param {string} text
+     */
     applyStyle(element, text) {
       const style = this.getStyle(text);
       element.style.backgroundColor = style.bg;
@@ -64,14 +84,21 @@ const UIHelpers = (() => {
     }
   };
 
+  /**
+   * Inicializa la funcionalidad de acordeón para tarjetas de materias.
+   *
+   * @param {HTMLElement} [container]
+   */
   function initAccordionGrid(container) {
     let grid = container;
     if (!grid) {
-      grid = document.querySelector('.accordion-card-grid') || document.querySelector('.materias-grid');
+      grid = document.querySelector('.accordion-card-grid') ||
+             document.querySelector('.materias-grid');
     }
     if (!grid) return;
 
     grid.addEventListener('click', (e) => {
+      // Menú contextual (estructura nueva)
       const menuToggle = e.target.closest('.accordion-card__menu-toggle');
       if (menuToggle) {
         e.stopPropagation();
@@ -85,6 +112,7 @@ const UIHelpers = (() => {
         return;
       }
 
+      // Menú contextual (estructura antigua)
       const menuBtn = e.target.closest('.materia-menu-btn');
       if (menuBtn) {
         e.stopPropagation();
@@ -96,7 +124,9 @@ const UIHelpers = (() => {
         return;
       }
 
-      if (!e.target.closest('.accordion-card__menu') && !e.target.closest('.materia-menu-content')) {
+      // Cerrar menús al hacer click fuera
+      if (!e.target.closest('.accordion-card__menu') &&
+          !e.target.closest('.materia-menu-content')) {
         document.querySelectorAll('.accordion-card__menu').forEach(m => {
           m.style.display = 'none';
         });
@@ -105,6 +135,7 @@ const UIHelpers = (() => {
         });
       }
 
+      // Acordeón (estructura nueva)
       const accordionHeader = e.target.closest('.accordion-card__header');
       if (accordionHeader && !e.target.closest('.accordion-card__actions')) {
         const card = accordionHeader.closest('.accordion-card');
@@ -112,8 +143,12 @@ const UIHelpers = (() => {
         return;
       }
 
+      // Acordeón (estructura antigua)
       const header = e.target.closest('.materia-header');
-      if (header && !e.target.closest('.materia-actions') && !e.target.closest('.materia-menu')) {
+      if (header &&
+          !e.target.closest('.materia-actions') &&
+          !e.target.closest('.materia-menu')) {
+
         const card = header.closest('.materia-card');
         const content = card.querySelector('.materia-content');
         const icon = header.querySelector('.chevron-icon');
@@ -135,8 +170,8 @@ const UIHelpers = (() => {
     });
 
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('.accordion-card__menu') && 
-          !e.target.closest('.accordion-card__menu-toggle') && 
+      if (!e.target.closest('.accordion-card__menu') &&
+          !e.target.closest('.accordion-card__menu-toggle') &&
           !e.target.closest('.materia-menu')) {
         document.querySelectorAll('.accordion-card__menu').forEach(m => {
           m.style.display = 'none';
@@ -148,75 +183,44 @@ const UIHelpers = (() => {
     });
   }
 
-  function initSearchBar(options = {}) {
-    const {
-      input = document.getElementById('search-input') || document.getElementById('buscador-menu') || document.getElementById('buscador-materias'),
-      toggleBtn = document.getElementById('search-toggle'),
-      wrapper = document.querySelector('.search-wrapper') || document.querySelector('.floating-search'),
-      onFilter = null
-    } = options;
+  /**
+   * Inicializa una barra de búsqueda "inline" (como la del Dashboard).
+   *
+   * No crea estilos: solo engancha eventos al <input>.
+   *
+   * @param {Object} opciones
+   * @param {HTMLInputElement} [opciones.input]   Input a usar. Si no se pasa,
+   *                      intenta con `.d-search-input` o `.search-input`.
+   * @param {(texto:string)=>void} [opciones.onFilter]
+   *                      Función que recibe el texto actual
+   */
+  function initInlineSearchBox({ input, onFilter } = {}) {
+    const inputEl =
+      input ||
+      document.querySelector('.d-search-input') ||
+      document.querySelector('.search-input');
 
-    if (!input || !toggleBtn) return;
+    if (!inputEl) return;
 
-    toggleBtn.addEventListener('click', () => {
-      if (wrapper) {
-        wrapper.classList.add('active');
-      }
-      input.focus();
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && wrapper && wrapper.classList.contains('active')) {
-        wrapper.classList.remove('active');
-        input.value = '';
-        input.dispatchEvent(new Event('input'));
-      }
-    });
-
-    input.addEventListener('input', (e) => {
-      const term = e.target.value;
-
+    // Cada cambio de texto dispara el callback
+    inputEl.addEventListener('input', (e) => {
+      const valor = e.target.value ?? '';
       if (typeof onFilter === 'function') {
-        onFilter(term);
-      } else {
-        const cards = document.querySelectorAll('.materia-card');
-        let visibleCount = 0;
+        onFilter(valor);
+      }
+    });
 
-        cards.forEach(card => {
-          const title = card.querySelector('h3')?.textContent.toLowerCase() || '';
-          const tags = Array.from(card.querySelectorAll('.tag')).map(t => t.textContent.toLowerCase());
-          const t = term.toLowerCase().trim();
-
-          const matches = title.includes(t) || tags.some(tag => tag.includes(t));
-
-          if (matches) {
-            card.style.display = '';
-            if (term.length > 0) {
-              const content = card.querySelector('.materia-content');
-              const icon = card.querySelector('.chevron-icon');
-              if (content) {
-                content.style.maxHeight = content.scrollHeight + 'px';
-                content.style.opacity = '1';
-                content.style.marginTop = '1rem';
-              }
-              if (icon) icon.style.transform = 'rotate(180deg)';
-            }
-            visibleCount++;
-          } else {
-            card.style.display = 'none';
-          }
-        });
-
-        const emptyState = document.querySelector('.empty-state');
-        if (emptyState) {
-          if (visibleCount === 0 && cards.length > 0) {
-            emptyState.style.display = 'flex';
-            const msg = emptyState.querySelector('p');
-            if (msg) msg.textContent = `No se encontraron materias que coincidan con "${term}"`;
-          } else {
-            emptyState.style.display = 'none';
-          }
+    // ESC: limpiar texto y volver a filtrar vacío
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        inputEl.value = '';
+        if (typeof onFilter === 'function') {
+          onFilter('');
+        } else {
+          inputEl.dispatchEvent(new Event('input'));
         }
+        inputEl.blur();
       }
     });
   }
@@ -224,7 +228,7 @@ const UIHelpers = (() => {
   return {
     TagStyleManager,
     initAccordionGrid,
-    initSearchBar
+    initInlineSearchBox
   };
 })();
 
@@ -235,9 +239,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = UIHelpers;
 }
 
-
 /**
- * Toast global pastel
+ * Toast global pastel reutilizable.
  */
 function showToast(message, { duration = 4000, type = 'info' } = {}) {
   try {
@@ -301,6 +304,7 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
 
     container.appendChild(toast);
 
+    // Forzar reflow para animación
     void toast.offsetWidth;
     toast.style.opacity = '1';
     toast.style.transform = 'translateY(0)';

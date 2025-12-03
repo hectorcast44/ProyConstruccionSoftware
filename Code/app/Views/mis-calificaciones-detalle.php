@@ -43,24 +43,29 @@ $baseUrl = rtrim($dirName, '/') . '/';
   <div id="sidebar-mount"></div>
 
   <main>
-    <!-- buscador flotante -->
-    <div class="search-wrapper">
-      <div class="input-holder">
-        <input type="text" class="search-input" placeholder="Buscar actividad..." id="buscador-menu" />
-        <button class="search-icon" aria-label="Buscar / Cerrar" id="search-toggle">
-          <i data-feather="search"></i>
-        </button>
+    <!-- barra principal con título -->
+    <div class="main-bar">
+      <div class="page-title">
+        <i data-feather="bar-chart-2"></i>
+        <h1>Mis calificaciones - detalles</h1>
       </div>
     </div>
 
-    <div class="page-title">
-      <i data-feather="bar-chart-2"></i>
-      <h1>Mis calificaciones - detalles</h1>
+    <!-- Search Bar estilo Dashboard -->
+    <div class="content-group">
+      <div class="search-box" id="search-box-detalle">
+        <i data-feather="search" class="d-search-icon"></i>
+        <input
+          type="text"
+          id="d-search-input-detalle"
+          class="d-search-input"
+          placeholder="Buscar actividad..."
+        >
+      </div>
     </div>
 
     <!-- cards con acordeón para actividades de esta materia -->
     <section id="lista-usuarios" class="accordion-card-grid"></section>
-
 
     <!-- bloque informe + diagnóstico -->
     <section class="progress-and-diagnosis">
@@ -125,8 +130,6 @@ $baseUrl = rtrim($dirName, '/') . '/';
       </div>
     </section>
   </main>
-
-
 
   <script src="https://unpkg.com/feather-icons"></script>
   <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>

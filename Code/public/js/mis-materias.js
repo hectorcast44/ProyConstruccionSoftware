@@ -6,8 +6,6 @@ function initMisMaterias() {
 
   const lista = document.getElementById('lista-materias');
   const buscadorInput = document.getElementById('buscador-materias');
-  const buscadorWrapper = document.querySelector('.search-wrapper');
-  const buscadorBtn = document.getElementById('search-toggle');
 
   if (!lista) return;
 
@@ -178,6 +176,14 @@ function initMisMaterias() {
     const filtradas = materias.filter(m => (m.nombre || '').toLowerCase().includes(termino));
     renderizarMaterias(filtradas);
   }
+
+
+  if (buscadorInput) {
+    buscadorInput.addEventListener('input', (e) => {
+      filtrarYRenderizar(e.target.value || '');
+    });
+  }
+
 
   /**
    * Carga las materias desde la API, incluyendo sus detalles y tipos de actividad.
@@ -492,17 +498,15 @@ function initMisMaterias() {
       }
     });
   }
-
-  // Inicializar acordeones y buscador si UIHelpers está disponible
+  
+  // Inicializar acordeón reutilizable
   if (globalThis.UIHelpers && typeof UIHelpers.initAccordionGrid === 'function') {
     UIHelpers.initAccordionGrid(lista);
   }
-  
-  if (globalThis.UIHelpers && typeof UIHelpers.initSearchBar === 'function') {
-    UIHelpers.initSearchBar({ input: buscadorInput, toggleBtn: buscadorBtn, wrapper: buscadorWrapper, onFilter: filtrarYRenderizar });
-  }
 
+  // Cargar materias desde la API al iniciar
   cargarMateriasDesdeAPI();
+
 
   /**
    * Escapa caracteres especiales HTML para prevenir XSS.

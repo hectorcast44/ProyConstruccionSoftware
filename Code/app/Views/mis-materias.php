@@ -61,9 +61,22 @@
       </div>
     </div>
 
+    <div class="content-group">
+      <div class="search-box">
+        <i data-feather="search" class="d-search-icon"></i>
+        <input
+          type="text"
+          id="buscador-materias"
+          class="d-search-input"
+          placeholder="Buscar materia..."
+        >
+      </div>
+    </div>
+
     <!-- listado de materias (cards) -->
     <section id="lista-materias" class="accordion-card-grid"></section>
   </main>
+
 
   <script src="https://unpkg.com/feather-icons"></script>
   <script src="<?php echo $baseUrl; ?>assets/js/sidebar.js?v=<?php echo time(); ?>"></script>
