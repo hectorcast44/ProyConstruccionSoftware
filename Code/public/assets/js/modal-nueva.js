@@ -29,14 +29,14 @@ function abrirModalNueva() {
             }
             const hid = document.getElementById('id_actividad');
             if (hid) hid.value = '';
-          } catch (e) {}
+          } catch (e) { }
 
           if (window.feather) feather.replace();
 
           const created = document.getElementById('modal-nueva');
           try {
             created.showModal();
-          } catch (e) {}
+          } catch (e) { }
           resolve(created);
         })
         .catch((err) => {
@@ -55,7 +55,7 @@ function abrirModalNueva() {
       }
       const hid = document.getElementById('id_actividad');
       if (hid) hid.value = '';
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       const titleEl = modal.querySelector('.modal-title h2');
@@ -67,11 +67,11 @@ function abrirModalNueva() {
         const ico = btnCrear.querySelector('i');
         if (ico) ico.setAttribute('data-feather', 'plus-circle');
       }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       modal.showModal();
-    } catch (e) {}
+    } catch (e) { }
 
     resolve(modal);
   });
@@ -93,15 +93,20 @@ function configurarInputNumerico(input) {
     console.warn('Error inesperado asignando tipo number:', e);
   }
 
-  input.setAttribute('inputmode', 'numeric');
-  input.setAttribute('pattern', '[0-9]+');
-  input.setAttribute('min', '1');
-  input.setAttribute('step', '1');
+  input.setAttribute('inputmode', 'decimal');
+  input.setAttribute('pattern', '[0-9]+([.,][0-9]+)?');
+  input.setAttribute('min', '0');
+  input.setAttribute('step', '0.01');
 
   input.addEventListener('input', (ev) => {
+    // Permitir números y un solo punto decimal
     const v = ev.target.value || '';
-    const cleaned = String(v).replace(/[^0-9]/g, '');
-    if (cleaned !== v) ev.target.value = cleaned;
+    // Esta regex permite dígitos y un punto opcional
+    // Nota: input type="number" a veces limpia el value si es inválido,
+    // así que confiamos más en la validación nativa del navegador para UX,
+    // pero evitamos caracteres no numéricos excepto punto.
+    // const cleaned = String(v).replace(/[^0-9.]/g, '');
+    // if (cleaned !== v) ev.target.value = cleaned;
   });
 }
 
@@ -452,7 +457,7 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
       setTimeout(() => {
         try {
           toast.remove();
-        } catch (e) {}
+        } catch (e) { }
       }, 260);
     };
 
