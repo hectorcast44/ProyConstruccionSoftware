@@ -13,12 +13,32 @@ function initMisMaterias() {
 
   /**
    * Obtiene la clase CSS para el tag del tipo de actividad.
+   * Usa UIHelpers.TagStyleManager si está disponible; de lo contrario,
+   * aplica un mapeo local por nombre.
    * @param {object} tipo - Objeto con información del tipo de actividad.
    * @returns {string} Clase CSS.
    */
   function obtenerTagClassPorTipo(tipo) {
-    const key = tipo.id_tipo ?? tipo.id_tipo_actividad ?? tipo.nombre;
-    return UIHelpers.TagStyleManager.getClassFor(key);
+    // Usar el nombre del tipo para la clasificación
+    const nombre = tipo.nombre || tipo.nombre_tipo || '';
+    const raw = String(nombre || '').toLowerCase().trim();
+
+    // Intentar usar TagStyleManager solo si existe y expone getClassFor
+    if (
+      globalThis.UIHelpers &&
+      UIHelpers.TagStyleManager &&
+      typeof UIHelpers.TagStyleManager.getClassFor === 'function'
+    ) {
+      return UIHelpers.TagStyleManager.getClassFor(nombre);
+    }
+
+    // Fallback sencillo
+    if (raw.includes('ejerc')) return 'tag-rojo';
+    if (raw.includes('examen')) return 'tag-azul';
+    if (raw.includes('proyecto')) return 'tag-verde';
+    if (raw.includes('tarea') || raw.includes('trabajo')) return 'tag-naranja';
+
+    return 'tag-agua';
   }
 
   /**
@@ -473,8 +493,14 @@ function initMisMaterias() {
     });
   }
 
-  UIHelpers.initAccordionGrid(lista);
-  UIHelpers.initSearchBar({ input: buscadorInput, toggleBtn: buscadorBtn, wrapper: buscadorWrapper, onFilter: filtrarYRenderizar });
+  // Inicializar acordeones y buscador si UIHelpers está disponible
+  if (globalThis.UIHelpers && typeof UIHelpers.initAccordionGrid === 'function') {
+    UIHelpers.initAccordionGrid(lista);
+  }
+  
+  if (globalThis.UIHelpers && typeof UIHelpers.initSearchBar === 'function') {
+    UIHelpers.initSearchBar({ input: buscadorInput, toggleBtn: buscadorBtn, wrapper: buscadorWrapper, onFilter: filtrarYRenderizar });
+  }
 
   cargarMateriasDesdeAPI();
 
