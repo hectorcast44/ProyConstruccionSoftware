@@ -158,16 +158,15 @@ async function poblarSelectsModal() {
   const base = globalThis.BASE_URL || '';
   const selectMateria = document.querySelector('#modal-nueva select[name="materia"]');
   const selectTipo = document.querySelector('#modal-nueva select[name="tipo"]');
-
   if (!selectMateria && !selectTipo) return;
 
   try {
+    // cargar materias
     if (selectMateria) {
       const r = await fetch(base + 'api/materias', { credentials: 'same-origin' });
       const txt = await r.text();
       const json = JSON.parse(txt);
       const materias = json.data || [];
-      // limpiar y poblar - usar placeholder visible para evitar campo en blanco
       const options = materias.map(m => {
         const id = m.id ?? m.id_materia ?? m.idMateria ?? '';
         const nombre = m.nombre ?? m.nombre_materia ?? m.nombreMateria ?? String(id);
@@ -176,104 +175,91 @@ async function poblarSelectsModal() {
       selectMateria.innerHTML = '<option value="" disabled selected>Selecciona una materia</option>' + options;
     }
 
-    if (selectTipo) {
-      // No mostrar tipos por defecto: permanecerá deshabilitado hasta que se seleccione una materia
-      selectTipo.innerHTML = '<option value="" disabled selected>Selecciona una materia primero</option>';
-      selectTipo.disabled = true;
+    // cargar tipos globales UNA VEZ
+    let tiposGlobal = [];
+    try {
+      const r2 = await fetch(base + 'api/tipos-actividad', { credentials: 'same-origin' });
+      const txt2 = await r2.text();
+      const json2 = JSON.parse(txt2);
+      tiposGlobal = (json2 && Array.isArray(json2.data)) ? json2.data : [];
+    } catch (err) {
+      console.warn('No se pudieron cargar tipos globales inicialmente:', err);
+      tiposGlobal = [];
+    }
 
-      // cuando cambie la materia, cargar tipos específicos para esa materia (ponderaciones)
+    // poblar selectTipo con tipos globales (permitir elegir tipo antes de materia)
+    if (selectTipo) {
+      if (tiposGlobal.length) {
+        const opts = tiposGlobal.map(t => {
+          const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+          const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+          return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+        }).join('');
+        selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+        selectTipo.disabled = false;
+      } else {
+        selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos disponibles</option>';
+        selectTipo.disabled = true;
+      }
+    }
+
+    // cuando cambie la materia, preferir cargar los tipos específicos de esa materia (si existen)
+    if (selectMateria && selectTipo) {
       selectMateria.addEventListener('change', async () => {
         const val = selectMateria.value;
         if (!val) {
-          selectTipo.innerHTML = '<option value="" disabled selected>Selecciona una materia primero</option>';
+          // Restaurar tipos globales
+          if (tiposGlobal.length) {
+            const opts = tiposGlobal.map(t => {
+              const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+              const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+              return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+            }).join('');
+            selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+            selectTipo.disabled = false;
+            return;
+          }
+          selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos disponibles</option>';
           selectTipo.disabled = true;
           return;
         }
+
         try {
           const r = await fetch(base + 'api/materias/tipos?id=' + encodeURIComponent(val), { credentials: 'same-origin' });
-          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch (e) { json = null; }
+          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch(e){ json = null; }
           const tiposMat = (json && Array.isArray(json.data)) ? json.data : [];
 
           if (!tiposMat.length) {
-            // No hay tipos asignados para la materia: dejar select vacío y deshabilitado
-            selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
-            selectTipo.disabled = true;
+            // No hay tipos asignados para la materia: mantener los tipos globales o mostrar mensaje
+            if (tiposGlobal.length) {
+              const opts = tiposGlobal.map(t => {
+                const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
+                const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
+                return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
+              }).join('');
+              selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
+              selectTipo.disabled = false;
+            } else {
+              selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
+              selectTipo.disabled = false;
+            }
             return;
           }
 
-        if (tiposGlobal.length) {
-          const optsGlobal = tiposGlobal.map(t => {
+          const opts = tiposMat.map(t => {
             const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
             const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
             return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
           }).join('');
 
-          selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + optsGlobal;
+          selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
           selectTipo.disabled = false;
-        } else {
-          selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos disponibles</option>';
+        } catch (e) {
+          console.warn('No se pudieron cargar tipos de materia:', e);
+          selectTipo.innerHTML = '<option value="" disabled selected>Error cargando tipos</option>';
           selectTipo.disabled = true;
         }
-      } catch (e) {
-        console.warn('No se pudieron cargar tipos globales:', e);
-        selectTipo.innerHTML = '<option value="" disabled selected>Error cargando tipos</option>';
-        selectTipo.disabled = true;
-      }
-
-      // cuando cambie la materia, preferir cargar los tipos específicos de esa materia (si existen)
-      if (selectMateria) {
-        selectMateria.addEventListener('change', async () => {
-          const val = selectMateria.value;
-          if (!val) {
-            // Restaurar tipos globales si se deselecciona la materia
-            try {
-              const r3 = await fetch(base + 'api/tipos-actividad', { credentials: 'same-origin' });
-              const txt3 = await r3.text(); let json3 = null; try { json3 = JSON.parse(txt3); } catch(e){ json3 = null; }
-              const tiposGlobal2 = (json3 && Array.isArray(json3.data)) ? json3.data : [];
-              if (tiposGlobal2.length) {
-                const opts = tiposGlobal2.map(t => {
-                  const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
-                  const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
-                  return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
-                }).join('');
-                selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
-                selectTipo.disabled = false;
-                return;
-              }
-            } catch (e) {  }
-
-            selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos disponibles</option>';
-            selectTipo.disabled = true;
-            return;
-          }
-
-          try {
-            const r = await fetch(base + 'api/materias/tipos?id=' + encodeURIComponent(val), { credentials: 'same-origin' });
-            const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch(e){ json = null; }
-            const tiposMat = (json && Array.isArray(json.data)) ? json.data : [];
-
-            if (!tiposMat.length) {
-              // No hay tipos asignados para la materia: mantener los tipos globales o mostrar mensaje
-              selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
-              selectTipo.disabled = false;
-              return;
-            }
-
-            const opts = tiposMat.map(t => {
-              const id = t.id_tipo_actividad ?? t.id ?? t.idTipo ?? '';
-              const nombre = t.nombre_tipo ?? t.nombre ?? t.nombreTipo ?? String(id);
-              return `<option value="${escapeHtml(String(id))}">${escapeHtml(nombre)}</option>`;
-            }).join('');
-
-            selectTipo.innerHTML = '<option value="" disabled selected>Selecciona un tipo</option>' + opts;
-            selectTipo.disabled = false;
-          } catch (e) {
-            console.warn('No se pudieron cargar tipos de materia:', e);
-            selectTipo.innerHTML = '<option value="" disabled selected>Error cargando tipos</option>';
-            selectTipo.disabled = true;
-          }
-        });
-      }
+      });
     }
   } catch (e) {
     console.warn('No se pudieron poblar selects del modal:', e);
