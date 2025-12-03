@@ -396,7 +396,7 @@ async function confirmarEliminacionMasiva() {
     return showConfirm(
       'Confirmar eliminación',
       '¿Estás seguro de que deseas eliminar todas las actividades listadas? ' +
-        'Esta acción eliminará las actividades del servidor y no se podrá deshacer.'
+      'Esta acción eliminará las actividades del servidor y no se podrá deshacer.'
     );
   }
 
@@ -812,7 +812,7 @@ document.addEventListener('click', (evento) => {
  * @param {number} index Índice de la fila en el tbody.
  * @returns {void}
  */
-function editarFila(index) {
+async function editarFila(index) {
   const filas = document.querySelectorAll('#tabla-body tr');
   const tr = filas[index];
 
@@ -823,7 +823,7 @@ function editarFila(index) {
   const celdas = tr.querySelectorAll('td');
 
   if (typeof abrirModalNueva === 'function') {
-    abrirModalNueva();
+    await abrirModalNueva();
   }
 
   actualizarUiModalActividad('editar');
@@ -1228,8 +1228,7 @@ function cambiarProgreso(elemento) {
     } catch (error) {
       console.error('Error persistiendo progreso:', error);
       mostrarToastSeguro(
-        `No se pudo guardar el progreso: ${
-          error?.message ? error.message : String(error)
+        `No se pudo guardar el progreso: ${error?.message ? error.message : String(error)
         }`,
         { type: 'error' }
       );

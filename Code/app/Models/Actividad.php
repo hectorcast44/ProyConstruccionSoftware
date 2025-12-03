@@ -151,9 +151,9 @@ class Actividad
             throw new ActividadException('Actividad no encontrada.');
         }
 
-        if ($actividad['puntos_posibles'] > 0) {
-            throw new ActividadException('No se puede eliminar una actividad que tiene puntos asignados (RF-003).', 400);
-        }
+        // if ($actividad['puntos_posibles'] > 0) {
+        //     throw new ActividadException('No se puede eliminar una actividad que tiene puntos asignados (RF-003).', 400);
+        // }
 
         $sqlEliminar = "DELETE FROM ACTIVIDAD WHERE id_actividad = ? AND id_usuario = ?";
         $sentenciaEliminar = $this->pdo->prepare($sqlEliminar);
