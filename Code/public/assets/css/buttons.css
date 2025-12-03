@@ -63,11 +63,11 @@ button svg {
 .boton-editar {
   position: relative;
   border: none;
-  background: var(--fondo-gradiente);
+  background: var(--fondo-claro);
   border-radius: 50%;
   width: 45px;
   height: 40px;
-  color: #fff;
+  color: #4155af;
   cursor: pointer;
   z-index: 1;
 }
@@ -76,7 +76,7 @@ button svg {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--fondo-claro);
+  background: var(--fondo-gradiente);
   transform: scale(1.01);
   opacity: 0;
   border-radius: 50%;
@@ -89,7 +89,12 @@ button svg {
 }
 
 .boton-editar:hover {
-  color: #4155af;
+  color: #efefef;
+}
+
+.boton-editar:active {
+  transform: scale(.98);
+  box-shadow: 0 5px 2px rgba(100, 100, 255, 0.2);
 }
 
 /* Botón eliminar */

@@ -15,6 +15,8 @@
 
 /**
  * Obtiene la clase CSS para el tag de un tipo de actividad.
+ * Usa UIHelpers.TagStyleManager si está disponible; de lo contrario,
+ * aplica un mapeo local por nombre.
  *
  * @param {Object} tipo Objeto de tipo de actividad.
  * @param {number} [tipo.id_tipo] Identificador de tipo (opcional).
@@ -23,8 +25,26 @@
  * @returns {string} Nombre de la clase CSS a aplicar.
  */
 function obtenerTagClassPorTipo(tipo) {
-  const key = tipo.id_tipo ?? tipo.id_tipo_actividad ?? tipo.nombre;
-  return UIHelpers.TagStyleManager.getClassFor(key);
+  // Usar el nombre del tipo para la clasificación
+  const nombre = tipo.nombre || tipo.nombre_tipo || '';
+  const raw = String(nombre || '').toLowerCase().trim();
+
+  // Intentar usar TagStyleManager solo si existe y expone getClassFor
+  if (
+    globalThis.UIHelpers &&
+    UIHelpers.TagStyleManager &&
+    typeof UIHelpers.TagStyleManager.getClassFor === 'function'
+  ) {
+    return UIHelpers.TagStyleManager.getClassFor(nombre);
+  }
+
+  // Fallback sencillo
+  if (raw.includes('ejerc')) return 'tag-rojo';
+  if (raw.includes('examen')) return 'tag-azul';
+  if (raw.includes('proyecto')) return 'tag-verde';
+  if (raw.includes('tarea') || raw.includes('trabajo')) return 'tag-naranja';
+
+  return 'tag-agua';
 }
 
 function normalizar(str) {
@@ -230,8 +250,12 @@ function initMisCalificaciones() {
     });
   }
 
-  if (globalThis.UIHelpers) {
+  // Inicializar acordeones y buscador si UIHelpers está disponible
+  if (globalThis.UIHelpers && typeof UIHelpers.initAccordionGrid === 'function') {
     UIHelpers.initAccordionGrid(listaCalificaciones);
+  }
+  
+  if (globalThis.UIHelpers && typeof UIHelpers.initSearchBar === 'function') {
     UIHelpers.initSearchBar({
       input: buscadorInput,
       toggleBtn: buscadorBtn,

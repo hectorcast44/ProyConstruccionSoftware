@@ -415,13 +415,16 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
       container.id = 'toast-container';
       Object.assign(container.style, {
         position: 'fixed',
-        right: '1rem',
-        bottom: '1rem',
+        top: '1rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.5rem',
-        zIndex: 99999,
-        pointerEvents: 'none'
+        zIndex: '2147483647',
+        pointerEvents: 'none',
+        maxWidth: '90vw',
+        width: '100%'
       });
       document.body.appendChild(container);
     }
@@ -429,20 +432,30 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
     const toast = document.createElement('div');
     toast.className = 'app-toast app-toast-' + type;
     toast.textContent = message;
+    
+    // Colores pastel según el tipo
+    const colors = {
+      error: { bg: '#fdd7d7', text: '#9d4d5c' },     // Rojo pastel
+      success: { bg: '#d4edda', text: '#5a7d6b' },   // Verde pastel
+      info: { bg: '#cfe2ff', text: '#5a7e9c' }       // Azul pastel
+    };
+    
+    const colorConfig = colors[type] || colors.info;
+    
     Object.assign(toast.style, {
       pointerEvents: 'auto',
-      minWidth: '200px',
-      maxWidth: '360px',
-      background:
-        type === 'error' ? '#ff4d4f' : type === 'success' ? '#22c55e' : '#333',
-      color: '#fff',
-      padding: '10px 14px',
+      minWidth: '250px',
+      maxWidth: '500px',
+      background: colorConfig.bg,
+      color: colorConfig.text,
+      padding: '12px 16px',
       borderRadius: '8px',
-      boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
       opacity: '0',
-      transform: 'translateY(8px)',
+      transform: 'translateY(-8px)',
       transition: 'opacity 240ms ease, transform 240ms ease',
-      fontSize: '0.95rem'
+      fontSize: '0.95rem',
+      fontWeight: '500'
     });
 
     container.appendChild(toast);
@@ -453,7 +466,7 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
 
     const hide = () => {
       toast.style.opacity = '0';
-      toast.style.transform = 'translateY(8px)';
+      toast.style.transform = 'translateY(-8px)';
       setTimeout(() => {
         try {
           toast.remove();

@@ -118,13 +118,43 @@ function normalizeEstado(raw) {
 }
 
 /**
+ * Obtiene la clase CSS para el tag del tipo de actividad.
+ * Usa UIHelpers.TagStyleManager si está disponible; de lo contrario,
+ * aplica un mapeo local por nombre.
+ *
+ * @param {object} tipo - Objeto con información del tipo de actividad.
+ * @returns {string} Clase CSS.
+ */
+function obtenerTagClassPorTipo(tipo) {
+  const key = tipo.id_tipo ?? tipo.id_tipo_actividad ?? tipo.nombre;
+  const raw = String(key || '').toLowerCase().trim();
+
+  // Intentar usar TagStyleManager solo si existe y expone getClassFor
+  if (
+    globalThis.UIHelpers &&
+    UIHelpers.TagStyleManager &&
+    typeof UIHelpers.TagStyleManager.getClassFor === 'function'
+  ) {
+    return UIHelpers.TagStyleManager.getClassFor(key);
+  }
+
+  // Fallback sencillo (igual que en mis-actividades)
+  if (raw.includes('ejerc')) return 'tag-rojo';
+  if (raw.includes('examen')) return 'tag-azul';
+  if (raw.includes('proyecto')) return 'tag-verde';
+  if (raw.includes('tarea') || raw.includes('trabajo')) return 'tag-naranja';
+
+  return 'tag-agua';
+}
+
+/**
  * Mapear nombre de tipo de actividad a clase CSS.
  *
  * @param {any} raw Texto crudo del tipo.
  * @returns {string} Clase CSS asociada.
  */
 function tipoClase(raw) {
-  if (!raw && !raw === 0) {
+  if (raw === undefined || raw === null) {
     return 'tag-agua';
   }
 
@@ -137,6 +167,7 @@ function tipoClase(raw) {
 
   return 'tag-agua';
 }
+
 
 /* ==========================================================
    INICIALIZACIÓN AL CARGAR EL DOCUMENTO
@@ -273,6 +304,16 @@ function construirFilasActividades(resultados) {
       const actividades = seccion.actividades || [];
 
       for (const actividad of actividades) {
+        const puntosObtenidos =
+          actividad.puntos_obtenidos ??
+          actividad.obtenido ??
+          null;
+
+        const puntosPosibles =
+          actividad.puntos_posibles ??
+          actividad.maximo ??
+          null;
+
         filas.push({
           id: actividad.id_actividad || actividad.id || '',
           fecha: actividad.fecha_entrega || actividad.fecha || '',
@@ -280,10 +321,11 @@ function construirFilasActividades(resultados) {
           materia: materia.nombre || '',
           tipo: tipoNombre,
           estado: normalizeEstado(
-            actividad.estado || (actividad.obtenido !== null ? 'pendiente' : 'en curso')
+            actividad.estado ||
+            (puntosObtenidos !== null ? 'listo' : 'pendiente')
           ),
-          obtenido: actividad.obtenido ?? null,
-          maximo: actividad.maximo ?? null,
+          obtenido: puntosObtenidos,
+          maximo: puntosPosibles,
           id_materia: materia.id || materia.id_materia || materia.idMateria || null,
           id_tipo_actividad:
             seccion.id_tipo_actividad || seccion.id_tipo || seccion.idTipo || null
@@ -294,6 +336,7 @@ function construirFilasActividades(resultados) {
 
   return filas;
 }
+
 
 function generarBadgeProgreso(estado) {
   const est = normalizeEstado(estado);
@@ -946,12 +989,28 @@ function seleccionarOpcionEnSelect(selectEl, idValor, textoCelda) {
 }
 
 /**
- * Completa el formulario del modal usando los datos de la fila seleccionada.
- *
- * @param {HTMLTableRowElement} tr
- * @param {NodeListOf<HTMLTableCellElement>} celdas
- * @param {number} index
- * @returns {Promise<void>}
+ * 
+ * @param {*} selectEl 
+ * @param {*} minOptions 
+ * @param {*} timeoutMs 
+ */
+async function esperarOpcionesSelect(selectEl, minOptions = 2, timeoutMs = 1000) {
+  const inicio = Date.now();
+  while (
+    selectEl &&
+    selectEl.options.length < minOptions &&
+    Date.now() - inicio < timeoutMs
+  ) {
+    await new Promise((resolver) => setTimeout(resolver, 50));
+  }
+}
+
+
+/**
+ * 
+ * @param {*} tr 
+ * @param {*} celdas 
+ * @param {*} index 
  */
 async function completarFormularioDesdeFila(tr, celdas, index) {
   const {
@@ -968,7 +1027,7 @@ async function completarFormularioDesdeFila(tr, celdas, index) {
   const { idActividad, idMateria, idTipo } = obtenerIdsDesdeFila(tr);
   const { maximo, obtenido } = obtenerPuntosDesdeFila(tr);
 
-  // 1) Campos básicos
+  // 1) Campos básicos: fecha y nombre
   rellenarCamposTextoBasicos(celdas, campoFecha, campoNombre);
 
   // 2) Puntos máximo y obtenido
@@ -980,26 +1039,17 @@ async function completarFormularioDesdeFila(tr, celdas, index) {
     campoPuntos.value = obtenido || '';
   }
 
-  // 3) Seleccionar materia (por id o texto)
+  // 3) Seleccionar materia directamente (sin disparar change)
   seleccionarOpcionEnSelect(selectMateria, idMateria, celdas[2]);
 
-  // Disparar change para que se carguen los tipos según la materia
-  if (selectMateria) {
-    const changeEvent = new Event('change', { bubbles: true });
-    selectMateria.dispatchEvent(changeEvent);
-  }
-
-  // 4) Pequeña espera para que se llenen las opciones del select de tipo (si se cargan dinámicamente)
-  await new Promise((resolver) => setTimeout(resolver, 150));
-
-  // 5) Seleccionar tipo
+  // 4) Seleccionar tipo directamente usando el id o el texto
   seleccionarOpcionEnSelect(selectTipo, idTipo, celdas[3]);
 
   if (selectTipo) {
     selectTipo.disabled = false;
   }
 
-  // 6) ID oculto e índice de edición
+  // 5) ID oculto e índice de edición
   if (campoIdOculto && idActividad) {
     campoIdOculto.value = String(idActividad);
   }
@@ -1008,6 +1058,7 @@ async function completarFormularioDesdeFila(tr, celdas, index) {
     formulario.dataset.editIndex = String(index);
   }
 }
+
 
 /**
  * Intenta desactivar el modo edición si está activo,
@@ -1089,14 +1140,18 @@ function eliminarFila(index) {
       try {
         if (typeof cargarActividadesDesdeAPI === 'function') {
           cargarActividadesDesdeAPI();
+          // Desactivar modo edición después de recargar
+          desactivarModoEdicion();
         } else {
           tr.remove();
           verificarTablaVacia();
+          desactivarModoEdicion();
         }
       } catch (error_) {
         console.error('Error recargando actividades tras eliminar:', error_);
         tr.remove();
         verificarTablaVacia();
+        desactivarModoEdicion();
       }
     } catch (error) {
       console.error('Error eliminando actividad:', error);
