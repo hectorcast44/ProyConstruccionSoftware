@@ -18,7 +18,7 @@ spl_autoload_register(function ($class) {
     $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
 
     if (file_exists($file)) {
-        require $file;
+        require_once $file;
     }
 });
 
@@ -41,7 +41,7 @@ $router->get('/auth/me', [App\Controllers\AuthController::class, 'me']);
 $router->get('/', function () {
     $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
     $baseDir = rtrim(dirname($scriptName), '/');
-    $baseUrl = $baseDir . '/'; 
+    $baseUrl = $baseDir . '/';
 
     if (empty($_SESSION['id_usuario'])) {
         header('Location: ' . $baseUrl . 'auth/login');
