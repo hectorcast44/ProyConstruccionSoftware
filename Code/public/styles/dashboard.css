@@ -49,6 +49,7 @@
 
 /* Estilos para la tabla del dashboard*/
 .dashboard-table-wrapper {
+  table-layout: fixed;
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -92,12 +93,14 @@
   background: #efefef !important;
   border: none !important;
   box-shadow: none !important;
-  width: 50px;
-  max-width: 50px;
+  width: 10%;
+  max-width: 10%;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .filter-btns {
-  display: flex;
+  display: inline-flex;
   gap: 10px;
   justify-content: center;
 }

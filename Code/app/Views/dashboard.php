@@ -64,9 +64,6 @@ if ($publicPos === false) {
             <div id="contenedor-boton-filtro"></div>
         </div>
 
-
-
-        <!-- Contenido de tabla -->
         <!-- Contenido de tabla -->
         <table id="tabla" class="dashboard-table-wrapper">
             <thead>
@@ -79,39 +76,7 @@ if ($publicPos === false) {
                 </tr>
             </thead>
             <tbody id="tabla-body">
-                <tr>
-                    <td>2025-11-21</td>
-                    <td>Actividad 1 </td>
-                    <td>Inferencia</td>
-                    <td>Tarea</td>
-                    <td>
-                        <span class="progress-badge progress-encurso" data-progreso="en curso">
-                            En curso
-                        </span>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2025-12-25</td>
-                    <td>Proyecto 1</td>
-                    <td>Bases de datos</td>
-                    <td>Proyecto</td>
-                    <td>
-                        <span class="progress-badge progress-completado" data-progreso="listo">
-                            Listo
-                        </span>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2025-11-19</td>
-                    <td>Examen</td>
-                    <td>Construcción de Software</td>
-                    <td>Examen</td>
-                    <td>
-                        <span class="progress-badge progress-sininiciar" data-progreso="sin iniciar">
-                            Sin iniciar
-                        </span>
-                    </td>
-                </tr>
+                <!-- Filas de actividades generadas dinámicamente -->
             </tbody>
         </table>
         <p id="tabla-vacia" class="oculto">No se han encontrado actividades que coincidan con la búsqueda.</p>
