@@ -399,4 +399,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
   intentarCargar();
+  intentarCargar();
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    abrirModalCrearMateria,
+    inicializarModalNuevaMateria,
+    prefilarModalMateria,
+    cargarTiposParaModal,
+    obtenerReferenciasTipo,
+    manejarEliminacionTipo
+  };
+}

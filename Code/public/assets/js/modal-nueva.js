@@ -116,7 +116,7 @@ function inicializarModalNueva() {
 
       const txt = await res.text();
       let json = null;
-      try { json = JSON.parse(txt); } catch(e){ throw new Error('Respuesta inválida del servidor'); }
+      try { json = JSON.parse(txt); } catch (e) { throw new Error('Respuesta inválida del servidor'); }
 
       if (!res.ok) throw new Error(json.message || ('HTTP ' + res.status));
 
@@ -177,11 +177,29 @@ async function poblarSelectsModal() {
     }
 
     if (selectTipo) {
-      // Cargar tipos globales inicialmente y permitir seleccionar tipo incluso sin elegir materia
-      try {
-        const r2 = await fetch(base + 'api/tipos-actividad', { credentials: 'same-origin' });
-        const txt2 = await r2.text(); let json2 = null; try { json2 = JSON.parse(txt2); } catch(e){ json2 = null; }
-        const tiposGlobal = (json2 && Array.isArray(json2.data)) ? json2.data : [];
+      // No mostrar tipos por defecto: permanecerá deshabilitado hasta que se seleccione una materia
+      selectTipo.innerHTML = '<option value="" disabled selected>Selecciona una materia primero</option>';
+      selectTipo.disabled = true;
+
+      // cuando cambie la materia, cargar tipos específicos para esa materia (ponderaciones)
+      selectMateria.addEventListener('change', async () => {
+        const val = selectMateria.value;
+        if (!val) {
+          selectTipo.innerHTML = '<option value="" disabled selected>Selecciona una materia primero</option>';
+          selectTipo.disabled = true;
+          return;
+        }
+        try {
+          const r = await fetch(base + 'api/materias/tipos?id=' + encodeURIComponent(val), { credentials: 'same-origin' });
+          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch (e) { json = null; }
+          const tiposMat = (json && Array.isArray(json.data)) ? json.data : [];
+
+          if (!tiposMat.length) {
+            // No hay tipos asignados para la materia: dejar select vacío y deshabilitado
+            selectTipo.innerHTML = '<option value="" disabled selected>No hay tipos definidos para esta materia</option>';
+            selectTipo.disabled = true;
+            return;
+          }
 
         if (tiposGlobal.length) {
           const optsGlobal = tiposGlobal.map(t => {
@@ -261,7 +279,7 @@ async function poblarSelectsModal() {
     console.warn('No se pudieron poblar selects del modal:', e);
   }
 
-  function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+  function escapeHtml(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", "&#39;"); }
 }
 
 // Toast helper: muestra notificaciones temporales en la esquina inferior derecha
@@ -312,7 +330,7 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
     const hide = () => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(8px)';
-      setTimeout(() => { try { toast.remove(); } catch(e){} }, 260);
+      setTimeout(() => { try { toast.remove(); } catch (e) { } }, 260);
     };
 
     const timer = setTimeout(hide, duration);
@@ -323,4 +341,8 @@ function showToast(message, { duration = 4000, type = 'info' } = {}) {
   } catch (e) {
     console.error('showToast error', e);
   }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { abrirModalNueva, inicializarModalNueva, poblarSelectsModal, showToast };
 }

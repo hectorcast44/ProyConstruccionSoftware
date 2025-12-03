@@ -257,3 +257,7 @@ if (document.readyState === 'loading') {
 } else {
     if (document.getElementById('modal-filtro')) inicializarModalFiltro();
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { abrirModalFiltro: window.abrirModalFiltro, inicializarModalFiltro };
+}

@@ -15,7 +15,8 @@ use PDO;
  *  - Eliminar actividades.
  *  - Consultar actividades por materia o por identificador.
  */
-class Actividad {
+class Actividad
+{
     /**
      * Conexión PDO hacia la base de datos.
      *
@@ -32,7 +33,8 @@ class Actividad {
      *
      * @return void
      */
-    public function __construct(?PDO $pdo = null) {
+    public function __construct(?PDO $pdo = null)
+    {
         $this->pdo = $pdo ?? Database::getInstance()->getConnection();
     }
 
@@ -53,7 +55,8 @@ class Actividad {
      *
      * @return int Identificador de la nueva actividad.
      */
-    public function crear(array $datos): int {
+    public function crear(array $datos): int
+    {
         $sql = "INSERT INTO ACTIVIDAD (
                     id_materia, id_tipo_actividad, id_usuario,
                     nombre_actividad, fecha_entrega, estado,
@@ -95,7 +98,8 @@ class Actividad {
      *
      * @return bool Verdadero si se actualizó al menos un registro, falso en otro caso.
      */
-    public function actualizar(int $id_actividad, array $datos): bool {
+    public function actualizar(int $id_actividad, array $datos): bool
+    {
         $sql = "UPDATE ACTIVIDAD SET
                     id_materia = ?,
                     id_tipo_actividad = ?,
@@ -133,7 +137,8 @@ class Actividad {
      *
      * @return int Identificador de la materia a la que pertenecía la actividad.
      */
-    public function eliminar(int $id_actividad, int $id_usuario): int {
+    public function eliminar(int $id_actividad, int $id_usuario): int
+    {
         $sqlVerificar = "SELECT id_materia, puntos_posibles
                          FROM ACTIVIDAD
                          WHERE id_actividad = ? AND id_usuario = ?";
@@ -144,6 +149,10 @@ class Actividad {
 
         if (!$actividad) {
             throw new ActividadException('Actividad no encontrada.');
+        }
+
+        if ($actividad['puntos_posibles'] > 0) {
+            throw new ActividadException('No se puede eliminar una actividad que tiene puntos asignados (RF-003).', 400);
         }
 
         $sqlEliminar = "DELETE FROM ACTIVIDAD WHERE id_actividad = ? AND id_usuario = ?";
@@ -162,7 +171,8 @@ class Actividad {
      *
      * @return array<int,array<string,mixed>> Lista de actividades encontradas.
      */
-    public function obtenerPorMateria(int $id_materia, int $id_usuario): array {
+    public function obtenerPorMateria(int $id_materia, int $id_usuario): array
+    {
         $sql = "SELECT
                     a.*,
                     t.nombre_tipo
@@ -185,7 +195,8 @@ class Actividad {
      *
      * @return array<string,mixed>|null Datos de la actividad o null si no se encuentra.
      */
-    public function obtenerPorId(int $id_actividad, int $id_usuario): ?array {
+    public function obtenerPorId(int $id_actividad, int $id_usuario): ?array
+    {
         $sql = "SELECT * FROM ACTIVIDAD WHERE id_actividad = ? AND id_usuario = ?";
 
         $sentencia = $this->pdo->prepare($sql);

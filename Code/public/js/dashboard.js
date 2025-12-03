@@ -117,10 +117,10 @@ function tipoClase(raw) {
    INICIALIZACIÓN AL CARGAR EL DOCUMENTO
    ========================================================== */
 
-document.addEventListener('DOMContentLoaded', verificarTablaVacia);
-document.addEventListener('DOMContentLoaded', () => {
+function initDashboard() {
+  verificarTablaVacia();
   cargarActividadesDesdeAPI();
-});
+}
 
 /* ==========================================================
    VERIFICAR TABLA VACÍA
@@ -380,7 +380,7 @@ async function confirmarEliminacionMasiva() {
     return showConfirm(
       'Confirmar eliminación',
       '¿Estás seguro de que deseas eliminar todas las actividades listadas? ' +
-        'Esta acción eliminará las actividades del servidor y no se podrá deshacer.'
+      'Esta acción eliminará las actividades del servidor y no se podrá deshacer.'
     );
   }
 
@@ -676,11 +676,7 @@ function inicializarBuscador() {
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', inicializarBuscador);
-} else {
-  inicializarBuscador();
-}
+// inicializarBuscador handled in initDashboard or separately
 
 /* ==========================================================
    COLUMNA DE ACCIONES EDITAR / ELIMINAR
@@ -812,7 +808,6 @@ async function esperarOpcionSelect(selectEl, value, timeout = 1200) {
       return false;
     }
 
-    // eslint-disable-next-line no-await-in-loop
     await new Promise((resolver) => setTimeout(resolver, 50));
   }
 
@@ -1160,8 +1155,7 @@ function cambiarProgreso(elemento) {
     } catch (error) {
       console.error('Error persistiendo progreso:', error);
       mostrarToastSeguro(
-        `No se pudo guardar el progreso: ${
-          error?.message ? error.message : String(error)
+        `No se pudo guardar el progreso: ${error?.message ? error.message : String(error)
         }`,
         { type: 'error' }
       );
@@ -1181,4 +1175,49 @@ function capitalizar(texto) {
     return '';
   }
   return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initDashboard();
+  inicializarBuscador();
+});
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    obtenerBaseUrl,
+    mostrarToastSeguro,
+    parsearJsonSeguro,
+    escapeHtml,
+    normalizeEstado,
+    tipoClase,
+    verificarTablaVacia,
+    obtenerMateriasDesdeApi,
+    obtenerActividadesPorMateria,
+    construirFilasActividades,
+    generarBadgeProgreso,
+    pintarFilasActividades,
+    manejarErrorCargaActividades,
+    cargarActividadesDesdeAPI,
+    confirmarEliminacionMasiva,
+    obtenerFilasTabla,
+    separarFilasPorId,
+    eliminarFilasSinId,
+    borrarActividadesConId,
+    construirMensajeErroresBorrado,
+    recargarDespuesDeBorrado,
+    botonEliminarMasivo,
+    normalizarTextoBusqueda,
+    aplicarFiltroBusqueda,
+    inicializarBuscador,
+    actualizarColumnaAcciones,
+    asegurarHeaderAcciones,
+    quitarHeaderAcciones,
+    crearCeldaAcciones,
+    agregarAccionesAFilas,
+    quitarAccionesDeFilas,
+    activarColumnaAcciones,
+    desactivarColumnaAcciones,
+    esperarOpcionSelect,
+    initDashboard
+  };
 }

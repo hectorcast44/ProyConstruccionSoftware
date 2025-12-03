@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initLogin() {
+
 
     const container = document.getElementById('container');
     const btnSignUp = document.getElementById('signUp');
@@ -20,10 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Spinner del login
-    const loginForm    = document.getElementById('signInForm');
-    const loginBtn     = document.getElementById('btnLogin');
+    const loginForm = document.getElementById('signInForm');
+    const loginBtn = document.getElementById('btnLogin');
     const loginSpinner = document.getElementById('loginSpinner');
-    const loginText    = document.getElementById('loginText');
+    const loginText = document.getElementById('loginText');
 
     if (loginForm && loginBtn && loginSpinner && loginText) {
         loginForm.addEventListener('submit', function () {
@@ -35,4 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }, delay);
         });
     }
-});
+}
+
+document.addEventListener('DOMContentLoaded', initLogin);
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { initLogin };
+}
