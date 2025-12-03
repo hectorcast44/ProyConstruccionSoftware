@@ -1,3 +1,9 @@
+/**
+ * Abre el modal para crear una nueva actividad.
+ * Si el modal no existe, carga el parcial HTML dinámicamente.
+ *
+ * @returns {Promise<HTMLElement|null>} Promesa que resuelve con el elemento del modal o null si falla.
+ */
 function abrirModalNueva() {
   return new Promise((resolve) => {
     let modal = document.getElementById('modal-nueva');
@@ -23,7 +29,7 @@ function abrirModalNueva() {
             }
             const hid = document.getElementById('id_actividad');
             if (hid) hid.value = '';
-          } catch (e) {  }
+          } catch (e) { }
 
           // renderizar iconos dentro del modal
           if (window.feather) feather.replace();
@@ -67,6 +73,13 @@ function abrirModalNueva() {
   });
 }
 
+/**
+ * Configura un input para que solo acepte valores numéricos positivos.
+ * Establece atributos inputmode, pattern, min y step, y añade un listener para limpiar caracteres no numéricos.
+ *
+ * @param {HTMLInputElement} input Elemento input a configurar.
+ * @returns {void}
+ */
 function configurarInputNumerico(input) {
   if (!input) return;
 
@@ -90,6 +103,12 @@ function configurarInputNumerico(input) {
 }
 
 
+/**
+ * Inicializa los eventos del modal de nueva actividad.
+ * Configura el cierre del modal, validaciones personalizadas y el envío del formulario.
+ *
+ * @returns {void}
+ */
 function inicializarModalNueva() {
   const modal = document.getElementById('modal-nueva');
   const cerrar = document.getElementById('cerrar-modal');
@@ -105,7 +124,7 @@ function inicializarModalNueva() {
 
   // Asegurar que los campos de puntaje sólo acepten valores numéricos positivos
   try {
-    
+
     const inputMax = form.querySelector('[name="puntaje-max"]');
     const inputObt = form.querySelector('[name="puntaje"]');
     configurarInputNumerico(inputMax);
@@ -199,7 +218,12 @@ function inicializarModalNueva() {
   });
 }
 
-// Poblar selects de materia y tipo usando la API
+/**
+ * Poblar selects de materia y tipo usando la API.
+ * Carga las materias y los tipos de actividad disponibles.
+ *
+ * @returns {Promise<void>}
+ */
 async function poblarSelectsModal() {
   const base = globalThis.BASE_URL || '';
   const selectMateria = document.querySelector('#modal-nueva select[name="materia"]');
@@ -272,7 +296,7 @@ async function poblarSelectsModal() {
 
         try {
           const r = await fetch(base + 'api/materias/tipos?id=' + encodeURIComponent(val), { credentials: 'same-origin' });
-          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch(e){ json = null; }
+          const txt = await r.text(); let json = null; try { json = JSON.parse(txt); } catch (e) { json = null; }
           const tiposMat = (json && Array.isArray(json.data)) ? json.data : [];
 
           if (!tiposMat.length) {
@@ -314,7 +338,15 @@ async function poblarSelectsModal() {
   function escapeHtml(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", "&#39;"); }
 }
 
-// Toast helper: muestra notificaciones temporales en la esquina inferior derecha
+/**
+ * Muestra notificaciones temporales en la esquina inferior derecha.
+ *
+ * @param {string} message Mensaje a mostrar.
+ * @param {Object} options Opciones de configuración.
+ * @param {number} options.duration Duración en milisegundos.
+ * @param {string} options.type Tipo de notificación ('info', 'success', 'error').
+ * @returns {HTMLElement|undefined} Elemento del toast creado.
+ */
 function showToast(message, { duration = 4000, type = 'info' } = {}) {
   try {
     let container = document.getElementById('toast-container');

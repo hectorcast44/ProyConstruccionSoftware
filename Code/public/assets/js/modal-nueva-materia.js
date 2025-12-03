@@ -1,7 +1,9 @@
 /**
  * Abre el modal para crear o editar una materia.
  * Si se proporciona `data`, se pre-llena el formulario para edición.
+ *
  * @param {Object|null} data Datos de la materia a editar (opcional).
+ * @returns {void}
  */
 function abrirModalCrearMateria(data = null) {
   // Si se llama desde un evento (click), data es un Event. Lo tratamos como null.
@@ -44,6 +46,8 @@ function abrirModalCrearMateria(data = null) {
 /**
  * Inicializa los eventos del modal de nueva materia (submit, cerrar).
  * Configura la lógica de envío del formulario, incluyendo validación de porcentajes.
+ *
+ * @returns {void}
  */
 function inicializarModalNuevaMateria() {
   const modal = document.getElementById('modal-nueva-materia');
@@ -157,7 +161,9 @@ function inicializarModalNuevaMateria() {
 /**
  * Rellena el modal con los datos de una materia existente para su edición.
  * Marca los checkboxes de los tipos de actividad asociados y preserva sus porcentajes.
+ *
  * @param {Object} data Datos de la materia (id, nombre, calif_minima, tipos).
+ * @returns {void}
  */
 function prefilarModalMateria(data) {
   const form = document.getElementById('form-materia');
@@ -323,6 +329,9 @@ async function cargarTiposParaModal() {
 
 /**
  * Obtener referencias de un tipo de actividad desde la API.
+ *
+ * @param {number|string} idTipo ID del tipo de actividad.
+ * @returns {Promise<Object>} Datos de las referencias.
  */
 async function obtenerReferenciasTipo(idTipo) {
   const respuesta = await fetch(
@@ -337,6 +346,10 @@ async function obtenerReferenciasTipo(idTipo) {
 
 /**
  * Gestionar el flujo completo de eliminación de un tipo de actividad.
+ *
+ * @param {HTMLElement} etiqueta Elemento DOM que representa el tipo en la lista.
+ * @param {number|string} idTipo ID del tipo de actividad.
+ * @returns {Promise<void>}
  */
 async function manejarEliminacionTipo(etiqueta, idTipo) {
   // Confirmación inicial
