@@ -4,23 +4,7 @@ use App\Core\Router;
 
 session_start();
 
-// Autoloader
-spl_autoload_register(function ($class) {
-    $prefix = 'App\\';
-    $base_dir = __DIR__ . '/../app/';
-
-    $len = strlen($prefix);
-    if (strncmp($prefix, $class, $len) !== 0) {
-        return;
-    }
-
-    $relative_class = substr($class, $len);
-    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
-
-    if (file_exists($file)) {
-        require $file;
-    }
-});
+require_once __DIR__ . '/../vendor/autoload.php';
 
 $router = new Router();
 
@@ -41,7 +25,7 @@ $router->get('/auth/me', [App\Controllers\AuthController::class, 'me']);
 $router->get('/', function () {
     $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
     $baseDir = rtrim(dirname($scriptName), '/');
-    $baseUrl = $baseDir . '/'; 
+    $baseUrl = $baseDir . '/';
 
     if (empty($_SESSION['id_usuario'])) {
         header('Location: ' . $baseUrl . 'auth/login');
