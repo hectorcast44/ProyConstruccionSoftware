@@ -42,7 +42,7 @@
                 </div>
 
                 <div class="form-group">
-                    <input class="form-control" type="password" id="suPassword" name="password" placeholder="Contraseña" required>
+                    <input class="form-control" type="password" id="suPassword" name="password" placeholder="Contraseña" minlength="6" required>
                 </div>
 
                 <button class="btn-primary" type="submit">Registrarme</button>
