@@ -35,7 +35,7 @@ if ($publicPos === false) {
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>assets/css/modal.css">
     <!-- estilos específicos -->
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>styles/dashboard.css">
-    
+
     <!-- FullCalendar -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
     <style>
@@ -44,16 +44,20 @@ if ($publicPos === false) {
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             margin-top: 20px;
-            display: none; /* Oculto por defecto */
+            display: none;
+            /* Oculto por defecto */
         }
+
         .fc-event {
             cursor: pointer;
         }
+
         .fc-toolbar-title {
             font-size: 1.25em !important;
         }
+
         .btn-icon-text {
             display: flex;
             align-items: center;
@@ -108,7 +112,7 @@ if ($publicPos === false) {
                 <!-- Filas de actividades generadas dinámicamente -->
             </tbody>
         </table>
-        
+
         <!-- Contenedor del Calendario -->
         <div id="calendar-view"></div>
 
@@ -125,7 +129,7 @@ if ($publicPos === false) {
     <!-- ui-helpers -->
     <script src="<?php echo $baseUrl; ?>assets/js/ui-helpers.js"></script>
     <!-- Modal nueva -->
-    <script src="<?php echo $baseUrl; ?>assets/js/modal-nueva.js"></script>
+    <script src="<?php echo $baseUrl; ?>assets/js/modal-nueva.js?v=<?php echo time(); ?>"></script>
     <!-- Modal filtro (define abrirModalFiltro) -->
     <script src="<?php echo $baseUrl; ?>assets/js/modal-filtro.js?v=<?php echo time(); ?>"></script>
     <!-- Lógica de botones -->

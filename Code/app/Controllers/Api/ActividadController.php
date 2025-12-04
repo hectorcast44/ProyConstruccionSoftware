@@ -189,7 +189,8 @@ class ActividadController extends Controller
     private function validateStoreLogic($data, $puntosPosibles, $puntosObtenidos)
     {
         // Validación 1: Puntos obtenidos no pueden ser mayores a los posibles
-        if ($puntosObtenidos !== null && $puntosObtenidos > $puntosPosibles) {
+        // Solo validamos si hay puntos posibles definidos (> 0)
+        if ($puntosPosibles > 0 && $puntosObtenidos !== null && $puntosObtenidos > $puntosPosibles) {
             throw new \Exception('Los puntos obtenidos no pueden ser mayores a los puntos posibles.');
         }
 
