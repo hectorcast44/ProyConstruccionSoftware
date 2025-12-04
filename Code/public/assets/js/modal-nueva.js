@@ -164,11 +164,10 @@ function inicializarModalNueva() {
       !payload.id_materia ||
       !payload.id_tipo_actividad ||
       !payload.nombre_actividad ||
-      payload.puntos_posibles === null ||
       payload.fecha_entrega === ''
     ) {
       showToast(
-        'Por favor completa los campos obligatorios: Materia, Tipo, Actividad, Puntaje máximo y Fecha.',
+        'Por favor completa los campos obligatorios: Materia, Tipo, Actividad y Fecha.',
         { type: 'error' }
       );
       return;
