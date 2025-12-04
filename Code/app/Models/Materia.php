@@ -274,25 +274,6 @@ class Materia
     }
 
     /**
-     * Verificar si una materia tiene actividades asociadas.
-     *
-     * @param int $idMateria Identificador de la materia.
-     *
-     * @return bool Verdadero si existen actividades relacionadas.
-     */
-    private function tieneActividades(int $idMateria): bool
-    {
-        $sql = "SELECT COUNT(*)
-                FROM ACTIVIDAD
-                WHERE id_materia = ?";
-
-        $sentencia = $this->pdo->prepare($sql);
-        $sentencia->execute([$idMateria]);
-
-        return (int) $sentencia->fetchColumn() > 0;
-    }
-
-    /**
      * Verificar si una materia tiene actividades de un tipo específico.
      *
      * @param int $idMateria Identificador de la materia.
@@ -432,8 +413,8 @@ class Materia
     public function validarPonderacionActividades(int $idMateria, int $idTipo, float $nuevoPorcentaje)
     {
         // Obtener la actividad con mayor puntaje para este tipo
-        $sql = "SELECT MAX(puntos_posibles) as max_puntos 
-                FROM ACTIVIDAD 
+        $sql = "SELECT MAX(puntos_posibles) as max_puntos
+                FROM ACTIVIDAD
                 WHERE id_materia = ? AND id_tipo_actividad = ?";
 
         $stmt = $this->pdo->prepare($sql);

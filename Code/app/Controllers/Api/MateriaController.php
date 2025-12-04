@@ -68,7 +68,7 @@ class MateriaController extends Controller
                 $this->json(['status' => 'success', 'data' => []]);
                 return;
             }
-            
+
             $resumen = $this->materiaModel->obtenerResumenActividades($idUsuario);
 
             foreach ($resumen as $fila) {
@@ -88,7 +88,6 @@ class MateriaController extends Controller
 
     /**
      * Obtiene los tipos de actividad (ponderaciones) asociados a una materia.
-     * 
      * Requiere el parámetro 'id' en la query string.
      *
      * @return void Envía una respuesta JSON.
