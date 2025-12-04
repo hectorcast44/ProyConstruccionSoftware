@@ -325,7 +325,7 @@ function construirFilasActividades(resultados) {
           tipo: tipoNombre,
           estado: normalizeEstado(
             actividad.estado ||
-            (puntosObtenidos !== null ? 'listo' : 'pendiente')
+            (puntosObtenidos === null ? 'pendiente' : 'listo')
           ),
           obtenido: puntosObtenidos,
           maximo: puntosPosibles,
@@ -709,7 +709,7 @@ function inicializarBuscador() {
     return;
   }
 
-  if (window.UIHelpers && typeof UIHelpers.initInlineSearchBox === 'function') {
+  if (globalThis.UIHelpers && typeof UIHelpers.initInlineSearchBox === 'function') {
     UIHelpers.initInlineSearchBox({
       input: searchInput,
       onFilter: (texto) => {
@@ -1329,7 +1329,7 @@ function mapearActividadesAEventos(actividades) {
     return {
       title: act.nombre,
       start: act.fecha,
-      allDay: true, // Asumimos todo el día por ahora
+      allDay: true, 
       backgroundColor: color,
       borderColor: color,
       extendedProps: {
@@ -1380,8 +1380,6 @@ function toggleVista() {
   const btn = document.getElementById('btn-toggle-view');
   const icon = btn.querySelector('i');
   const text = btn.querySelector('span');
-  const searchBox = document.getElementById('search-box');
-  const btnFiltro = document.getElementById('contenedor-boton-filtro');
 
   if (vistaActual === 'tabla') {
     // Cambiar a calendario
@@ -1391,14 +1389,14 @@ function toggleVista() {
     calendarEl.style.display = 'block';
 
     // Actualizar botón
-    if (icon) icon.setAttribute('data-feather', 'list');
+    if (icon) icon.dataset.feather = 'list';
     if (text) text.textContent = 'Tabla';
 
     // Inicializar si es la primera vez
-    if (!calendarInstance) {
-      inicializarCalendario();
-    } else {
+    if (calendarInstance) {
       calendarInstance.updateSize(); // Reajustar tamaño por si acaso
+    } else {
+      inicializarCalendario();
     }
 
   } else {
@@ -1409,7 +1407,7 @@ function toggleVista() {
     calendarEl.style.display = 'none';
 
     // Actualizar botón
-    if (icon) icon.setAttribute('data-feather', 'calendar');
+    if (icon) icon.dataset.feather = 'calendar';
     if (text) text.textContent = 'Calendario';
   }
 

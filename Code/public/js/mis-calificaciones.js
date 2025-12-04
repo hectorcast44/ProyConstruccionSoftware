@@ -206,9 +206,7 @@ async function cargarMateriasDesdeAPI() {
       console.error('No es JSON válido:', text);
     }
 
-    if (!json?.data) {
-      materias = [];
-    } else {
+    if (json?.data) {
       materias = json.data.map(m => ({
         id: m.id ?? m.id_materia ?? 0,
         nombre: m.nombre ?? m.nombre_materia ?? 'Sin nombre',
@@ -219,6 +217,8 @@ async function cargarMateriasDesdeAPI() {
           maximo: Number(t.maximo ?? t.puntos_posibles ?? 0)
         }))
       }));
+    } else {
+      materias = [];
     }
 
     filtrarYRenderizar('');

@@ -69,14 +69,6 @@ class MateriaController extends Controller
                 return;
             }
 
-            // Obtener resumen de puntos por tipo de actividad (Lógica portada de calificaciones_resumen.php)
-            // Nota: Idealmente esto iría en un método del modelo, pero por simplicidad lo integramos aquí 
-            // o lo movemos a MateriaModel->obtenerResumenPorUsuario($idUsuario).
-            // Para mantener MVC puro, lo moveremos al modelo en un paso posterior si es necesario, 
-            // pero por ahora usaremos el modelo para obtener los datos crudos si es posible, 
-            // o ejecutaremos la query aquí si el modelo no tiene el método.
-
-            // Mejor enfoque: Agregar método al modelo Materia para obtener el resumen.
             $resumen = $this->materiaModel->obtenerResumenActividades($idUsuario);
 
             foreach ($resumen as $fila) {
@@ -96,7 +88,6 @@ class MateriaController extends Controller
 
     /**
      * Obtiene los tipos de actividad (ponderaciones) asociados a una materia.
-     * 
      * Requiere el parámetro 'id' en la query string.
      *
      * @return void Envía una respuesta JSON.

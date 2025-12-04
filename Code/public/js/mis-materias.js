@@ -198,9 +198,7 @@ function initMisMaterias() {
       let json = null;
       try { json = JSON.parse(text); } catch { json = null; }
 
-      if (!json?.data) {
-        materias = [];
-      } else {
+      if (json?.data) {
         materias = json.data.map(m => ({
           id: m.id ?? m.id_materia ?? 0,
           nombre: m.nombre ?? m.nombre_materia ?? 'Sin nombre',
@@ -211,6 +209,8 @@ function initMisMaterias() {
             maximo: Number(t.maximo ?? t.puntos_posibles ?? 0)
           }))
         }));
+      } else {
+        materias = [];
       }
 
       // Después de obtener el listado, pedir detalles por materia (que incluyen tipos con porcentaje)
@@ -220,7 +220,7 @@ function initMisMaterias() {
           try {
             const r = await fetch(base + 'api/materias?id=' + encodeURIComponent(mat.id), { credentials: 'same-origin' });
             const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) { j = null; }
-            if (r.ok && j && j.data && Array.isArray(j.data.tipos)) {
+            if (r.ok && j?.data && Array.isArray(j.data.tipos)) {
               mat.tipos = j.data.tipos.map(t => ({
                 id_tipo: t.id_tipo_actividad ?? t.id_tipo ?? t.id ?? 0,
                 nombre: t.nombre_tipo ?? t.nombre ?? 'Tipo',
@@ -244,9 +244,9 @@ function initMisMaterias() {
   }
 
   // Exponer para que otros módulos (modal) puedan refrescar la lista sin recargar
-  window.cargarMateriasDesdeAPI = cargarMateriasDesdeAPI;
+  globalThis.cargarMateriasDesdeAPI = cargarMateriasDesdeAPI;
   // Exponer función de ponderación para que otros módulos (p. ej. modal de crear materia) la usen
-  window.abrirModalPonderacion = abrirModalPonderacion;
+  globalThis.abrirModalPonderacion = abrirModalPonderacion;
 
   /**
    * Abre el modal para gestionar las ponderaciones de una materia.
@@ -258,7 +258,7 @@ function initMisMaterias() {
     // intentar obtener los tipos de la materia
     const r = await fetch(base + 'api/materias?id=' + encodeURIComponent(idMateria), { credentials: 'same-origin' });
     const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) { j = null; }
-    if (!r.ok || !j || !j.data) {
+    if (!r.ok || !j?.data) {
       throw new Error(j?.message || 'No se pudo obtener la materia');
     }
 
@@ -331,7 +331,7 @@ function initMisMaterias() {
 
     // handler compartido para guardar ponderaciones (evita recarga si algo falla)
     async function handleGuardarPonderaciones(ev) {
-      try { ev && ev.preventDefault(); } catch (e) { }
+      try { ev?.preventDefault(); } catch (e) { }
       // construir payload
       const inputs = Array.from(dlg.querySelectorAll('.ponder-row'));
       const tiposPayload = inputs.map(row => {
@@ -344,18 +344,18 @@ function initMisMaterias() {
 
       try {
         const payload = { id_materia: Number(idMateria), tipos: tiposPayload };
-        try { console.debug && console.debug('Ponderacion - payload', payload); } catch (e) { }
+        try { console.debug?.('Ponderacion - payload', payload); } catch (e) { }
         const res = await fetch(base + 'api/materias', {
           method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const t = await res.text(); let jj = null; try { jj = JSON.parse(t); } catch (e) { jj = null; }
-        try { console.debug && console.debug('Ponderacion - response', { ok: res.ok, status: res.status, body: jj || t }); } catch (e) { }
+        try { console.debug?.('Ponderacion - response', { ok: res.ok, status: res.status, body: jj || t }); } catch (e) { }
         if (!res.ok) throw new Error(jj?.message || ('HTTP ' + res.status));
 
         try { dlg.close(); } catch (e) { }
         ensureToast(jj?.message || 'Ponderaciones guardadas', 'success');
-        if (typeof window.cargarMateriasDesdeAPI === 'function') window.cargarMateriasDesdeAPI();
+        if (typeof globalThis.cargarMateriasDesdeAPI === 'function') globalThis.cargarMateriasDesdeAPI();
       } catch (err) {
         console.error('Error guardando ponderaciones:', err);
         ensureToast('Error guardando ponderaciones: ' + (err.message || err), 'error');
@@ -365,8 +365,6 @@ function initMisMaterias() {
     // Adjuntar tanto al submit del form (compatibilidad) como al click del botón guardar
     form.addEventListener('submit', handleGuardarPonderaciones);
     btnSave?.addEventListener('click', handleGuardarPonderaciones);
-
-    return;
   }
 
   if (lista) {
@@ -387,8 +385,8 @@ function initMisMaterias() {
           if (!r.ok) throw new Error(json.message || ('HTTP ' + r.status));
 
           // abrir modal en modo edición
-          if (typeof window.abrirModalCrearMateria === 'function') {
-            window.abrirModalCrearMateria(json.data);
+          if (typeof globalThis.abrirModalCrearMateria === 'function') {
+            globalThis.abrirModalCrearMateria(json.data);
           }
         } catch (err) {
           console.error('Error cargando materia para editar:', err);
@@ -451,10 +449,10 @@ function initMisMaterias() {
               }
               const ok = dlg.querySelector('#__temp_ok_mat');
               const cancel = dlg.querySelector('#__temp_cancel_mat');
-              ok && ok.focus();
+              ok?.focus();
               const cleanup = (res) => { try { dlg.close(); dlg.remove(); } catch (e) { }; resolve(res); };
-              ok && ok.addEventListener('click', () => cleanup(true));
-              cancel && cancel.addEventListener('click', () => cleanup(false));
+              ok?.addEventListener('click', () => cleanup(true));
+              cancel?.addEventListener('click', () => cleanup(false));
               dlg.addEventListener('cancel', () => cleanup(false));
             });
           })();
@@ -493,8 +491,6 @@ function initMisMaterias() {
           console.error('Error eliminando materia:', err);
           ensureToast('Acción prohibida: ' + (err.message || err), 'error');
         }
-
-        return;
       }
     });
   }
