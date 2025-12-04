@@ -173,7 +173,7 @@
 
 .progress-encurso {
   background-color: #fff4e6;
-  color: #e65100;
+  color: #c54601;
   border-color: #ff9800;
 }
 
@@ -190,13 +190,6 @@
 /* 
   Search Bar del Dashboard 
 */
-
-.content-group {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .search-box {
   position: relative;
   height: 40px;
@@ -293,7 +286,7 @@
 }
 
 .modal-eliminar-masivo button.btn-delete-fila {
-  background: #d9534f;
+  background: #c44b47;
   color: #fff;
 }
 
