@@ -17,7 +17,7 @@ function abrirModalCrearMateria(data = null) {
       .then(html => {
         document.body.insertAdjacentHTML('beforeend', html);
         inicializarModalNuevaMateria();
-        if (window.feather) feather.replace();
+        if (globalThis.feather) feather.replace();
         const m = document.getElementById('modal-nueva-materia');
 
         // Intentar cargar tipos si no se han cargado
@@ -35,11 +35,9 @@ function abrirModalCrearMateria(data = null) {
   // si ya existe el modal, prefilar si se pasó data, sino resetear
   if (data) {
     prefilarModalMateria(data);
-  } else {
-    if (typeof window.resetModalMateria === 'function') {
-      window.resetModalMateria();
+  } else if (typeof globalThis.resetModalMateria === 'function') {
+      globalThis.resetModalMateria();
     }
-  }
   modal.showModal();
 }
 
@@ -66,11 +64,11 @@ function inicializarModalNuevaMateria() {
     // limpiar datasets de porcentajes
     const checks = document.querySelectorAll('#tipos-checkboxes input[type="checkbox"]');
     checks.forEach(c => delete c.dataset.porcentaje);
-    if (window.feather) feather.replace();
+    if (globalThis.feather) feather.replace();
   };
 
   // Exponer reset para que pueda ser llamado desde fuera
-  window.resetModalMateria = resetTexts;
+  globalThis.resetModalMateria = resetTexts;
 
   if (cerrar) cerrar.addEventListener('click', () => { modal.close(); resetTexts(); });
 
@@ -139,14 +137,14 @@ function inicializarModalNuevaMateria() {
       modal.close();
 
       // Si es creación nueva O edición, abrir modal de ponderación si hay tipos seleccionados
-      if (targetId && typeof window.abrirModalPonderacion === 'function') {
+      if (targetId && typeof globalThis.abrirModalPonderacion === 'function') {
         try {
-          setTimeout(() => window.abrirModalPonderacion(targetId, tiposParaPrefill), 300);
+          setTimeout(() => globalThis.abrirModalPonderacion(targetId, tiposParaPrefill), 300);
         } catch (e) { console.warn('No se pudo abrir modal de ponderación:', e); }
       }
 
       // Refrescar lista de fondo
-      if (typeof window.cargarMateriasDesdeAPI === 'function') window.cargarMateriasDesdeAPI();
+      if (typeof globalThis.cargarMateriasDesdeAPI === 'function') globalThis.cargarMateriasDesdeAPI();
       else location.reload();
 
       if (typeof showToast === 'function') showToast(json.message || (isEdit ? 'Materia actualizada' : 'Materia creada'), { type: 'success' });

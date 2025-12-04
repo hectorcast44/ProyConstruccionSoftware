@@ -459,21 +459,6 @@ class Calculadora {
         return [$puntosGanados, $puntosPerdidos, $puntosPendientes, $sumaCalifPorTipo];
     }
 
-    /**
-     * Calcular calificación normalizada a una escala 0–100.
-     *
-     * @param float $sumaCalifPorTipo Suma de contribuciones por tipo.
-     * @param float $puntosEscalaTotal Suma de ponderaciones.
-     *
-     * @return float Calificación actual normalizada.
-     */
-    private function calcularCalificacionNormalizada(float $sumaCalifPorTipo, float $puntosEscalaTotal): float {
-        if ($puntosEscalaTotal <= 0.0) {
-            return 0.0;
-        }
-
-        return ($sumaCalifPorTipo / $puntosEscalaTotal) * self::ESCALA_PORCENTAJE;
-    }
 
     /**
      * Redondear los resultados globales a dos decimales.

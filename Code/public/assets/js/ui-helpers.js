@@ -103,7 +103,7 @@ const UIHelpers = (() => {
       if (menuToggle) {
         e.stopPropagation();
         const menu = menuToggle.nextElementSibling;
-        if (menu && menu.classList.contains('accordion-card__menu')) {
+        if (menu?.classList.contains('accordion-card__menu')) {
           document.querySelectorAll('.accordion-card__menu').forEach(m => {
             if (m !== menu) m.style.display = 'none';
           });
@@ -233,7 +233,7 @@ const UIHelpers = (() => {
 })();
 
 // Exponer globalmente
-window.UIHelpers = UIHelpers;
+globalThis.UIHelpers = UIHelpers;
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = UIHelpers;

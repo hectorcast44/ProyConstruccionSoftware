@@ -26,8 +26,9 @@
     <?php
     $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
     $dirName = dirname($scriptName);
-    if ($dirName === '.' || $dirName === '/')
+    if ($dirName === '.' || $dirName === '/'){
       $dirName = '';
+    }
     $baseUrl = rtrim($dirName, '/') . '/';
     ?>
     const BASE_URL = "<?php echo $baseUrl; ?>";

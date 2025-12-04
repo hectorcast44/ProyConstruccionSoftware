@@ -18,7 +18,7 @@ function initLogin() {
     }
 
     // Abrir panel de registro automáticamente si está configurado
-    if (window.SIGNUP_OPEN === true && container) {
+    if (globalThis.SIGNUP_OPEN === true && container) {
         container.classList.add('right-panel-active');
     }
 

@@ -10,7 +10,7 @@
  *
  * @returns {void}
  */
-window.abrirModalFiltro = function abrirModalFiltro() {
+globalThis.abrirModalFiltro = function abrirModalFiltro() {
     // Intentar obtener el elemento del modal; si no existe, cargamos el parcial.
     let modal = document.getElementById('modal-filtro');
 
@@ -32,7 +32,7 @@ window.abrirModalFiltro = function abrirModalFiltro() {
                 inicializarModalFiltro();
 
                 // renderizar iconos dentro del modal (después de insertar)
-                if (window.feather) feather.replace();
+                if (globalThis.feather) feather.replace();
 
                 // mostrar modal
                 modal = document.getElementById('modal-filtro');
@@ -45,7 +45,7 @@ window.abrirModalFiltro = function abrirModalFiltro() {
     // Si ya existe un modal, pero su contenido es la versión antigua (input en lugar de select),
     // recargamos el partial y lo reemplazamos para asegurar que el campo sea un <select>.
     const materiaEl = modal.querySelector('#filtro-materia');
-    const isInputOld = materiaEl && materiaEl.tagName && materiaEl.tagName.toLowerCase() === 'input';
+    const isInputOld = materiaEl?.tagName && materiaEl.tagName.toLowerCase() === 'input';
     if (isInputOld) {
         const base = globalThis.BASE_URL || '';
         const url = base + 'partials/modal-filtro.html?t=' + Date.now();
@@ -57,7 +57,7 @@ window.abrirModalFiltro = function abrirModalFiltro() {
                 // reinicializar referencia y listeners
                 modal = document.getElementById('modal-filtro');
                 inicializarModalFiltro();
-                if (window.feather) feather.replace();
+                if (globalThis.feather) feather.replace();
                 if (modal) showModal();
             })
             .catch(err => {
@@ -68,8 +68,8 @@ window.abrirModalFiltro = function abrirModalFiltro() {
     }
 
     // Si ya existe, asegurarnos de repoblar los tipos por si hubo cambios
-    if (typeof window.poblarTiposFiltro === 'function') {
-        window.poblarTiposFiltro();
+    if (typeof globalThis.poblarTiposFiltro === 'function') {
+        globalThis.poblarTiposFiltro();
     }
     showModal();
 };
@@ -173,7 +173,7 @@ function inicializarModalFiltro() {
             });
     }
     poblarTipos();
-    window.poblarTiposFiltro = poblarTipos;
+    globalThis.poblarTiposFiltro = poblarTipos;
 
     // Botón para restablecer todos los filtros a su estado por defecto
     const resetBtn = document.getElementById('reset-filtros');
@@ -217,7 +217,6 @@ function inicializarModalFiltro() {
         filas.forEach(fila => {
             const children = fila.children;
             const fecha = children[0] ? children[0].innerText.trim() : '';
-            const actividad = children[1] ? children[1].innerText.toLowerCase() : '';
             const materiaFila = children[2] ? children[2].innerText.toLowerCase() : '';
             const tipoFila = children[3] ? children[3].innerText.toLowerCase() : '';
             let progresoFila = children[4] ? children[4].innerText.toLowerCase() : '';
@@ -262,10 +261,8 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('modal-filtro')) inicializarModalFiltro();
     });
-} else {
-    if (document.getElementById('modal-filtro')) inicializarModalFiltro();
-}
+} else if (document.getElementById('modal-filtro')) inicializarModalFiltro();
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { abrirModalFiltro: window.abrirModalFiltro, inicializarModalFiltro };
+    module.exports = { abrirModalFiltro: globalThis.abrirModalFiltro, inicializarModalFiltro };
 }

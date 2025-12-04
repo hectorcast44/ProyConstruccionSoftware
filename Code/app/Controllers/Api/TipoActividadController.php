@@ -24,7 +24,6 @@ class TipoActividadController extends Controller
 
     /**
      * Obtiene la lista de tipos de actividades o un tipo específico.
-     * 
      * Si se proporciona el parámetro 'id' en la query string, devuelve el detalle de ese tipo
      * junto con el conteo de referencias. De lo contrario, devuelve todos los tipos del usuario.
      *

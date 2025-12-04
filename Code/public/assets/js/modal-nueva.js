@@ -31,7 +31,7 @@ function abrirModalNueva() {
             if (hid) hid.value = '';
           } catch (e) { }
 
-          if (window.feather) feather.replace();
+          if (globalThis.feather) feather.replace();
 
           const created = document.getElementById('modal-nueva');
           try {
@@ -101,12 +101,6 @@ function configurarInputNumerico(input) {
   input.addEventListener('input', (ev) => {
     // Permitir números y un solo punto decimal
     const v = ev.target.value || '';
-    // Esta regex permite dígitos y un punto opcional
-    // Nota: input type="number" a veces limpia el value si es inválido,
-    // así que confiamos más en la validación nativa del navegador para UX,
-    // pero evitamos caracteres no numéricos excepto punto.
-    // const cleaned = String(v).replace(/[^0-9.]/g, '');
-    // if (cleaned !== v) ev.target.value = cleaned;
   });
 }
 
@@ -207,18 +201,18 @@ function inicializarModalNueva() {
       modal.close();
 
       try {
-        if (typeof window.cargarActividadesDesdeAPI === 'function') {
-          window.cargarActividadesDesdeAPI();
-        } else if (typeof window.cargarActividades === 'function') {
-          window.cargarActividades();
+        if (typeof globalThis.cargarActividadesDesdeAPI === 'function') {
+          globalThis.cargarActividadesDesdeAPI();
+        } else if (typeof globalThis.cargarActividades === 'function') {
+          globalThis.cargarActividades();
         }
 
-        if (typeof window.cargarMateriasDesdeAPI === 'function') {
-          window.cargarMateriasDesdeAPI();
+        if (typeof globalThis.cargarMateriasDesdeAPI === 'function') {
+          globalThis.cargarMateriasDesdeAPI();
         }
 
-        if (typeof window.cargarDetalleMateria === 'function') {
-          window.cargarDetalleMateria();
+        if (typeof globalThis.cargarDetalleMateria === 'function') {
+          globalThis.cargarDetalleMateria();
         }
       } catch (e) {
         console.warn('No se pudieron invocar funciones de recarga tras crear actividad', e);

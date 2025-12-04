@@ -20,7 +20,7 @@ function cargarPartial(ruta, contenedorId, botonId, callback) {
 
       contenedor.innerHTML = html;
 
-      if (window.feather) {
+      if (globalThis.feather) {
         feather.replace();
       }
 
