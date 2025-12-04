@@ -55,8 +55,6 @@ function initMisMaterias() {
 
     return tipos.map(tipo => {
       const tagClass = obtenerTagClassPorTipo(tipo);
-      const obtenido = Number(tipo.obtenido ?? 0);
-      const maximo = Number(tipo.maximo ?? 0);
       const porcentaje = (tipo.porcentaje !== undefined && tipo.porcentaje !== null)
         ? `${Number(tipo.porcentaje).toFixed(0)}%`
         : '';

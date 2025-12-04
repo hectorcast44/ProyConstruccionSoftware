@@ -280,7 +280,7 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 /**
- * Barra de búsqueda con estilo Dashboard para Mis Calificaciones
+ * Barra de búsqueda 
  */
 function initSearchCalificaciones() {
   const input = document.getElementById('d-search-input');
@@ -289,8 +289,6 @@ function initSearchCalificaciones() {
   input.addEventListener('input', () => {
     const termino = input.value.toLowerCase().trim();
     const cards = document.querySelectorAll('#lista-calificaciones .accordion-card');
-
-    let coincideAlguna = false;
 
     cards.forEach(card => {
       const titulo = (card.querySelector('.accordion-card__title')?.textContent || '')
@@ -304,7 +302,6 @@ function initSearchCalificaciones() {
         tipos.some(t => t.includes(termino));
 
       card.style.display = match ? '' : 'none';
-      if (match) coincideAlguna = true;
     });
   });
 }
